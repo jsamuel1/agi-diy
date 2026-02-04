@@ -1785,20 +1785,24 @@ Example - create a tool that gets weather:
 
                 // Store the tool definition
                 const customTools = loadCustomTools();
-                customTools[input.name] = {
+                const toolDef = {
                     description: input.description,
                     inputSchema: input.inputSchema,
                     code: input.code,
                     createdAt: new Date().toISOString()
                 };
+                customTools[input.name] = toolDef;
                 saveCustomTools(customTools);
 
-                // Mark agent for reinit to pick up new tool
-                window._agentNeedsReinit = true;
+                // Immediately add tool to current agent (hot-reload!)
+                const newTool = createToolFromDefinition(input.name, toolDef);
+                if (newTool && agent) {
+                    agent.tools.push(newTool);
+                }
 
                 return { 
                     success: true, 
-                    message: `Tool '${input.name}' created! It will be available on next message.`,
+                    message: `Tool '${input.name}' created and ready to use immediately!`,
                     tool: input.name
                 };
             } catch (e) {
@@ -1813,8 +1817,8 @@ Example - create a tool that gets weather:
         inputSchema: z.object({
             includeBuiltIn: z.boolean().optional().describe('Include built-in tools (default: true)')
         }),
-        callback: async (input) => {
-            const includeBuiltIn = input.includeBuiltIn !== false;
+        callback: async (input = {}) => {
+            const includeBuiltIn = input?.includeBuiltIn !== false;
             const result = { custom: [], builtIn: [] };
 
             // Custom tools
