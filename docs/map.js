@@ -406,7 +406,7 @@ class MapBackground {
     }
     
     /**
-     * Pan to specific location
+     * Pan to specific location (instant)
      */
     panTo(lat, lng, zoom = null) {
         if (this.map) {
@@ -415,6 +415,154 @@ class MapBackground {
                 this.map.setZoom(zoom);
             }
         }
+    }
+    
+    /**
+     * Smoothly fly/animate to a location
+     * @param {number} lat - Target latitude
+     * @param {number} lng - Target longitude  
+     * @param {number} zoom - Optional target zoom level
+     * @param {number} duration - Animation duration in ms (default: 2000)
+     * @returns {Promise} Resolves when animation completes
+     */
+    flyTo(lat, lng, zoom = null, duration = 2000) {
+        return new Promise((resolve) => {
+            if (!this.map) {
+                resolve(false);
+                return;
+            }
+            
+            const targetZoom = zoom !== null ? zoom : this.map.getZoom();
+            const startCenter = this.map.getCenter();
+            const startZoom = this.map.getZoom();
+            const startLat = startCenter.lat();
+            const startLng = startCenter.lng();
+            
+            const deltaLat = lat - startLat;
+            const deltaLng = lng - startLng;
+            const deltaZoom = targetZoom - startZoom;
+            
+            const startTime = performance.now();
+            
+            // Easing function (ease-in-out-cubic)
+            const easeInOutCubic = (t) => {
+                return t < 0.5 
+                    ? 4 * t * t * t 
+                    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+            };
+            
+            const animate = (currentTime) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easedProgress = easeInOutCubic(progress);
+                
+                const currentLat = startLat + (deltaLat * easedProgress);
+                const currentLng = startLng + (deltaLng * easedProgress);
+                const currentZoom = startZoom + (deltaZoom * easedProgress);
+                
+                this.map.setCenter({ lat: currentLat, lng: currentLng });
+                this.map.setZoom(currentZoom);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    console.log(`🗺️ Flew to ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                    resolve(true);
+                }
+            };
+            
+            requestAnimationFrame(animate);
+        });
+    }
+    
+    /**
+     * Fly to a marker by its ID
+     * @param {string} markerId - The marker ID to fly to
+     * @param {number} zoom - Optional zoom level
+     * @param {number} duration - Animation duration in ms
+     * @returns {Promise<object>} Result with position info
+     */
+    async flyToMarker(markerId, zoom = null, duration = 2000) {
+        const pos = this.getMarkerPosition(markerId);
+        if (!pos) {
+            return { success: false, error: `Marker '${markerId}' not found` };
+        }
+        
+        await this.flyTo(pos.lat, pos.lng, zoom, duration);
+        return { 
+            success: true, 
+            markerId, 
+            position: pos,
+            message: `Flew to marker '${markerId}'`
+        };
+    }
+    
+    /**
+     * Get marker position by ID
+     * @param {string} markerId - The marker ID
+     * @returns {object|null} Position {lat, lng} or null if not found
+     */
+    getMarkerPosition(markerId) {
+        const entry = this.markers.get(markerId);
+        if (!entry) return null;
+        
+        let position;
+        if (entry.useAdvanced) {
+            position = entry.marker.position;
+            // AdvancedMarkerElement position might be LatLng or LatLngLiteral
+            if (typeof position.lat === 'function') {
+                return { lat: position.lat(), lng: position.lng() };
+            }
+            return { lat: position.lat, lng: position.lng };
+        } else {
+            position = entry.marker.getPosition();
+            return { lat: position.lat(), lng: position.lng() };
+        }
+    }
+    
+    /**
+     * Get all markers with their positions
+     * @returns {Array} Array of {id, lat, lng, ...}
+     */
+    getAllMarkers() {
+        const result = [];
+        for (const [id, entry] of this.markers) {
+            const pos = this.getMarkerPosition(id);
+            if (pos) {
+                result.push({ id, ...pos });
+            }
+        }
+        return result;
+    }
+    
+    /**
+     * Animate through multiple markers in sequence (tour)
+     * @param {Array<string>} markerIds - Array of marker IDs to visit
+     * @param {number} pauseMs - Pause at each marker (default: 1500ms)
+     * @param {number} flyDurationMs - Flight duration between markers (default: 2000ms)
+     * @returns {Promise<object>} Tour results
+     */
+    async tourMarkers(markerIds, pauseMs = 1500, flyDurationMs = 2000) {
+        const visited = [];
+        const errors = [];
+        
+        for (const markerId of markerIds) {
+            const result = await this.flyToMarker(markerId, null, flyDurationMs);
+            if (result.success) {
+                visited.push(markerId);
+                // Pause at marker
+                await new Promise(r => setTimeout(r, pauseMs));
+            } else {
+                errors.push({ markerId, error: result.error });
+            }
+        }
+        
+        return {
+            success: errors.length === 0,
+            visited,
+            errors: errors.length > 0 ? errors : undefined,
+            totalVisited: visited.length
+        };
     }
     
     /**

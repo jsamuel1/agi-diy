@@ -174,9 +174,23 @@
             border-radius: 100px;
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 16px;
             z-index: 100;
             padding-top: calc(12px + env(safe-area-inset-top));
+            min-width: 400px;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .brand {
@@ -616,9 +630,16 @@
             padding: 4px;
             background: var(--glass);
             border-radius: 10px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .tabs::-webkit-scrollbar {
+            display: none;
         }
         .tab {
-            flex: 1;
+            flex: 0 0 auto;
             padding: 10px 16px;
             border-radius: 7px;
             background: transparent;
@@ -629,11 +650,33 @@
             cursor: pointer;
             transition: all 0.2s ease;
             font-family: inherit;
+            white-space: nowrap;
         }
         .tab:hover { color: var(--text-secondary); }
         .tab.active { 
             background: var(--bg);
             color: var(--text);
+        }
+        
+        @media (max-width: 640px) {
+            .tabs {
+                margin-bottom: 20px;
+                padding: 3px;
+            }
+            .tab {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            .modal-content {
+                max-height: 90vh;
+                border-radius: 16px;
+            }
+            .modal-body {
+                padding: 20px;
+            }
+            .modal-header {
+                padding: 16px 20px;
+            }
         }
 
         .tab-content { display: none; }
@@ -691,12 +734,16 @@
                 gap: 8px;
                 padding: 10px 16px;
                 padding-top: calc(10px + env(safe-area-inset-top));
-                flex-wrap: nowrap;
-                overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
+                min-width: auto;
             }
-            .header::-webkit-scrollbar {
-                display: none;
+            .header-left {
+                gap: 8px;
+                flex: 1;
+                min-width: 0;
+            }
+            .header-right {
+                gap: 4px;
+                flex-shrink: 0;
             }
             .header-btn {
                 padding: 6px 10px;
@@ -712,8 +759,8 @@
             }
             #sdkStatus {
                 font-size: 10px;
-                flex-shrink: 0;
-                max-width: 60px;
+                flex-shrink: 1;
+                max-width: 80px;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -731,13 +778,16 @@
 <body>
     <div class="app">
         <header class="header">
-            <span class="brand">agi<span class="brand-dot">.</span>diy</span>
-            <div class="header-divider"></div>
-            <span id="sdkStatus">loading...</span>
-            <div class="header-divider"></div>
-            <button class="header-btn" id="notifyBtn" title="Enable notifications">🔔</button>
-            <button class="header-btn" id="clearBtn">clear</button>
-            <button class="header-btn" id="settingsBtn">settings</button>
+            <div class="header-left">
+                <span class="brand">agi<span class="brand-dot">.</span>diy</span>
+                <div class="header-divider"></div>
+                <span id="sdkStatus">loading...</span>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" id="notifyBtn" title="Enable notifications">🔔</button>
+                <button class="header-btn" id="clearBtn">clear</button>
+                <button class="header-btn" id="settingsBtn">settings</button>
+            </div>
         </header>
 
         <div class="messages-container" id="chatContainer">
@@ -788,10 +838,12 @@
             <div class="modal-body">
                 <div class="tabs">
                     <button class="tab active" data-tab="credentials">API</button>
+                    <button class="tab" data-tab="google">Google</button>
                     <button class="tab" data-tab="system">System</button>
                     <button class="tab" data-tab="tools">Tools</button>
                     <button class="tab" data-tab="context">Context</button>
                     <button class="tab" data-tab="map">Map</button>
+                    <button class="tab" data-tab="sync">Sync</button>
                 </div>
 
                 <div class="tab-content active" id="tab-credentials">
@@ -813,6 +865,16 @@
                             <label class="form-label">Model</label>
                             <input type="text" class="form-input" id="anthropicModel" placeholder="claude-haiku-4-5">
                         </div>
+                        <div class="form-group">
+                            <label class="form-label">Max Tokens</label>
+                            <input type="number" class="form-input" id="anthropicMaxTokens" placeholder="8096" min="1" max="200000">
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">Maximum tokens for response (default: 8096)</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Custom Headers (JSON)</label>
+                            <textarea class="form-input" id="anthropicHeaders" rows="3" placeholder='{"anthropic-beta": "max-tokens-3-5-sonnet-2024-07-15"}'></textarea>
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">Additional HTTP headers for API requests (optional)</div>
+                        </div>
                     </div>
                     
                     <div id="openaiFields" style="display:none;">
@@ -823,6 +885,16 @@
                         <div class="form-group">
                             <label class="form-label">Model</label>
                             <input type="text" class="form-input" id="openaiModel" placeholder="gpt-5-nano-2025-08-07">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Max Tokens</label>
+                            <input type="number" class="form-input" id="openaiMaxTokens" placeholder="8096" min="1" max="128000">
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">Maximum tokens for response (default: 8096)</div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Custom Headers (JSON)</label>
+                            <textarea class="form-input" id="openaiHeaders" rows="3" placeholder='{"OpenAI-Organization": "org-xxx"}'></textarea>
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">Additional HTTP headers for API requests (optional)</div>
                         </div>
                     </div>
                     
@@ -861,6 +933,60 @@
                     </div>
                 </div>
 
+                <div class="tab-content" id="tab-google">
+                    <div class="form-group">
+                        <label class="form-label">🔐 Google OAuth Setup</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:16px;line-height:1.6;">
+                            Connect to Google APIs (Gmail, Drive, Calendar, YouTube, etc.)
+                            <br>Requires OAuth Client ID from Google Cloud Console.
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">OAuth Client ID</label>
+                        <input type="text" class="form-input" id="googleClientId" placeholder="xxx.apps.googleusercontent.com">
+                        <div style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">
+                            Get from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--text-secondary);">Google Cloud Console</a> → Create OAuth 2.0 Client ID (Web application)
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">API Key (Optional)</label>
+                        <input type="password" class="form-input" id="googleApiKey" placeholder="AIzaSy...">
+                        <div style="font-size:11px;color:var(--text-tertiary);margin-top:8px;">
+                            For public APIs without OAuth. Create at Cloud Console → API Keys
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">OAuth Status</label>
+                        <div id="googleAuthStatus" style="font-family:'SF Mono',monospace;font-size:12px;color:var(--text-secondary);background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;">
+                            Not connected
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="saveGoogleConfigBtn">Save Config</button>
+                        <button class="btn" id="googleAuthBtn">🔐 Authenticate</button>
+                        <button class="btn" id="googleRevokeBtn">Revoke</button>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top:24px;">
+                        <label class="form-label">📋 Setup Instructions</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8;">
+                            1. Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--text-secondary);">Google Cloud Console</a><br>
+                            2. Create a new project (or select existing)<br>
+                            3. Enable APIs you need (Gmail, Drive, Calendar, etc.)<br>
+                            4. Click "Create Credentials" → "OAuth client ID"<br>
+                            5. Select "Web application"</strong><br>
+                            6. Under "Authorized JavaScript origins" add:<br>
+                            <code id="currentOrigin" style="background:rgba(255,255,255,0.1);padding:4px 8px;border-radius:4px;display:inline-block;margin:4px 0;"></code><br>
+                            7. Copy the Client ID and paste above<br>
+                            8. Click "Authenticate" to connect
+                        </div>
+                    </div>
+                </div>
+
                 <div class="tab-content" id="tab-system">
                     <div class="form-group">
                         <label class="form-label">System Prompt</label>
@@ -871,44 +997,9 @@
 
                 <div class="tab-content" id="tab-tools">
                     <div class="form-group">
-                        <label class="form-label">Built-in Tools</label>
-                        <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
-                            <code>render_ui</code> — Render dynamic HTML<br>
-                            <code>javascript_eval</code> — Execute JavaScript<br>
-                            <code>storage_get</code> — Read localStorage<br>
-                            <code>storage_set</code> — Write localStorage<br>
-                            <code>fetch_url</code> — HTTP requests<br>
-                            <code>update_self</code> — Self-modify config<br>
-                            <code>notify</code> — Send push notifications 🔔<br>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">🔧 Self-Modification Tools</label>
-                        <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
-                            <code>create_tool</code> — Create new tools at runtime<br>
-                            <code>list_tools</code> — List all available tools<br>
-                            <code>delete_tool</code> — Remove custom tools<br>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">🧠 Context & Communication Tools</label>
-                        <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
-                            <code>get_user_context</code> — Get user activity, location, etc.<br>
-                            <code>set_context</code> — Set custom context for injection<br>
-                            <code>enable_context_tracking</code> — Toggle activity/location/bluetooth<br>
-                            <code>scan_bluetooth</code> — Scan for nearby devices/agents 📡<br>
-                            <code>send_to_agent</code> — Message nearby AGI agents<br>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">🗺️ Map Tools</label>
-                        <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
-                            <code>add_map_marker</code> — Add marker with emoji/label/color<br>
-                            <code>remove_map_marker</code> — Remove marker by ID<br>
-                            <code>clear_map_markers</code> — Clear all markers<br>
-                            <code>list_map_markers</code> — List all marker IDs<br>
-                            <code>pan_map</code> — Pan/zoom to location<br>
-                            <code>get_map_location</code> — Get current user location<br>
+                        <label class="form-label">All Tools (click to toggle)</label>
+                        <div id="builtinToolsList" style="font-size:13px;color:var(--text-secondary);line-height:2.2;">
+                            <!-- Tools will be rendered by JS with click handlers, grouped by category -->
                         </div>
                     </div>
                     <div class="form-group">
@@ -1024,16 +1115,6 @@
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">UI Transparency</label>
-                        <input type="range" id="mapOpacitySetting" min="0" max="100" value="70" style="width:100%;">
-                        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-tertiary);">
-                            <span>Clear (map visible)</span>
-                            <span id="mapOpacityValue">70%</span>
-                            <span>Solid (map hidden)</span>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
                         <label class="form-label">Current Location</label>
                         <div id="mapLocationDisplay" style="font-family:'SF Mono',monospace;font-size:12px;color:var(--text-secondary);background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;">
                             Waiting for location...
@@ -1043,6 +1124,80 @@
                     <div class="btn-group">
                         <button class="btn btn-primary" id="saveMapSettingsBtn">Save & Apply</button>
                         <button class="btn" id="testMapBtn">Test Map</button>
+                    </div>
+                </div>
+
+                <div class="tab-content" id="tab-sync">
+                    <div class="form-group">
+                        <label class="form-label">🔄 Sync & Share</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:16px;">
+                            Export your settings as an encrypted URL to import on another device (like your mobile PWA).
+                            All API keys and config are encrypted with your password.
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">📤 Export Settings</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+                            Enter a password to encrypt your settings. Share the generated URL/code with your mobile.
+                        </div>
+                        <div style="display:flex;gap:8px;margin-bottom:12px;">
+                            <input type="password" class="form-input" id="exportPassword" placeholder="Encryption password" style="flex:1;">
+                            <button class="btn btn-primary" id="exportSettingsBtn">Export</button>
+                        </div>
+                        <div id="exportResult" style="display:none;">
+                            <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px;">📋 Copy this URL:</div>
+                            <textarea class="form-input" id="exportedUrl" rows="3" readonly style="font-size:12px;"></textarea>
+                            <div class="btn-group" style="margin-top:8px;">
+                                <button class="btn" id="copyExportBtn">📋 Copy URL</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top:24px;padding-top:24px;border-top:1px solid var(--divider);">
+                        <label class="form-label">📥 Import Settings</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+                            Paste the encrypted URL from your other device.
+                        </div>
+                        <textarea class="form-input" id="importUrl" rows="2" placeholder="Paste encrypted URL here..." style="font-size:12px;margin-bottom:8px;"></textarea>
+                        <div style="display:flex;gap:8px;">
+                            <input type="password" class="form-input" id="importPassword" placeholder="Decryption password" style="flex:1;">
+                            <button class="btn btn-primary" id="importSettingsBtn">Import</button>
+                        </div>
+                        <div id="importStatus" style="font-size:12px;margin-top:8px;display:none;"></div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top:24px;padding-top:24px;border-top:1px solid var(--divider);">
+                        <label class="form-label">💬 Chat History</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+                            Messages are automatically saved to local storage.
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                                <input type="checkbox" id="persistMessages" style="width:18px;height:18px;" checked>
+                                <span style="color:var(--text);">Auto-save messages</span>
+                            </label>
+                        </div>
+                        <div id="chatHistoryStats" style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
+                            Loading...
+                        </div>
+                        <div class="btn-group">
+                            <button class="btn" id="exportChatBtn">📥 Export Chat</button>
+                            <button class="btn" id="clearChatHistoryBtn" style="color:rgba(255,100,100,0.8);">🗑️ Clear History</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top:24px;padding-top:24px;border-top:1px solid var(--divider);">
+                        <label class="form-label">🔐 What's Exported</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8;">
+                            ✅ API keys (Anthropic, OpenAI, Google)<br>
+                            ✅ Model preferences<br>
+                            ✅ System prompt<br>
+                            ✅ Custom tools<br>
+                            ✅ Map settings<br>
+                            ✅ Context preferences<br>
+                            ❌ Chat history (use Export Chat separately)
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1114,6 +1269,8 @@
         MapBackground,
         createMapControls
     } from './map.js';
+    
+    import { googleAPI, DEFAULT_SCOPES } from './tools/google.js';
     
     // Initialize global context injector
     const contextInjector = new ContextInjector();
@@ -1229,61 +1386,50 @@ agi.diy: https://agi.diy
     'font-size:16px;color:#555'
     );
 
-    const DEFAULT_SYSTEM_PROMPT = `You are an AI agent running at agi.diy — entirely in the browser using Strands SDK.
+    const DEFAULT_SYSTEM_PROMPT = `You are AGI, an autonomous AI agent running entirely in the browser at agi.diy.
 
-## Capabilities
-- render_ui: Create interactive HTML/CSS/JS components
-- javascript_eval: Execute JavaScript code
-- storage_get/set: Persist data in localStorage
-- fetch_url: Make HTTP requests (CORS restrictions apply)
-- update_self: Modify your own system prompt
-- notify: Send push notifications (even when app is in background!)
+## Core Tools
+- **render_ui**: Create interactive HTML/CSS/JS components inline
+- **javascript_eval**: Execute JavaScript, return results
+- **storage_get/set**: Persist data in localStorage across sessions
+- **fetch_url**: HTTP requests (CORS restrictions apply)
+- **notify**: Push notifications (works in background)
 
-## 🧠 Context Awareness
-You have access to dynamic context that's injected into every conversation turn:
-- get_user_context: Get activity state, mouse position, idle time, location, etc.
-- set_context: Add custom key-value context that persists
-- enable_context_tracking: Enable activity/geolocation/bluetooth tracking
+## Self-Modification
+- **create_tool**: Define new tools with name, schema, and JS code
+- **list_tools**: See all available tools
+- **delete_tool**: Remove custom tools
+- **update_self**: Modify your own system prompt
 
-Context is automatically injected at the start of each message, giving you awareness of:
-- User activity (typing, scrolling, mouse movement, idle time)
-- Window focus state and screen size
-- Battery level and network type
-- Geolocation (if enabled and permitted)
-- Nearby Bluetooth devices (if enabled)
+Custom tools persist in localStorage and load automatically.
 
-## 📡 Agent Communication (Bluetooth)
-- scan_bluetooth: Discover nearby Bluetooth devices and AGI agents
-- send_to_agent: Send messages to discovered AGI agents
+## Context Awareness
+- **get_user_context**: Activity state, mouse position, idle time, location
+- **set_context**: Add persistent key-value context
+- **enable_context_tracking**: Toggle activity/geolocation/bluetooth
 
-This allows you to communicate with other AGI agents running nearby!
+## Communication
+- **scan_bluetooth**: Discover nearby devices and AGI agents
+- **send_to_agent**: Message other AGI agents nearby
 
-## 🔧 Self-Modification (Hot-Reload Tools)
-You can CREATE YOUR OWN TOOLS that persist across sessions:
-- create_tool: Define new tools with name, description, schema, and JavaScript code
-- list_tools: See all available tools (built-in + custom)
-- delete_tool: Remove custom tools you've created
+## Map Tools (when enabled)
+- **add_map_marker**: Place markers with emoji/label/color
+- **fly_to_location/marker**: Smooth camera animations
+- **tour_markers**: Animated journey through markers
+- **get_map_location**: Current GPS position
 
-Example - Create a tool to get random quotes:
-create_tool({
-  name: "random_quote",
-  description: "Get a random inspirational quote",
-  inputSchema: { type: "object", properties: {}, required: [] },
-  code: "const r = await fetch('https://api.quotable.io/random'); const d = await r.json(); return { quote: d.content, author: d.author };"
-})
-
-Custom tools are stored in localStorage and automatically loaded on startup.
-After creating a tool, it becomes available on your next message!
+## Google APIs (when configured)
+- **google_auth**: OAuth 2.0 authentication
+- **use_google**: Access Gmail, Drive, Calendar, YouTube, etc.
+- **gmail_send**: Send emails directly
 
 ## Guidelines
-- Be concise and helpful
-- Use tools when they add value
-- You can create interactive experiences with render_ui
-- Data persists across sessions with storage
-- Use notify to alert users about important events
-- Create custom tools when you need new capabilities!
+- Be concise and direct
+- Use tools proactively
+
+- Create custom tools for repeated tasks
 - Check user context to understand what they're doing
-- Look for nearby agents to collaborate with
+- Render interactive UI for better experiences
 
 Version: ${VERSION}`;
 
@@ -1299,6 +1445,7 @@ Version: ${VERSION}`;
                 modelId: config.modelId || 'claude-haiku-4-5',
                 maxTokens: config.maxTokens || 8096,
                 temperature: config.temperature || 1.0,
+                customHeaders: config.customHeaders || {},
             };
         }
 
@@ -1311,7 +1458,7 @@ Version: ${VERSION}`;
         }
 
         async *stream(messages, options) {
-            const { apiKey, modelId, maxTokens, temperature } = this._config;
+            const { apiKey, modelId, maxTokens, temperature, customHeaders } = this._config;
             
             if (!apiKey) {
                 throw new Error('API key not configured. Open settings to add your key.');
@@ -1397,14 +1544,18 @@ Version: ${VERSION}`;
                 }));
             }
 
+            // Build headers with custom headers support
+            const headers = {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true',
+                ...customHeaders
+            };
+
             const response = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-key': apiKey,
-                    'anthropic-version': '2023-06-01',
-                    'anthropic-dangerous-direct-browser-access': 'true'
-                },
+                headers: headers,
                 body: JSON.stringify(requestBody)
             });
 
@@ -1518,6 +1669,7 @@ Version: ${VERSION}`;
                 modelId: config.modelId || 'gpt-5-nano-2025-08-07',
                 maxTokens: config.maxTokens || 8096,
                 temperature: config.temperature || 1.0,
+                customHeaders: config.customHeaders || {},
             };
         }
 
@@ -1530,7 +1682,7 @@ Version: ${VERSION}`;
         }
 
         async *stream(messages, options) {
-            const { apiKey, modelId, maxTokens, temperature } = this._config;
+            const { apiKey, modelId, maxTokens, temperature, customHeaders } = this._config;
             
             if (!apiKey) {
                 throw new Error('OpenAI API key not configured. Open settings to add your key.');
@@ -1645,7 +1797,8 @@ Version: ${VERSION}`;
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
+                    'Authorization': `Bearer ${apiKey}`,
+                    ...customHeaders
                 },
                 body: JSON.stringify(requestBody)
             });
@@ -1811,7 +1964,7 @@ Version: ${VERSION}`;
             
             const messagesInner = document.getElementById('messagesInner');
             messagesInner.appendChild(container);
-            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+            smartScroll();
             
             if (input.script) {
                 try {
@@ -2224,6 +2377,321 @@ Version: ${VERSION}`;
         }
     });
 
+    const flyToMarkerTool = tool({
+        name: 'fly_to_marker',
+        description: 'Smoothly animate/fly the map camera to a specific marker. Great for showcasing locations or giving tours.',
+        inputSchema: z.object({
+            markerId: z.string().describe('The marker ID to fly to'),
+            zoom: z.number().optional().describe('Optional zoom level (1-20)'),
+            duration: z.number().optional().describe('Animation duration in milliseconds (default: 2000)')
+        }),
+        callback: async (input) => {
+            if (!mapBackground || !mapBackground.ready) {
+                return { error: 'Map not enabled. Enable it in settings → Map' };
+            }
+            
+            const result = await mapBackground.flyToMarker(
+                input.markerId, 
+                input.zoom || null, 
+                input.duration || 2000
+            );
+            return result;
+        }
+    });
+
+    const flyToLocationTool = tool({
+        name: 'fly_to_location',
+        description: 'Smoothly animate/fly the map camera to specific coordinates with easing animation.',
+        inputSchema: z.object({
+            lat: z.number().describe('Target latitude'),
+            lng: z.number().describe('Target longitude'),
+            zoom: z.number().optional().describe('Optional zoom level (1-20)'),
+            duration: z.number().optional().describe('Animation duration in milliseconds (default: 2000)')
+        }),
+        callback: async (input) => {
+            if (!mapBackground || !mapBackground.ready) {
+                return { error: 'Map not enabled' };
+            }
+            
+            await mapBackground.flyTo(
+                input.lat, 
+                input.lng, 
+                input.zoom || null, 
+                input.duration || 2000
+            );
+            return { 
+                success: true, 
+                position: { lat: input.lat, lng: input.lng },
+                message: `Flew to ${input.lat.toFixed(4)}, ${input.lng.toFixed(4)}`
+            };
+        }
+    });
+
+    const tourMarkersTool = tool({
+        name: 'tour_markers',
+        description: 'Take a tour through multiple markers in sequence with smooth animations. Perfect for showcasing a journey or route.',
+        inputSchema: z.object({
+            markerIds: z.array(z.string()).describe('Array of marker IDs to visit in order'),
+            pauseMs: z.number().optional().describe('Pause duration at each marker in ms (default: 1500)'),
+            flyDurationMs: z.number().optional().describe('Flight animation duration between markers in ms (default: 2000)')
+        }),
+        callback: async (input) => {
+            if (!mapBackground || !mapBackground.ready) {
+                return { error: 'Map not enabled' };
+            }
+            
+            const result = await mapBackground.tourMarkers(
+                input.markerIds,
+                input.pauseMs || 1500,
+                input.flyDurationMs || 2000
+            );
+            return result;
+        }
+    });
+
+    const getMarkerPositionTool = tool({
+        name: 'get_marker_position',
+        description: 'Get the coordinates of a specific marker by its ID.',
+        inputSchema: z.object({
+            markerId: z.string().describe('The marker ID')
+        }),
+        callback: async (input) => {
+            if (!mapBackground) {
+                return { error: 'Map not enabled' };
+            }
+            
+            const pos = mapBackground.getMarkerPosition(input.markerId);
+            if (pos) {
+                return { markerId: input.markerId, ...pos };
+            }
+            return { error: `Marker '${input.markerId}' not found` };
+        }
+    });
+
+    const getAllMarkersTool = tool({
+        name: 'get_all_markers',
+        description: 'Get all markers with their IDs and positions.',
+        inputSchema: z.object({}),
+        callback: async () => {
+            if (!mapBackground) {
+                return { error: 'Map not enabled' };
+            }
+            
+            const markers = mapBackground.getAllMarkers();
+            return { 
+                markers, 
+                count: markers.length 
+            };
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GOOGLE API TOOLS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const googleAuthTool = tool({
+        name: 'google_auth',
+        description: `Authenticate with Google OAuth 2.0. Opens a popup for Google sign-in.
+        
+After authentication, you can use the use_google tool to access Gmail, Drive, Calendar, YouTube, and 200+ other Google APIs.
+
+Setup required in settings → Google tab:
+1. Create OAuth Client ID at Google Cloud Console
+2. Add your domain to authorized origins
+3. Paste Client ID in settings`,
+        inputSchema: z.object({
+            forceNew: z.boolean().optional().describe('Force new authentication even if already logged in')
+        }),
+        callback: async (input) => {
+            try {
+                const config = googleAPI.getConfig();
+                if (!config?.clientId) {
+                    return { 
+                        error: 'Google OAuth not configured. Go to settings → Google tab to add your Client ID.' 
+                    };
+                }
+
+                const token = await googleAPI.getToken(input?.forceNew || false);
+                
+                // Get user info
+                let userInfo = null;
+                try {
+                    userInfo = await googleAPI.getUserInfo();
+                } catch (e) {
+                    console.warn('Could not get user info:', e);
+                }
+
+                return {
+                    success: true,
+                    message: userInfo 
+                        ? `✅ Authenticated as ${userInfo.email}\n\nYou can now use use_google to access Google APIs.`
+                        : '✅ Authentication successful!\n\nYou can now use use_google to access Google APIs.',
+                    email: userInfo?.email,
+                    scopes: token.scope?.split(' ') || []
+                };
+            } catch (error) {
+                return { error: error.message || 'Authentication failed' };
+            }
+        }
+    });
+
+    const useGoogleTool = tool({
+        name: 'use_google',
+        description: `Execute Google API operations (Gmail, Drive, Calendar, YouTube, Sheets, Docs, etc.)
+
+Universal access to 200+ Google APIs through the Discovery API.
+
+Args:
+  service: Google service name (gmail, drive, calendar, youtube, sheets, etc.)
+  version: API version (v1, v3, etc.)
+  resource: Resource path (e.g., 'users.messages', 'files', 'events')
+  method: Method name (list, get, create, delete, send, etc.)
+  parameters: API parameters as object
+
+Examples:
+  // List Gmail messages
+  use_google({
+    service: "gmail", version: "v1",
+    resource: "users.messages", method: "list",
+    parameters: { userId: "me", maxResults: 10 }
+  })
+
+  // Get calendar events
+  use_google({
+    service: "calendar", version: "v3",
+    resource: "events", method: "list",
+    parameters: { calendarId: "primary" }
+  })
+
+  // List Drive files
+  use_google({
+    service: "drive", version: "v3",
+    resource: "files", method: "list",
+    parameters: { pageSize: 10 }
+  })
+
+  // Search YouTube
+  use_google({
+    service: "youtube", version: "v3",
+    resource: "search", method: "list",
+    parameters: { part: "snippet", q: "coding tutorials", maxResults: 5 }
+  })`,
+        inputSchema: z.object({
+            service: z.string().describe('Google service (gmail, drive, calendar, youtube, sheets, docs, etc.)'),
+            version: z.string().describe('API version (v1, v3, etc.)'),
+            resource: z.string().describe('Resource path (e.g., users.messages, files, events)'),
+            method: z.string().describe('Method name (list, get, create, delete, send, etc.)'),
+            parameters: z.record(z.string(), z.any()).optional().describe('API parameters'),
+            headers: z.record(z.string(), z.string()).optional().describe('Custom HTTP headers')
+        }),
+        callback: async (input) => {
+            try {
+                // Check if authenticated
+                if (!googleAPI.isAuthenticated()) {
+                    const config = googleAPI.getConfig();
+                    if (!config?.clientId) {
+                        return { 
+                            error: 'Google not configured. Go to settings → Google tab to set up OAuth.' 
+                        };
+                    }
+                    return { 
+                        error: 'Not authenticated. Use google_auth tool first to sign in.' 
+                    };
+                }
+
+                const result = await googleAPI.callAPI(
+                    input.service,
+                    input.version,
+                    input.resource,
+                    input.method,
+                    input.parameters || {},
+                    input.headers || {}
+                );
+
+                if (result.status === 'error') {
+                    return { error: result.error };
+                }
+
+                return {
+                    success: true,
+                    data: result.data
+                };
+            } catch (error) {
+                return { error: error.message || 'API call failed' };
+            }
+        }
+    });
+
+    const gmailSendTool = tool({
+        name: 'gmail_send',
+        description: `Send an email via Gmail. Handles message formatting automatically.
+
+Example:
+  gmail_send({
+    to: "friend@example.com",
+    subject: "Hello!",
+    body: "This is a test email."
+  })`,
+        inputSchema: z.object({
+            to: z.string().describe('Recipient email address'),
+            subject: z.string().describe('Email subject'),
+            body: z.string().describe('Email body (plain text or HTML)'),
+            cc: z.array(z.string()).optional().describe('CC recipients'),
+            bcc: z.array(z.string()).optional().describe('BCC recipients'),
+            html: z.boolean().optional().describe('If true, body is HTML')
+        }),
+        callback: async (input) => {
+            try {
+                if (!googleAPI.isAuthenticated()) {
+                    return { error: 'Not authenticated. Use google_auth tool first.' };
+                }
+
+                // Get user email first
+                const userInfo = await googleAPI.getUserInfo();
+                const senderEmail = userInfo.email;
+
+                // Create MIME message
+                const boundary = '===boundary===';
+                let message = '';
+                
+                message += `From: ${senderEmail}\r\n`;
+                message += `To: ${input.to}\r\n`;
+                if (input.cc?.length) message += `Cc: ${input.cc.join(', ')}\r\n`;
+                if (input.bcc?.length) message += `Bcc: ${input.bcc.join(', ')}\r\n`;
+                message += `Subject: ${input.subject}\r\n`;
+                message += `MIME-Version: 1.0\r\n`;
+                message += `Content-Type: text/${input.html ? 'html' : 'plain'}; charset=UTF-8\r\n`;
+                message += `\r\n`;
+                message += input.body;
+
+                // Base64 URL-safe encode
+                const encodedMessage = btoa(unescape(encodeURIComponent(message)))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '');
+
+                // Send via Gmail API
+                const result = await googleAPI.callAPI(
+                    'gmail', 'v1',
+                    'users.messages', 'send',
+                    { userId: 'me', resource: { raw: encodedMessage } }
+                );
+
+                if (result.status === 'error') {
+                    return { error: result.error };
+                }
+
+                return {
+                    success: true,
+                    message: `✅ Email sent to ${input.to}`,
+                    messageId: result.data?.id
+                };
+            } catch (error) {
+                return { error: error.message || 'Failed to send email' };
+            }
+        }
+    });
+
     // ═══════════════════════════════════════════════════════════════════════════
     // SELF-MODIFICATION TOOLS - Agent can create its own tools!
     // ═══════════════════════════════════════════════════════════════════════════
@@ -2457,7 +2925,17 @@ Example - create a tool that gets weather:
         clearMapMarkersTool,
         listMapMarkersTool,
         panMapTool,
-        getMapLocationTool
+        getMapLocationTool,
+        // Map navigation tools
+        flyToMarkerTool,
+        flyToLocationTool,
+        tourMarkersTool,
+        getMarkerPositionTool,
+        getAllMarkersTool,
+        // Google API tools
+        googleAuthTool,
+        useGoogleTool,
+        gmailSendTool
     ];
 
     // Expose model classes globally for ambient mode cloning
@@ -2527,23 +3005,43 @@ Example - create a tool that gets weather:
         if (provider === 'anthropic') {
             const apiKey = localStorage.getItem('anthropic_api_key');
             const modelId = localStorage.getItem('anthropic_model') || 'claude-haiku-4-5';
+            const maxTokensStr = localStorage.getItem('anthropic_max_tokens');
+            const headersStr = localStorage.getItem('anthropic_headers');
             
             if (!apiKey) {
                 setStatus('no key');
                 return false;
             }
             
-            model = new AnthropicBrowserModel({ apiKey, modelId, maxTokens: 8096 });
+            const maxTokens = maxTokensStr ? parseInt(maxTokensStr) : 8096;
+            let customHeaders = {};
+            try {
+                if (headersStr) customHeaders = JSON.parse(headersStr);
+            } catch (e) {
+                console.warn('Invalid custom headers JSON:', e);
+            }
+            
+            model = new AnthropicBrowserModel({ apiKey, modelId, maxTokens, customHeaders });
         } else if (provider === 'openai') {
             const apiKey = localStorage.getItem('openai_api_key');
             const modelId = localStorage.getItem('openai_model') || 'gpt-5-nano-2025-08-07';
+            const maxTokensStr = localStorage.getItem('openai_max_tokens');
+            const headersStr = localStorage.getItem('openai_headers');
             
             if (!apiKey) {
                 setStatus('no key');
                 return false;
             }
             
-            model = new OpenAIBrowserModel({ apiKey, modelId, maxTokens: 8096 });
+            const maxTokens = maxTokensStr ? parseInt(maxTokensStr) : 8096;
+            let customHeaders = {};
+            try {
+                if (headersStr) customHeaders = JSON.parse(headersStr);
+            } catch (e) {
+                console.warn('Invalid custom headers JSON:', e);
+            }
+            
+            model = new OpenAIBrowserModel({ apiKey, modelId, maxTokens, customHeaders });
         } else if (provider === 'webllm') {
             const modelId = localStorage.getItem('webllm_model') || 'Qwen2.5-3B-Instruct-q4f16_1-MLC';
             
@@ -2597,10 +3095,18 @@ Example - create a tool that gets weather:
         try {
             // Build custom tools from localStorage
             const customTools = buildCustomTools();
-            const allTools = [...BROWSER_TOOLS, ...customTools];
+            
+            // Filter out disabled tools
+            const disabledTools = JSON.parse(localStorage.getItem('agi_disabled_tools') || '[]');
+            const enabledBuiltinTools = BROWSER_TOOLS.filter(t => !disabledTools.includes(t.name));
+            
+            const allTools = [...enabledBuiltinTools, ...customTools];
             
             if (customTools.length > 0) {
                 console.log(`✅ Loaded ${customTools.length} custom tool(s):`, customTools.map(t => t.name));
+            }
+            if (disabledTools.length > 0) {
+                console.log(`🚫 Disabled ${disabledTools.length} tool(s):`, disabledTools);
             }
 
             agent = new Agent({
@@ -2805,6 +3311,19 @@ Example - create a tool that gets weather:
     // ═══════════════════════════════════════════════════════════════════════════
 
     let streamingEl = null;
+    
+    // Smart scroll - only auto-scroll if user is near bottom
+    function smartScroll() {
+        const container = document.getElementById('chatContainer');
+        if (!container) return;
+        
+        const threshold = 150; // pixels from bottom to consider "at bottom"
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+        
+        if (isNearBottom) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }
 
     function addMessage(role, content) {
         const inner = document.getElementById('messagesInner');
@@ -2829,7 +3348,7 @@ Example - create a tool that gets weather:
         
         msg.appendChild(contentEl);
         inner.appendChild(msg);
-        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        smartScroll();
     }
 
     function updateStreaming(text) {
@@ -2853,7 +3372,7 @@ Example - create a tool that gets weather:
         }
         
         streamingEl.querySelector('.message-content').innerHTML = `<div class="markdown-content">${marked.parse(text)}</div>`;
-        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        smartScroll();
     }
 
     function finalizeStreaming(text) {
@@ -2861,6 +3380,8 @@ Example - create a tool that gets weather:
             streamingEl.querySelector('.message-content').innerHTML = `<div class="markdown-content">${marked.parse(text)}</div>`;
             streamingEl = null;
         }
+        // Save messages after streaming completes
+        setTimeout(saveMessagesToStorage, 100);
     }
 
     function addToolCall(name, input, status) {
@@ -2879,7 +3400,7 @@ Example - create a tool that gets weather:
             </details>
         `;
         inner.appendChild(tool);
-        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        smartScroll();
     }
 
     function updateToolStatus(name, status) {
@@ -2912,7 +3433,7 @@ Example - create a tool that gets weather:
         thinking.appendChild(content);
         
         inner.appendChild(thinking);
-        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        smartScroll();
     }
 
     function removeThinking() {
@@ -2954,7 +3475,7 @@ Example - create a tool that gets weather:
         ambientStreamingEl.appendChild(contentEl);
         
         inner.appendChild(ambientStreamingEl);
-        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        smartScroll();
     }
 
     function updateAmbientStreaming(text) {
@@ -2963,7 +3484,7 @@ Example - create a tool that gets weather:
         const contentEl = ambientStreamingEl.querySelector('.ambient-content');
         if (contentEl) {
             contentEl.innerHTML = `<div class="markdown-content">${marked.parse(text)}</div>`;
-            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+            smartScroll();
         }
     }
 
@@ -2985,7 +3506,7 @@ Example - create a tool that gets weather:
         `;
         
         ambientStreamingEl.appendChild(toolBlock);
-        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        smartScroll();
     }
 
     function updateAmbientToolStatus(toolName, status) {
@@ -3019,7 +3540,7 @@ Example - create a tool that gets weather:
         // Reset for next iteration
         ambientStreamingEl = null;
         
-        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        smartScroll();
     }
 
     function updateAmbientTimer(state, seconds, maxIter) {
@@ -3123,6 +3644,8 @@ Example - create a tool that gets weather:
             </div>
         `;
         window._agentNeedsReinit = true;
+        // Clear persisted messages too
+        localStorage.removeItem(MESSAGES_STORAGE_KEY);
         showToast('cleared');
     };
 
@@ -3172,9 +3695,13 @@ Example - create a tool that gets weather:
         if (provider === 'anthropic') {
             localStorage.setItem('anthropic_api_key', document.getElementById('anthropicApiKey').value);
             localStorage.setItem('anthropic_model', document.getElementById('anthropicModel').value || 'claude-haiku-4-5');
+            localStorage.setItem('anthropic_max_tokens', document.getElementById('anthropicMaxTokens').value || '');
+            localStorage.setItem('anthropic_headers', document.getElementById('anthropicHeaders').value || '');
         } else if (provider === 'openai') {
             localStorage.setItem('openai_api_key', document.getElementById('openaiApiKey').value);
             localStorage.setItem('openai_model', document.getElementById('openaiModel').value || 'gpt-5-nano-2025-08-07');
+            localStorage.setItem('openai_max_tokens', document.getElementById('openaiMaxTokens').value || '');
+            localStorage.setItem('openai_headers', document.getElementById('openaiHeaders').value || '');
         } else if (provider === 'webllm') {
             localStorage.setItem('webllm_model', document.getElementById('webllmModel').value);
         }
@@ -3603,8 +4130,12 @@ Example - create a tool that gets weather:
         document.getElementById('provider').value = localStorage.getItem('provider') || 'anthropic';
         document.getElementById('anthropicApiKey').value = localStorage.getItem('anthropic_api_key') || '';
         document.getElementById('anthropicModel').value = localStorage.getItem('anthropic_model') || 'claude-haiku-4-5';
+        document.getElementById('anthropicMaxTokens').value = localStorage.getItem('anthropic_max_tokens') || '';
+        document.getElementById('anthropicHeaders').value = localStorage.getItem('anthropic_headers') || '';
         document.getElementById('openaiApiKey').value = localStorage.getItem('openai_api_key') || '';
         document.getElementById('openaiModel').value = localStorage.getItem('openai_model') || 'gpt-5-nano-2025-08-07';
+        document.getElementById('openaiMaxTokens').value = localStorage.getItem('openai_max_tokens') || '';
+        document.getElementById('openaiHeaders').value = localStorage.getItem('openai_headers') || '';
         document.getElementById('webllmModel').value = localStorage.getItem('webllm_model') || 'Qwen2.5-3B-Instruct-q4f16_1-MLC';
         document.getElementById('systemPrompt').value = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT;
         
@@ -3680,6 +4211,9 @@ Example - create a tool that gets weather:
             
             // Update tools tab content when shown
             if (tabName === 'tools') {
+                // Render built-in tools with toggle capability
+                renderBuiltinTools();
+                
                 // Update custom tools list
                 const customToolsList = document.getElementById('customToolsList');
                 if (customToolsList) {
@@ -3817,7 +4351,6 @@ Example - create a tool that gets weather:
         const mapId = localStorage.getItem('google_maps_map_id');
         const mapEnabled = localStorage.getItem('map_enabled') === 'true';
         const mapStyle = localStorage.getItem('map_style') || 'dark';
-        const uiOpacity = parseInt(localStorage.getItem('map_opacity') || '70') / 100;
         
         if (!mapEnabled || !apiKey) {
             document.documentElement.classList.remove('map-mode');
@@ -3833,9 +4366,6 @@ Example - create a tool that gets weather:
         if (mapBackground) {
             mapBackground.destroy();
         }
-        
-        // Apply UI transparency
-        document.documentElement.style.setProperty('--ui-opacity', uiOpacity);
         
         // Create new map
         mapBackground = new MapBackground({
@@ -3879,44 +4409,29 @@ Example - create a tool that gets weather:
         const mapId = localStorage.getItem('google_maps_map_id') || '';
         const mapEnabled = localStorage.getItem('map_enabled') === 'true';
         const mapStyle = localStorage.getItem('map_style') || 'dark';
-        const uiOpacity = localStorage.getItem('map_opacity') || '70';
         
         const apiKeyInput = document.getElementById('googleMapsApiKey');
         const mapIdInput = document.getElementById('googleMapsMapId');
         const enabledCheckbox = document.getElementById('mapEnabled');
         const styleSelect = document.getElementById('mapStyle');
-        const opacitySlider = document.getElementById('mapOpacitySetting');
-        const opacityValue = document.getElementById('mapOpacityValue');
         
         if (apiKeyInput) apiKeyInput.value = apiKey;
         if (mapIdInput) mapIdInput.value = mapId;
         if (enabledCheckbox) enabledCheckbox.checked = mapEnabled;
         if (styleSelect) styleSelect.value = mapStyle;
-        if (opacitySlider) opacitySlider.value = uiOpacity;
-        if (opacityValue) opacityValue.textContent = `${uiOpacity}%`;
     }
     
     // Map settings event handlers
-    document.getElementById('mapOpacitySetting')?.addEventListener('input', (e) => {
-        const value = e.target.value;
-        document.getElementById('mapOpacityValue').textContent = `${value}%`;
-        
-        // Live update UI transparency via CSS variable
-        document.documentElement.style.setProperty('--ui-opacity', value / 100);
-    });
-    
     document.getElementById('saveMapSettingsBtn')?.addEventListener('click', async () => {
         const apiKey = document.getElementById('googleMapsApiKey')?.value || '';
         const mapId = document.getElementById('googleMapsMapId')?.value || '';
         const enabled = document.getElementById('mapEnabled')?.checked || false;
         const style = document.getElementById('mapStyle')?.value || 'dark';
-        const opacity = document.getElementById('mapOpacitySetting')?.value || '60';
         
         localStorage.setItem('google_maps_api_key', apiKey);
         localStorage.setItem('google_maps_map_id', mapId);
         localStorage.setItem('map_enabled', enabled.toString());
         localStorage.setItem('map_style', style);
-        localStorage.setItem('map_opacity', opacity);
         
         await initMapBackground();
         showToast(enabled ? (mapId ? 'Map enabled (Advanced)' : 'Map enabled (Basic)') : 'Map disabled');
@@ -3934,7 +4449,6 @@ Example - create a tool that gets weather:
         localStorage.setItem('google_maps_map_id', document.getElementById('googleMapsMapId')?.value || '');
         localStorage.setItem('map_enabled', 'true');
         localStorage.setItem('map_style', document.getElementById('mapStyle')?.value || 'dark');
-        localStorage.setItem('map_opacity', document.getElementById('mapOpacitySetting')?.value || '60');
         
         await initMapBackground();
         showToast('Testing map...');
@@ -3942,6 +4456,687 @@ Example - create a tool that gets weather:
     
     // Load map settings on page load
     loadMapSettings();
+    
+    // ═══════════════════════════════════════════════════════════════════════════
+    // GOOGLE SETTINGS EVENT HANDLERS
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    function loadGoogleSettings() {
+        const config = googleAPI.getConfig();
+        if (config) {
+            const clientIdInput = document.getElementById('googleClientId');
+            const apiKeyInput = document.getElementById('googleApiKey');
+            if (clientIdInput) clientIdInput.value = config.clientId || '';
+            if (apiKeyInput) apiKeyInput.value = config.apiKey || '';
+        }
+        
+        // Show current origin for authorized origins setup
+        const originEl = document.getElementById('currentOrigin');
+        if (originEl) originEl.textContent = window.location.origin;
+        
+        updateGoogleAuthStatus();
+    }
+    
+    async function updateGoogleAuthStatus() {
+        const statusEl = document.getElementById('googleAuthStatus');
+        if (!statusEl) return;
+        
+        const config = googleAPI.getConfig();
+        if (!config?.clientId) {
+            statusEl.innerHTML = '❌ <strong>Not configured</strong><br>Add OAuth Client ID above';
+            statusEl.style.color = 'rgba(255,100,100,0.8)';
+            return;
+        }
+        
+        if (googleAPI.isAuthenticated()) {
+            try {
+                const userInfo = await googleAPI.getUserInfo();
+                statusEl.innerHTML = `✅ <strong>Connected</strong><br>Signed in as: ${userInfo.email}`;
+                statusEl.style.color = 'rgba(100,255,100,0.8)';
+            } catch (e) {
+                statusEl.innerHTML = '✅ <strong>Token stored</strong><br>May need refresh';
+                statusEl.style.color = 'rgba(255,200,100,0.8)';
+            }
+        } else {
+            statusEl.innerHTML = '⚠️ <strong>Configured but not signed in</strong><br>Click "Authenticate" to connect';
+            statusEl.style.color = 'rgba(255,200,100,0.8)';
+        }
+    }
+    
+    document.getElementById('saveGoogleConfigBtn')?.addEventListener('click', () => {
+        const clientId = document.getElementById('googleClientId')?.value?.trim();
+        const apiKey = document.getElementById('googleApiKey')?.value?.trim();
+        
+        if (!clientId) {
+            showToast('Client ID required');
+            return;
+        }
+        
+        googleAPI.saveConfig({
+            clientId,
+            apiKey: apiKey || undefined,
+            scopes: DEFAULT_SCOPES
+        });
+        
+        updateGoogleAuthStatus();
+        showToast('Google config saved');
+    });
+    
+    document.getElementById('googleAuthBtn')?.addEventListener('click', async () => {
+        const config = googleAPI.getConfig();
+        if (!config?.clientId) {
+            showToast('Save config first');
+            return;
+        }
+        
+        try {
+            const statusEl = document.getElementById('googleAuthStatus');
+            if (statusEl) {
+                statusEl.innerHTML = '🔄 <strong>Authenticating...</strong><br>Check popup window';
+                statusEl.style.color = 'rgba(100,150,255,0.8)';
+            }
+            
+            await googleAPI.requestToken();
+            await updateGoogleAuthStatus();
+            showToast('Google authenticated!');
+        } catch (e) {
+            const statusEl = document.getElementById('googleAuthStatus');
+            if (statusEl) {
+                statusEl.innerHTML = `❌ <strong>Auth failed</strong><br>${e.message}`;
+                statusEl.style.color = 'rgba(255,100,100,0.8)';
+            }
+            showToast('Auth failed: ' + e.message);
+        }
+    });
+    
+    document.getElementById('googleRevokeBtn')?.addEventListener('click', async () => {
+        try {
+            await googleAPI.revokeToken();
+            await updateGoogleAuthStatus();
+            showToast('Google token revoked');
+        } catch (e) {
+            showToast('Revoke failed: ' + e.message);
+        }
+    });
+    
+    // Load Google settings on page load
+    loadGoogleSettings();
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // ENCRYPTED SETTINGS EXPORT/IMPORT
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const SETTINGS_KEYS = [
+        'provider',
+        'anthropic_api_key',
+        'anthropic_model',
+        'anthropic_max_tokens',
+        'anthropic_headers',
+        'openai_api_key',
+        'openai_model',
+        'openai_max_tokens',
+        'openai_headers',
+        'webllm_model',
+        'system_prompt',
+        'agi_custom_tools',
+        'agi_disabled_tools',
+        // Google OAuth (stored as JSON object)
+        'google_api_config',
+        'google_oauth_token',
+        // Google Maps
+        'google_maps_api_key',
+        'google_maps_map_id',
+        'map_enabled',
+        'map_style',
+        // Context settings
+        'context_activity',
+        'context_geolocation',
+        'context_bluetooth',
+        // Message persistence
+        'persist_messages'
+    ];
+
+    async function deriveKey(password, salt) {
+        const enc = new TextEncoder();
+        const keyMaterial = await crypto.subtle.importKey(
+            'raw',
+            enc.encode(password),
+            'PBKDF2',
+            false,
+            ['deriveKey']
+        );
+        return crypto.subtle.deriveKey(
+            {
+                name: 'PBKDF2',
+                salt: salt,
+                iterations: 100000,
+                hash: 'SHA-256'
+            },
+            keyMaterial,
+            { name: 'AES-GCM', length: 256 },
+            false,
+            ['encrypt', 'decrypt']
+        );
+    }
+
+    async function encryptSettings(password) {
+        // Gather all settings
+        const settings = {};
+        for (const key of SETTINGS_KEYS) {
+            const value = localStorage.getItem(key);
+            if (value !== null) {
+                settings[key] = value;
+            }
+        }
+        
+        const plaintext = JSON.stringify(settings);
+        const enc = new TextEncoder();
+        
+        // Generate salt and IV
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        
+        // Derive key and encrypt
+        const key = await deriveKey(password, salt);
+        const ciphertext = await crypto.subtle.encrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            enc.encode(plaintext)
+        );
+        
+        // Combine salt + iv + ciphertext
+        const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
+        combined.set(salt, 0);
+        combined.set(iv, salt.length);
+        combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
+        
+        // Base64 encode
+        return btoa(String.fromCharCode(...combined));
+    }
+
+    async function decryptSettings(encryptedBase64, password) {
+        // Decode base64
+        const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
+        
+        // Extract salt, iv, ciphertext
+        const salt = combined.slice(0, 16);
+        const iv = combined.slice(16, 28);
+        const ciphertext = combined.slice(28);
+        
+        // Derive key and decrypt
+        const key = await deriveKey(password, salt);
+        const plaintext = await crypto.subtle.decrypt(
+            { name: 'AES-GCM', iv: iv },
+            key,
+            ciphertext
+        );
+        
+        const dec = new TextDecoder();
+        return JSON.parse(dec.decode(plaintext));
+    }
+
+    function generateExportUrl(encryptedData) {
+        const url = new URL(window.location.origin + window.location.pathname);
+        url.searchParams.set('import', encryptedData);
+        return url.toString();
+    }
+
+    function applySettings(settings) {
+        for (const [key, value] of Object.entries(settings)) {
+            localStorage.setItem(key, value);
+        }
+        window._agentNeedsReinit = true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // MESSAGE PERSISTENCE
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const MESSAGES_STORAGE_KEY = 'agi_chat_messages';
+
+    function saveMessagesToStorage() {
+        if (localStorage.getItem('persist_messages') === 'false') return;
+        
+        const messagesInner = document.getElementById('messagesInner');
+        if (!messagesInner) return;
+        
+        const messages = [];
+        messagesInner.querySelectorAll('.message').forEach(msgEl => {
+            const role = msgEl.classList.contains('user') ? 'user' 
+                       : msgEl.classList.contains('assistant') ? 'assistant'
+                       : msgEl.classList.contains('error') ? 'error'
+                       : 'system';
+            
+            // Skip system intro message
+            if (role === 'system' && msgEl.querySelector('.message-content')?.textContent?.includes('Build your own AGI')) {
+                return;
+            }
+            
+            const content = msgEl.querySelector('.message-content')?.innerHTML || '';
+            if (content) {
+                messages.push({ role, content, timestamp: Date.now() });
+            }
+        });
+        
+        // Also save tool blocks
+        messagesInner.querySelectorAll('.tool-block').forEach(toolEl => {
+            const name = toolEl.querySelector('.tool-name')?.textContent || 'unknown';
+            const input = toolEl.querySelector('.tool-input')?.textContent || '';
+            messages.push({ role: 'tool', name, input, timestamp: Date.now() });
+        });
+        
+        localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+    }
+
+    function loadMessagesFromStorage() {
+        if (localStorage.getItem('persist_messages') === 'false') return;
+        
+        const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
+        if (!stored) return;
+        
+        try {
+            const messages = JSON.parse(stored);
+            if (!Array.isArray(messages) || messages.length === 0) return;
+            
+            const inner = document.getElementById('messagesInner');
+            
+            messages.forEach(msg => {
+                if (msg.role === 'tool') {
+                    // Restore tool block
+                    const tool = document.createElement('div');
+                    tool.className = 'tool-block';
+                    tool.innerHTML = `
+                        <div class="tool-header">
+                            <div class="tool-status"></div>
+                            <span class="tool-name">${msg.name}</span>
+                        </div>
+                        <details>
+                            <summary style="cursor:pointer;color:var(--text-tertiary);font-size:11px;margin-top:8px;">input</summary>
+                            <div class="tool-input">${msg.input}</div>
+                        </details>
+                    `;
+                    inner.appendChild(tool);
+                } else {
+                    // Restore message
+                    const msgEl = document.createElement('div');
+                    msgEl.className = `message ${msg.role}`;
+                    
+                    if (msg.role !== 'system') {
+                        const roleLabel = document.createElement('div');
+                        roleLabel.className = 'message-role';
+                        roleLabel.textContent = msg.role === 'user' ? 'you' : msg.role === 'assistant' ? 'agi' : msg.role;
+                        msgEl.appendChild(roleLabel);
+                    }
+                    
+                    const contentEl = document.createElement('div');
+                    contentEl.className = 'message-content';
+                    contentEl.innerHTML = msg.content;
+                    msgEl.appendChild(contentEl);
+                    
+                    inner.appendChild(msgEl);
+                }
+            });
+            
+            smartScroll();
+        } catch (e) {
+            console.warn('Failed to load messages:', e);
+        }
+    }
+
+    function getChatHistoryStats() {
+        const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
+        if (!stored) return { count: 0, size: 0 };
+        
+        try {
+            const messages = JSON.parse(stored);
+            return {
+                count: messages.length,
+                size: (stored.length / 1024).toFixed(1)
+            };
+        } catch {
+            return { count: 0, size: 0 };
+        }
+    }
+
+    function updateChatHistoryStats() {
+        const stats = getChatHistoryStats();
+        const statsEl = document.getElementById('chatHistoryStats');
+        if (statsEl) {
+            statsEl.textContent = `${stats.count} messages saved (${stats.size} KB)`;
+        }
+    }
+
+    // Auto-save messages after each interaction
+    const originalAddMessage = addMessage;
+    window._originalAddMessage = originalAddMessage;
+    
+    // Override to add persistence
+    function addMessageWithPersist(role, content) {
+        const inner = document.getElementById('messagesInner');
+        const msg = document.createElement('div');
+        msg.className = `message ${role}`;
+        
+        if (role !== 'system') {
+            const roleLabel = document.createElement('div');
+            roleLabel.className = 'message-role';
+            roleLabel.textContent = role === 'user' ? 'you' : role === 'assistant' ? 'agi' : role;
+            msg.appendChild(roleLabel);
+        }
+        
+        const contentEl = document.createElement('div');
+        contentEl.className = 'message-content';
+        
+        if (role === 'user') {
+            contentEl.textContent = content;
+        } else {
+            contentEl.innerHTML = `<div class="markdown-content">${marked.parse(content)}</div>`;
+        }
+        
+        msg.appendChild(contentEl);
+        inner.appendChild(msg);
+        smartScroll();
+        
+        // Auto-save after adding message
+        setTimeout(saveMessagesToStorage, 100);
+    }
+
+    // Replace the original addMessage function
+    addMessage = addMessageWithPersist;
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SYNC TAB EVENT HANDLERS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    document.getElementById('exportSettingsBtn')?.addEventListener('click', async () => {
+        const password = document.getElementById('exportPassword')?.value;
+        if (!password || password.length < 4) {
+            showToast('Password must be at least 4 characters');
+            return;
+        }
+        
+        try {
+            const encrypted = await encryptSettings(password);
+            const url = generateExportUrl(encrypted);
+            
+            document.getElementById('exportedUrl').value = url;
+            document.getElementById('exportResult').style.display = 'block';
+            
+            showToast('Settings exported!');
+        } catch (e) {
+            console.error('Export failed:', e);
+            showToast('Export failed: ' + e.message);
+        }
+    });
+
+    document.getElementById('copyExportBtn')?.addEventListener('click', () => {
+        const url = document.getElementById('exportedUrl')?.value;
+        if (url) {
+            navigator.clipboard.writeText(url);
+            showToast('URL copied to clipboard!');
+        }
+    });
+
+    document.getElementById('importSettingsBtn')?.addEventListener('click', async () => {
+        const urlOrData = document.getElementById('importUrl')?.value?.trim();
+        const password = document.getElementById('importPassword')?.value;
+        const statusEl = document.getElementById('importStatus');
+        
+        if (!urlOrData) {
+            showToast('Paste the encrypted URL first');
+            return;
+        }
+        if (!password) {
+            showToast('Enter decryption password');
+            return;
+        }
+        
+        statusEl.style.display = 'block';
+        statusEl.innerHTML = '🔄 Decrypting...';
+        statusEl.style.color = 'rgba(100,150,255,0.8)';
+        
+        try {
+            // Extract encrypted data from URL or use directly
+            let encryptedData = urlOrData;
+            if (urlOrData.includes('?import=')) {
+                const url = new URL(urlOrData);
+                encryptedData = url.searchParams.get('import');
+            }
+            
+            const settings = await decryptSettings(encryptedData, password);
+            applySettings(settings);
+            
+            // Update form fields
+            document.getElementById('provider').value = settings.provider || 'anthropic';
+            document.getElementById('anthropicApiKey').value = settings.anthropic_api_key || '';
+            document.getElementById('anthropicModel').value = settings.anthropic_model || 'claude-haiku-4-5';
+            document.getElementById('openaiApiKey').value = settings.openai_api_key || '';
+            document.getElementById('openaiModel').value = settings.openai_model || 'gpt-5-nano-2025-08-07';
+            document.getElementById('systemPrompt').value = settings.system_prompt || DEFAULT_SYSTEM_PROMPT;
+            window.updateProviderFields();
+            
+            statusEl.innerHTML = '✅ Settings imported! Reinitializing...';
+            statusEl.style.color = 'rgba(100,255,100,0.8)';
+            
+            // Reload Google API config
+            if (window.googleAPI && typeof window.googleAPI.loadConfig === 'function') {
+                window.googleAPI.loadConfig();
+            }
+            
+            // Update Google settings UI
+            loadGoogleSettings();
+            
+            // Update map settings UI and reinitialize map
+            loadMapSettings();
+            await initMapBackground();
+            
+            // Reinitialize agent
+            await initializeAgent();
+            
+            showToast('Settings imported successfully!');
+            
+            // Clear import fields
+            document.getElementById('importUrl').value = '';
+            document.getElementById('importPassword').value = '';
+            
+        } catch (e) {
+            console.error('Import failed:', e);
+            statusEl.innerHTML = '❌ Decryption failed. Check password.';
+            statusEl.style.color = 'rgba(255,100,100,0.8)';
+            showToast('Import failed: Wrong password or corrupted data');
+        }
+    });
+
+    document.getElementById('persistMessages')?.addEventListener('change', (e) => {
+        localStorage.setItem('persist_messages', e.target.checked.toString());
+        if (e.target.checked) {
+            saveMessagesToStorage();
+            showToast('Message persistence enabled');
+        } else {
+            showToast('Message persistence disabled');
+        }
+    });
+
+    document.getElementById('exportChatBtn')?.addEventListener('click', () => {
+        const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
+        if (!stored) {
+            showToast('No messages to export');
+            return;
+        }
+        
+        const blob = new Blob([stored], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `agi-chat-${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showToast('Chat exported!');
+    });
+
+    document.getElementById('clearChatHistoryBtn')?.addEventListener('click', () => {
+        if (confirm('Clear all saved messages? This cannot be undone.')) {
+            localStorage.removeItem(MESSAGES_STORAGE_KEY);
+            updateChatHistoryStats();
+            showToast('Chat history cleared');
+        }
+    });
+
+    // Check for import URL on page load
+    function checkForImportUrl() {
+        const url = new URL(window.location.href);
+        const importData = url.searchParams.get('import');
+        
+        if (importData) {
+            // Open settings modal and switch to sync tab
+            document.getElementById('settingsModal').classList.add('active');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tab[data-tab="sync"]')?.classList.add('active');
+            document.getElementById('tab-sync')?.classList.add('active');
+            
+            // Pre-fill import URL
+            document.getElementById('importUrl').value = window.location.href;
+            
+            // Clear URL params without reload
+            window.history.replaceState({}, '', window.location.pathname);
+            
+            showToast('Import URL detected! Enter password to import.');
+        }
+    }
+
+    // Load persist messages setting
+    function loadSyncSettings() {
+        const persistEnabled = localStorage.getItem('persist_messages') !== 'false';
+        const checkbox = document.getElementById('persistMessages');
+        if (checkbox) checkbox.checked = persistEnabled;
+        
+        updateChatHistoryStats();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // BUILT-IN TOOLS WITH TOGGLE FUNCTIONALITY
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const BUILTIN_TOOLS_INFO = [
+        // Core tools
+        { name: 'render_ui', desc: 'Render dynamic HTML', category: 'core' },
+        { name: 'javascript_eval', desc: 'Execute JavaScript', category: 'core' },
+        { name: 'storage_get', desc: 'Read localStorage', category: 'core' },
+        { name: 'storage_set', desc: 'Write localStorage', category: 'core' },
+        { name: 'fetch_url', desc: 'HTTP requests', category: 'core' },
+        { name: 'update_self', desc: 'Self-modify config', category: 'core' },
+        { name: 'notify', desc: 'Send push notifications 🔔', category: 'core' },
+        // Self-modification tools
+        { name: 'create_tool', desc: 'Create new tools at runtime', category: 'self-mod' },
+        { name: 'list_tools', desc: 'List all available tools', category: 'self-mod' },
+        { name: 'delete_tool', desc: 'Remove custom tools', category: 'self-mod' },
+        // Context & Communication tools
+        { name: 'get_user_context', desc: 'Get user activity, location, etc.', category: 'context' },
+        { name: 'set_context', desc: 'Set custom context for injection', category: 'context' },
+        { name: 'enable_context_tracking', desc: 'Toggle activity/location/bluetooth', category: 'context' },
+        { name: 'scan_bluetooth', desc: 'Scan for nearby devices/agents 📡', category: 'context' },
+        { name: 'send_to_agent', desc: 'Message nearby AGI agents', category: 'context' },
+        // Map tools
+        { name: 'add_map_marker', desc: 'Add marker with emoji/label/color', category: 'map' },
+        { name: 'remove_map_marker', desc: 'Remove marker by ID', category: 'map' },
+        { name: 'clear_map_markers', desc: 'Clear all markers', category: 'map' },
+        { name: 'list_map_markers', desc: 'List all marker IDs', category: 'map' },
+        { name: 'pan_map', desc: 'Pan/zoom to location (instant)', category: 'map' },
+        { name: 'get_map_location', desc: 'Get current user location', category: 'map' },
+        { name: 'fly_to_marker', desc: 'Smooth fly animation to marker 🎬', category: 'map' },
+        { name: 'fly_to_location', desc: 'Smooth fly animation to coords', category: 'map' },
+        { name: 'tour_markers', desc: 'Animated tour through markers', category: 'map' },
+        { name: 'get_marker_position', desc: 'Get marker coordinates', category: 'map' },
+        { name: 'get_all_markers', desc: 'Get all markers with positions', category: 'map' },
+        // Google API tools
+        { name: 'google_auth', desc: 'Authenticate with Google OAuth 2.0', category: 'google' },
+        { name: 'use_google', desc: 'Access 200+ Google APIs', category: 'google' },
+        { name: 'gmail_send', desc: 'Send emails via Gmail', category: 'google' }
+    ];
+
+    const DISABLED_TOOLS_KEY = 'agi_disabled_tools';
+
+    function getDisabledTools() {
+        try {
+            return JSON.parse(localStorage.getItem(DISABLED_TOOLS_KEY) || '[]');
+        } catch {
+            return [];
+        }
+    }
+
+    function setDisabledTools(tools) {
+        localStorage.setItem(DISABLED_TOOLS_KEY, JSON.stringify(tools));
+    }
+
+    function toggleToolDisabled(toolName) {
+        const disabled = getDisabledTools();
+        const index = disabled.indexOf(toolName);
+        if (index >= 0) {
+            disabled.splice(index, 1);
+        } else {
+            disabled.push(toolName);
+        }
+        setDisabledTools(disabled);
+        window._agentNeedsReinit = true;
+        renderBuiltinTools();
+        showToast(index >= 0 ? `${toolName} enabled` : `${toolName} disabled`);
+    }
+
+    function renderBuiltinTools() {
+        const container = document.getElementById('builtinToolsList');
+        if (!container) return;
+        
+        const disabled = getDisabledTools();
+        
+        // Group tools by category
+        const categories = {
+            'core': { label: '🔧 Core Tools', tools: [] },
+            'self-mod': { label: '🧠 Self-Modification', tools: [] },
+            'context': { label: '📡 Context & Communication', tools: [] },
+            'map': { label: '🗺️ Map Tools', tools: [] },
+            'google': { label: '🔐 Google API', tools: [] }
+        };
+        
+        BUILTIN_TOOLS_INFO.forEach(tool => {
+            const cat = tool.category || 'core';
+            if (categories[cat]) {
+                categories[cat].tools.push(tool);
+            }
+        });
+        
+        let html = '';
+        for (const [catKey, cat] of Object.entries(categories)) {
+            if (cat.tools.length === 0) continue;
+            
+            html += `<div style="margin-bottom:16px;">
+                <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">${cat.label}</div>`;
+            
+            html += cat.tools.map(tool => {
+                const isDisabled = disabled.includes(tool.name);
+                return `<div class="tool-toggle-item" data-tool="${tool.name}" style="cursor:pointer;padding:4px 8px;border-radius:6px;margin-bottom:4px;transition:all 0.2s;${isDisabled ? 'opacity:0.4;' : ''}" 
+                    onmouseover="this.style.background='rgba(255,255,255,0.05)'" 
+                    onmouseout="this.style.background='transparent'">
+                    <code style="${isDisabled ? 'text-decoration:line-through;' : ''}">${tool.name}</code> — ${tool.desc}
+                    <span style="float:right;color:${isDisabled ? 'rgba(255,100,100,0.6)' : 'rgba(100,255,100,0.6)'};">${isDisabled ? '✕' : '✓'}</span>
+                </div>`;
+            }).join('');
+            
+            html += '</div>';
+        }
+        
+        container.innerHTML = html;
+        
+        // Add click handlers
+        container.querySelectorAll('.tool-toggle-item').forEach(item => {
+            item.addEventListener('click', () => {
+                toggleToolDisabled(item.dataset.tool);
+            });
+        });
+    }
+
+    // Render tools on page load and when tools tab is shown
+    renderBuiltinTools();
 
     init().catch(e => {
         console.error('Init error:', e);
@@ -3950,6 +5145,12 @@ Example - create a tool that gets weather:
     }).then(() => {
         // Initialize map background after main init
         initMapBackground();
+        // Load persisted messages
+        loadMessagesFromStorage();
+        // Load sync settings
+        loadSyncSettings();
+        // Check for import URL
+        checkForImportUrl();
     });
     </script>
 </body>
