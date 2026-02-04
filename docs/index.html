@@ -865,6 +865,13 @@
         z
     } from './strands.js';
     
+    // Expose Agent globally for ambient mode to create separate instances
+    window.Agent = Agent;
+    
+    // Expose model classes for ambient mode to clone
+    window.AnthropicBrowserModel = null; // Will be set after class definition
+    window.OpenAIBrowserModel = null;
+    
     import { WebLLMBrowserModel } from './webllm.js';
     
     import { 
@@ -1943,6 +1950,10 @@ Example - create a tool that gets weather:
         deleteToolTool
     ];
 
+    // Expose model classes globally for ambient mode cloning
+    window.AnthropicBrowserModel = AnthropicBrowserModel;
+    window.OpenAIBrowserModel = OpenAIBrowserModel;
+
     // ═══════════════════════════════════════════════════════════════════════════
     // STATE & AGENT
     // ═══════════════════════════════════════════════════════════════════════════
@@ -2098,13 +2109,35 @@ Example - create a tool that gets weather:
                     idleThreshold: 30000,
                     maxIterations: 3,
                     cooldown: 60000,
+                    onTimer: (state, seconds, maxIter) => {
+                        // Update timer display on ambient button
+                        updateAmbientTimer(state, seconds, maxIter);
+                    },
                     onThinking: (mode, iter) => {
                         const status = document.querySelector('.ambient-status');
                         if (status) status.textContent = `${mode} ${iter}...`;
+                        
+                        // Add ambient message block to UI
+                        addAmbientMessage(mode, iter);
+                    },
+                    onStream: (fullText, delta) => {
+                        // Stream ambient output to UI in real-time
+                        updateAmbientStreaming(fullText);
+                    },
+                    onToolCall: (status, toolName, data) => {
+                        // Show tool calls from ambient mode
+                        if (status === 'running') {
+                            addAmbientToolCall(toolName, data);
+                        } else if (status === 'done') {
+                            updateAmbientToolStatus(toolName, data?.status || 'success');
+                        }
                     },
                     onResult: (text, iter) => {
                         const status = document.querySelector('.ambient-status');
                         if (status) status.textContent = `Done (${iter})`;
+                        
+                        // Finalize the ambient message
+                        finalizeAmbientMessage(text, iter);
                     }
                 });
             }
@@ -2130,6 +2163,11 @@ Example - create a tool that gets weather:
                 addMessage('error', 'Not connected. Add your API key in settings.');
                 return;
             }
+        }
+
+        // Mark main agent as busy (for ambient mode)
+        if (visionAgent?.ambientMode) {
+            visionAgent.ambientMode.setMainAgentBusy(true);
         }
 
         // Combine images from parameter and pending
@@ -2232,6 +2270,11 @@ Example - create a tool that gets weather:
             removeThinking();
             addMessage('error', e.message);
             setStatus('ready');
+            
+            // Mark main agent as not busy on error
+            if (visionAgent?.ambientMode) {
+                visionAgent.ambientMode.setMainAgentBusy(false);
+            }
         }
     }
 
@@ -2357,6 +2400,151 @@ Example - create a tool that gets weather:
 
     function setStatus(text) {
         document.getElementById('sdkStatus').textContent = text;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AMBIENT MODE UI HELPERS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    let ambientStreamingEl = null;
+
+    function addAmbientMessage(mode, iter) {
+        const inner = document.getElementById('messagesInner');
+        
+        // Remove any existing ambient streaming element
+        if (ambientStreamingEl) {
+            ambientStreamingEl = null;
+        }
+        
+        // Create ambient message container
+        ambientStreamingEl = document.createElement('div');
+        ambientStreamingEl.className = 'message assistant ambient-message';
+        ambientStreamingEl.style.cssText = 'border-left: 3px solid rgba(147,112,219,0.5); padding-left: 16px; opacity: 0.9;';
+        
+        const roleLabel = document.createElement('div');
+        roleLabel.className = 'message-role';
+        roleLabel.innerHTML = `🌙 ${mode} <span style="color:var(--text-tertiary);font-size:10px;">(${iter})</span>`;
+        ambientStreamingEl.appendChild(roleLabel);
+        
+        const contentEl = document.createElement('div');
+        contentEl.className = 'message-content ambient-content';
+        contentEl.innerHTML = '<div class="thinking"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>';
+        ambientStreamingEl.appendChild(contentEl);
+        
+        inner.appendChild(ambientStreamingEl);
+        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+    }
+
+    function updateAmbientStreaming(text) {
+        if (!ambientStreamingEl) return;
+        
+        const contentEl = ambientStreamingEl.querySelector('.ambient-content');
+        if (contentEl) {
+            contentEl.innerHTML = `<div class="markdown-content">${marked.parse(text)}</div>`;
+            document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+        }
+    }
+
+    function addAmbientToolCall(toolName, input) {
+        if (!ambientStreamingEl) return;
+        
+        const toolBlock = document.createElement('div');
+        toolBlock.className = 'tool-block ambient-tool';
+        toolBlock.id = `ambient-tool-${toolName}-${Date.now()}`;
+        toolBlock.innerHTML = `
+            <div class="tool-header">
+                <div class="tool-status running"></div>
+                <span class="tool-name">🌙 ${toolName}</span>
+            </div>
+            <details>
+                <summary style="cursor:pointer;color:var(--text-tertiary);font-size:11px;margin-top:8px;">input</summary>
+                <div class="tool-input">${JSON.stringify(input, null, 2)}</div>
+            </details>
+        `;
+        
+        ambientStreamingEl.appendChild(toolBlock);
+        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+    }
+
+    function updateAmbientToolStatus(toolName, status) {
+        if (!ambientStreamingEl) return;
+        
+        const blocks = ambientStreamingEl.querySelectorAll('.ambient-tool');
+        for (let i = blocks.length - 1; i >= 0; i--) {
+            const block = blocks[i];
+            if (block.querySelector('.tool-name')?.textContent.includes(toolName)) {
+                const dot = block.querySelector('.tool-status');
+                if (dot) dot.className = `tool-status ${status === 'error' ? 'error' : ''}`;
+                break;
+            }
+        }
+    }
+
+    function finalizeAmbientMessage(text, iter) {
+        if (!ambientStreamingEl) return;
+        
+        const contentEl = ambientStreamingEl.querySelector('.ambient-content');
+        if (contentEl) {
+            contentEl.innerHTML = `<div class="markdown-content">${marked.parse(text)}</div>`;
+        }
+        
+        // Add a subtle "stored" indicator
+        const storedIndicator = document.createElement('div');
+        storedIndicator.style.cssText = 'font-size:11px;color:var(--text-tertiary);margin-top:12px;font-style:italic;';
+        storedIndicator.textContent = `💾 Stored - will be injected into your next message`;
+        ambientStreamingEl.appendChild(storedIndicator);
+        
+        // Reset for next iteration
+        ambientStreamingEl = null;
+        
+        document.getElementById('chatContainer').scrollTop = document.getElementById('chatContainer').scrollHeight;
+    }
+
+    function updateAmbientTimer(state, seconds, maxIter) {
+        const ambientStatus = document.getElementById('ambientStatus');
+        const ambientBtn = document.getElementById('ambientBtn');
+        const autoBtn = document.getElementById('autoBtn');
+        
+        if (!ambientStatus) return;
+        
+        // Update status text based on state
+        switch (state) {
+            case 'idle':
+                ambientStatus.textContent = `⏱️ ${seconds}s until thinking...`;
+                ambientStatus.style.color = 'rgba(255,255,255,0.5)';
+                break;
+            case 'cooldown':
+                ambientStatus.textContent = `⏳ cooldown ${seconds}s`;
+                ambientStatus.style.color = 'rgba(147,112,219,0.7)';
+                break;
+            case 'ready':
+                ambientStatus.textContent = `✨ ready to think`;
+                ambientStatus.style.color = 'rgba(100,255,100,0.7)';
+                break;
+            case 'running':
+                ambientStatus.textContent = `🧠 thinking...`;
+                ambientStatus.style.color = 'rgba(147,112,219,0.9)';
+                break;
+            case 'waiting':
+                ambientStatus.textContent = `⏸️ waiting for main`;
+                ambientStatus.style.color = 'rgba(255,165,0,0.7)';
+                break;
+            case 'done':
+                ambientStatus.textContent = `✅ done (${maxIter}/${maxIter})`;
+                ambientStatus.style.color = 'rgba(100,255,100,0.7)';
+                break;
+            case 'stopped':
+                ambientStatus.textContent = '';
+                break;
+            default:
+                ambientStatus.textContent = state;
+        }
+        
+        // Update button visual state
+        if (ambientBtn) {
+            const isActive = ['idle', 'cooldown', 'ready', 'running'].includes(state);
+            ambientBtn.classList.toggle('active', isActive && !autoBtn?.classList.contains('active'));
+        }
     }
 
     function showToast(message) {

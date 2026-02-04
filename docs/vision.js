@@ -225,9 +225,13 @@ class ScreenCapture {
 
 class AmbientMode {
     constructor(agent, options = {}) {
-        this.agent = agent;
+        this.mainAgent = agent;
+        this.ambientAgent = null; // Separate agent for ambient work
         this.running = false;
         this.autonomous = false;
+        
+        // Store agent config for creating ambient agent
+        this.agentConfig = options.agentConfig || null;
         
         // Configuration
         this.idleThreshold = options.idleThreshold || 30000; // 30s
@@ -246,11 +250,16 @@ class AmbientMode {
         this.lastAmbientRun = 0;
         this.interrupted = false;
         this.intervalId = null;
+        this._isRunning = false; // Lock to prevent concurrent ambient runs
+        this._mainAgentBusy = false; // Track if main agent is processing
         
         // Callbacks
         this.onThinking = null;
         this.onResult = null;
         this.onComplete = null;
+        this.onStream = null; // callback for streaming text updates
+        this.onToolCall = null; // callback for tool calls
+        this.onTimer = null; // NEW: callback for countdown timer
         
         // Completion signals
         this.completionSignals = [
@@ -263,6 +272,127 @@ class AmbientMode {
     }
     
     /**
+     * Clone model configuration and create a fresh model instance
+     * This avoids sharing locks between main and ambient agents
+     */
+    _cloneModel(originalModel) {
+        if (!originalModel) return null;
+        
+        try {
+            // Get the model's config if available
+            const config = originalModel.getConfig ? originalModel.getConfig() : originalModel._config;
+            
+            if (!config) {
+                console.warn('Could not get model config, will share model instance');
+                return originalModel;
+            }
+            
+            // Determine model type and create new instance
+            const modelType = originalModel.constructor.name;
+            
+            if (modelType === 'AnthropicBrowserModel' && window.AnthropicBrowserModel) {
+                return new window.AnthropicBrowserModel({ ...config });
+            } else if (modelType === 'OpenAIBrowserModel' && window.OpenAIBrowserModel) {
+                return new window.OpenAIBrowserModel({ ...config });
+            } else if (modelType === 'WebLLMBrowserModel' && window.WebLLMBrowserModel) {
+                // WebLLM models are heavy - share the instance but queue requests
+                console.log('🌙 WebLLM model detected - will wait for main agent');
+                return null; // Signal to wait for main agent
+            }
+            
+            // Fallback: share model but be careful about concurrency
+            console.warn('🌙 Unknown model type, will wait for main agent to finish');
+            return null;
+        } catch (err) {
+            console.warn('Failed to clone model:', err);
+            return null;
+        }
+    }
+    
+    /**
+     * Create a separate agent instance for ambient mode
+     * This avoids ConcurrentInvocationError by using its own agent + model
+     */
+    async _createAmbientAgent() {
+        if (!this.mainAgent) return null;
+        
+        try {
+            // Get config from main agent
+            const originalModel = this.mainAgent.model;
+            const tools = this.mainAgent.tools;
+            const systemPrompt = this.mainAgent.systemPrompt;
+            
+            // Try to clone the model for true independence
+            const clonedModel = this._cloneModel(originalModel);
+            
+            if (!clonedModel) {
+                // Model can't be cloned - we'll use main agent but wait for it
+                console.log('🌙 Will use main agent (waiting for availability)');
+                this.ambientAgent = null;
+                return null;
+            }
+            
+            // Import Agent class
+            const Agent = window.Agent || (await import('./strands.js')).Agent;
+            
+            // Create new agent with cloned model
+            this.ambientAgent = new Agent({
+                model: clonedModel,
+                tools: tools,
+                systemPrompt: systemPrompt + '\n\n[AMBIENT MODE] You are running in background ambient mode, continuing work from the main conversation.',
+                printer: false
+            });
+            
+            console.log('🌙 Created independent ambient agent with cloned model');
+            return this.ambientAgent;
+        } catch (err) {
+            console.error('Failed to create ambient agent:', err);
+            return null;
+        }
+    }
+    
+    /**
+     * Sync conversation history from main agent to ambient agent
+     */
+    _syncHistoryFromMain() {
+        if (!this.ambientAgent || !this.mainAgent) return;
+        
+        try {
+            // Copy messages from main agent
+            if (this.mainAgent.conversationManager?.messages) {
+                // Deep copy messages to avoid shared references
+                const messages = JSON.parse(JSON.stringify(this.mainAgent.conversationManager.messages));
+                if (this.ambientAgent.conversationManager) {
+                    this.ambientAgent.conversationManager.messages = messages;
+                }
+            }
+        } catch (err) {
+            console.warn('Failed to sync history:', err);
+        }
+    }
+    
+    /**
+     * Mark main agent as busy (call from main agent's stream start)
+     */
+    setMainAgentBusy(busy) {
+        this._mainAgentBusy = busy;
+        if (busy) {
+            this.interrupted = true; // Interrupt any ambient work
+        }
+    }
+    
+    /**
+     * Check if we can run (main agent not busy, or we have independent agent)
+     */
+    _canRun() {
+        // If we have an independent ambient agent, we can always run
+        if (this.ambientAgent) return true;
+        
+        // Otherwise, wait for main agent to be free
+        return !this._mainAgentBusy;
+    }
+    
+    /**
      * Start ambient mode
      */
     start(autonomous = false) {
@@ -272,10 +402,67 @@ class AmbientMode {
         this.autonomous = autonomous;
         this.interrupted = false;
         
-        this.intervalId = setInterval(() => this._checkAndRun(), 5000);
+        // Create ambient agent on start (async)
+        this._createAmbientAgent();
+        
+        // Use faster interval for responsive timer updates
+        this.intervalId = setInterval(() => {
+            this._updateTimer();
+            this._checkAndRun();
+        }, 1000); // 1 second for smooth countdown
         
         console.log(`🌙 Ambient mode started (${autonomous ? 'AUTONOMOUS' : 'standard'})`);
         return this;
+    }
+    
+    /**
+     * Update countdown timer display
+     */
+    _updateTimer() {
+        if (!this.running || !this.onTimer) return;
+        
+        const now = Date.now();
+        const idleTime = now - this.lastInteraction;
+        const cooldownElapsed = now - this.lastAmbientRun;
+        
+        const effectiveCooldown = this.autonomous ? this.autonomousCooldown : this.cooldown;
+        const effectiveMaxIterations = this.autonomous ? this.autonomousMaxIterations : this.maxIterations;
+        
+        // Check if we're done
+        if (this.ambientIterations >= effectiveMaxIterations) {
+            this.onTimer('done', 0, effectiveMaxIterations);
+            return;
+        }
+        
+        // Check main agent busy
+        if (this._mainAgentBusy && !this.ambientAgent) {
+            this.onTimer('waiting', -1, effectiveMaxIterations);
+            return;
+        }
+        
+        // Currently running
+        if (this._isRunning) {
+            this.onTimer('running', 0, effectiveMaxIterations);
+            return;
+        }
+        
+        // Calculate time until next run
+        if (this.autonomous) {
+            // Autonomous: just cooldown
+            const remaining = Math.max(0, effectiveCooldown - cooldownElapsed);
+            this.onTimer('cooldown', Math.ceil(remaining / 1000), effectiveMaxIterations);
+        } else {
+            // Standard: idle threshold + cooldown
+            if (idleTime < this.idleThreshold) {
+                const remaining = Math.max(0, this.idleThreshold - idleTime);
+                this.onTimer('idle', Math.ceil(remaining / 1000), effectiveMaxIterations);
+            } else if (cooldownElapsed < effectiveCooldown) {
+                const remaining = Math.max(0, effectiveCooldown - cooldownElapsed);
+                this.onTimer('cooldown', Math.ceil(remaining / 1000), effectiveMaxIterations);
+            } else {
+                this.onTimer('ready', 0, effectiveMaxIterations);
+            }
+        }
     }
     
     /**
@@ -284,10 +471,18 @@ class AmbientMode {
     stop() {
         this.running = false;
         this.autonomous = false;
+        this._isRunning = false;
         
         if (this.intervalId) {
             clearInterval(this.intervalId);
             this.intervalId = null;
+        }
+        
+        // Clean up ambient agent
+        this.ambientAgent = null;
+        
+        if (this.onTimer) {
+            this.onTimer('stopped', 0, 0);
         }
         
         console.log('🌙 Ambient mode stopped');
@@ -307,6 +502,10 @@ class AmbientMode {
         }
         
         this.interrupted = false;
+        this._mainAgentBusy = false;
+        
+        // Sync history after interaction
+        this._syncHistoryFromMain();
     }
     
     /**
@@ -377,7 +576,17 @@ If truly complete, say '[AMBIENT_DONE]'. Otherwise, keep making progress.`;
      * Internal check and run logic
      */
     async _checkAndRun() {
-        if (!this.running || !this.agent) return;
+        if (!this.running) return;
+        
+        // Prevent concurrent ambient runs
+        if (this._isRunning) {
+            return;
+        }
+        
+        // Check if we can run
+        if (!this._canRun()) {
+            return;
+        }
         
         const now = Date.now();
         const idleTime = now - this.lastInteraction;
@@ -400,6 +609,20 @@ If truly complete, say '[AMBIENT_DONE]'. Otherwise, keep making progress.`;
         
         if (!shouldRun) return;
         
+        // Determine which agent to use
+        let agentToUse = this.ambientAgent;
+        
+        if (!agentToUse) {
+            // No independent ambient agent - check if main agent is available
+            if (this._mainAgentBusy) {
+                console.log('🌙 Main agent busy, waiting...');
+                return;
+            }
+            agentToUse = this.mainAgent;
+        }
+        
+        if (!agentToUse) return;
+        
         const prompt = this._buildPrompt();
         if (!prompt) return;
         
@@ -412,18 +635,52 @@ If truly complete, say '[AMBIENT_DONE]'. Otherwise, keep making progress.`;
             this.onThinking(modeLabel, iterDisplay);
         }
         
+        // Set running lock
+        this._isRunning = true;
+        
         try {
             let resultText = '';
             
-            for await (const event of this.agent.stream(prompt)) {
+            // Sync history before running (if using ambient agent)
+            if (agentToUse === this.ambientAgent) {
+                this._syncHistoryFromMain();
+            }
+            
+            for await (const event of agentToUse.stream(prompt)) {
                 if (this.interrupted) {
                     console.log('🌙 [ambient] Interrupted by user input');
+                    this._isRunning = false;
                     return;
                 }
                 
                 if (event?.type === 'modelContentBlockDeltaEvent' && 
                     event.delta?.type === 'textDelta') {
                     resultText += event.delta.text;
+                    
+                    // Stream callback for real-time UI updates
+                    if (this.onStream) {
+                        this.onStream(resultText, event.delta.text);
+                    }
+                }
+                
+                // Handle tool calls for visibility
+                if (event?.type === 'modelContentBlockStartEvent' && 
+                    event.start?.type === 'toolUseStart') {
+                    if (this.onToolCall) {
+                        this.onToolCall('start', event.start.name, null);
+                    }
+                }
+                
+                if (event?.type === 'beforeToolCallEvent') {
+                    if (this.onToolCall) {
+                        this.onToolCall('running', event.toolUse?.name, event.toolUse?.input);
+                    }
+                }
+                
+                if (event?.type === 'afterToolCallEvent') {
+                    if (this.onToolCall) {
+                        this.onToolCall('done', event.toolUse?.name, event.result);
+                    }
                 }
             }
             
@@ -438,6 +695,7 @@ If truly complete, say '[AMBIENT_DONE]'. Otherwise, keep making progress.`;
                     if (this.onComplete) {
                         this.onComplete(this.ambientResultsHistory);
                     }
+                    this._isRunning = false;
                     return;
                 }
                 
@@ -459,6 +717,8 @@ If truly complete, say '[AMBIENT_DONE]'. Otherwise, keep making progress.`;
             }
         } catch (err) {
             console.error('🌙 Ambient mode error:', err);
+        } finally {
+            this._isRunning = false;
         }
     }
 }
