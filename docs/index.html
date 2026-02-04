@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>agi.diy</title>
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
     <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,6 +15,15 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <meta name="description" content="Build your own AGI. Strands Agent running entirely in your browser.">
+    
+    <!-- iOS Icons -->
+    <link rel="apple-touch-icon" href="icon-192.svg">
+    <link rel="apple-touch-icon" sizes="152x152" href="icon-192.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-192.svg">
+    <link rel="apple-touch-icon" sizes="167x167" href="icon-192.svg">
+    
+    <!-- Splash screens for iOS -->
+    <meta name="apple-mobile-web-app-title" content="agi.diy">
     
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
     
@@ -594,6 +606,7 @@
             <div class="header-divider"></div>
             <span id="sdkStatus">loading...</span>
             <div class="header-divider"></div>
+            <button class="header-btn" id="notifyBtn" onclick="requestNotificationPermission()" title="Enable notifications">🔔</button>
             <button class="header-btn" onclick="clearChat()">clear</button>
             <button class="header-btn" onclick="openSettings()">settings</button>
         </header>
@@ -730,6 +743,13 @@
                             <code>storage_set</code> — Write localStorage<br>
                             <code>fetch_url</code> — HTTP requests<br>
                             <code>update_self</code> — Self-modify config<br>
+                            <code>notify</code> — Send push notifications 🔔<br>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">PWA Status</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8;" id="pwaStatus">
+                            Checking...
                         </div>
                     </div>
                 </div>
@@ -895,12 +915,14 @@ agi.diy: https://agi.diy
 - storage_get/set: Persist data in localStorage
 - fetch_url: Make HTTP requests (CORS restrictions apply)
 - update_self: Modify your own system prompt
+- notify: Send push notifications (even when app is in background!)
 
 ## Guidelines
 - Be concise and helpful
 - Use tools when they add value
 - You can create interactive experiences with render_ui
 - Data persists across sessions with storage
+- Use notify to alert users about important events, completed tasks, or reminders
 
 Version: ${VERSION}`;
 
@@ -1504,13 +1526,72 @@ Version: ${VERSION}`;
         }
     });
 
+    const notifyTool = tool({
+        name: 'notify',
+        description: 'Send a browser/push notification to the user. Works even when app is in background. Use this to alert the user about important events, completed tasks, or time-sensitive information.',
+        inputSchema: z.object({
+            title: z.string().describe('Notification title'),
+            body: z.string().describe('Notification body text'),
+            tag: z.string().optional().describe('Tag to group/replace notifications'),
+            requireInteraction: z.boolean().optional().describe('Keep notification visible until user interacts'),
+            url: z.string().optional().describe('URL to open when notification is clicked')
+        }),
+        callback: async (input) => {
+            // Check permission
+            if (!('Notification' in window)) {
+                return { error: 'Notifications not supported in this browser' };
+            }
+            
+            if (Notification.permission === 'denied') {
+                return { error: 'Notification permission denied. User must enable in browser settings.' };
+            }
+            
+            if (Notification.permission === 'default') {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    return { error: 'Notification permission not granted' };
+                }
+            }
+            
+            // Try service worker notification first (works in background)
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'SHOW_NOTIFICATION',
+                    title: input.title,
+                    body: input.body,
+                    tag: input.tag,
+                    requireInteraction: input.requireInteraction,
+                    url: input.url
+                });
+                return { success: true, method: 'service-worker', title: input.title };
+            }
+            
+            // Fallback to regular notification
+            const notification = new Notification(input.title, {
+                body: input.body,
+                icon: '/icon-192.svg',
+                tag: input.tag || 'agi-notification',
+                requireInteraction: input.requireInteraction || false
+            });
+            
+            notification.onclick = () => {
+                window.focus();
+                if (input.url) window.location.href = input.url;
+                notification.close();
+            };
+            
+            return { success: true, method: 'direct', title: input.title };
+        }
+    });
+
     const BROWSER_TOOLS = [
         renderUiTool,
         javascriptEvalTool,
         storageGetTool,
         storageSetTool,
         fetchUrlTool,
-        updateSelfTool
+        updateSelfTool,
+        notifyTool
     ];
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1883,6 +1964,23 @@ Version: ${VERSION}`;
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         event.target.classList.add('active');
         document.getElementById(`tab-${tabName}`).classList.add('active');
+        
+        // Update PWA status when tools tab is shown
+        if (tabName === 'tools') {
+            const pwaStatus = document.getElementById('pwaStatus');
+            if (pwaStatus) {
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+                const hasServiceWorker = 'serviceWorker' in navigator;
+                const notifPermission = 'Notification' in window ? Notification.permission : 'unsupported';
+                
+                pwaStatus.innerHTML = `
+                    <strong>Installed:</strong> ${isStandalone ? '✅ Yes' : '❌ No (add to home screen)'}<br>
+                    <strong>Service Worker:</strong> ${hasServiceWorker ? '✅ Supported' : '❌ Not supported'}<br>
+                    <strong>Notifications:</strong> ${notifPermission === 'granted' ? '✅ Enabled' : notifPermission === 'denied' ? '❌ Blocked' : notifPermission === 'default' ? '⚠️ Not requested' : '❌ Not supported'}<br>
+                    <strong>Background:</strong> ${isStandalone && hasServiceWorker ? '✅ Ready' : '⚠️ Install PWA for full support'}
+                `;
+            }
+        }
     };
 
     window.updateProviderFields = function() {
@@ -1930,11 +2028,81 @@ Version: ${VERSION}`;
     };
 
     // ═══════════════════════════════════════════════════════════════════════════
+    // SERVICE WORKER & PWA
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    let swRegistration = null;
+
+    async function registerServiceWorker() {
+        if ('serviceWorker' in navigator) {
+            try {
+                swRegistration = await navigator.serviceWorker.register('/sw.js');
+                console.log('✅ Service Worker registered:', swRegistration.scope);
+                
+                // Listen for updates
+                swRegistration.addEventListener('updatefound', () => {
+                    const newWorker = swRegistration.installing;
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            showToast('Update available! Refresh to update.');
+                        }
+                    });
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Service Worker registration failed:', error);
+                return false;
+            }
+        }
+        return false;
+    }
+
+    async function requestNotificationPermission() {
+        if (!('Notification' in window)) {
+            showToast('Notifications not supported');
+            return false;
+        }
+        
+        if (Notification.permission === 'granted') {
+            showToast('Notifications enabled');
+            return true;
+        }
+        
+        if (Notification.permission === 'denied') {
+            showToast('Notifications blocked. Enable in browser settings.');
+            return false;
+        }
+        
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            showToast('Notifications enabled!');
+            // Send a test notification
+            if (swRegistration) {
+                swRegistration.showNotification('agi.diy', {
+                    body: 'Notifications are now enabled!',
+                    icon: '/icon-192.svg'
+                });
+            }
+            return true;
+        } else {
+            showToast('Notifications denied');
+            return false;
+        }
+    }
+
+    // Expose for button
+    window.requestNotificationPermission = requestNotificationPermission;
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // INIT
     // ═══════════════════════════════════════════════════════════════════════════
 
     async function init() {
         setStatus('loading...');
+        
+        // Register service worker first
+        await registerServiceWorker();
         
         document.getElementById('provider').value = localStorage.getItem('provider') || 'anthropic';
         document.getElementById('anthropicApiKey').value = localStorage.getItem('anthropic_api_key') || '';
@@ -1952,8 +2120,37 @@ Version: ${VERSION}`;
         document.getElementById('sendBtn').disabled = false;
         document.getElementById('inputField').focus();
         
+        // Update notification button state
+        updateNotificationButton();
+        
         if (!success) {
             addMessage('system', 'Add your API key in settings to get started, or try WebLLM for local inference!');
+        }
+        
+        // Check if running as PWA
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('Running as installed PWA');
+        }
+    }
+    
+    function updateNotificationButton() {
+        const btn = document.getElementById('notifyBtn');
+        if (!btn) return;
+        
+        if (!('Notification' in window)) {
+            btn.style.display = 'none';
+            return;
+        }
+        
+        if (Notification.permission === 'granted') {
+            btn.textContent = '🔔';
+            btn.title = 'Notifications enabled';
+        } else if (Notification.permission === 'denied') {
+            btn.textContent = '🔕';
+            btn.title = 'Notifications blocked';
+        } else {
+            btn.textContent = '🔔';
+            btn.title = 'Enable notifications';
         }
     }
 
