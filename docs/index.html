@@ -595,6 +595,35 @@
                 right: 16px;
                 transform: none;
                 border-radius: 16px;
+                gap: 8px;
+                padding: 10px 16px;
+                padding-top: calc(10px + env(safe-area-inset-top));
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .header::-webkit-scrollbar {
+                display: none;
+            }
+            .header-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+                flex-shrink: 0;
+            }
+            .header-divider {
+                display: none;
+            }
+            .brand {
+                font-size: 13px;
+                flex-shrink: 0;
+            }
+            #sdkStatus {
+                font-size: 10px;
+                flex-shrink: 0;
+                max-width: 60px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             .messages-inner {
                 padding: 0 20px;
