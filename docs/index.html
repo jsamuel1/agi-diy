@@ -335,9 +335,16 @@
             max-width: 720px;
             margin: 0 auto;
             display: flex;
-            gap: 12px;
-            align-items: flex-end;
+            flex-direction: column;
+            gap: 8px;
             pointer-events: auto; /* Re-enable clicks on actual input */
+        }
+        
+        .vision-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .input-field {
@@ -667,25 +674,27 @@
         </div>
 
         <div class="input-container">
-            <!-- Vision Controls Row -->
-            <div class="vision-controls" id="visionControls" style="display:flex;gap:8px;margin-bottom:8px;padding:0 8px;align-items:center;flex-wrap:wrap;">
-                <!-- Image upload, screen capture, ambient mode will be injected here -->
-            </div>
-            
-            <div class="input-wrapper">
-                <textarea 
-                    class="input-field" 
-                    id="inputField" 
-                    placeholder="Ask anything... (📷 add images, 🖥️ screen watch, 🌙 ambient)" 
-                    rows="1"
-                    disabled
-                ></textarea>
-                <button class="send-btn" id="sendBtn" disabled>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                        <polyline points="12 5 19 12 12 19"></polyline>
-                    </svg>
-                </button>
+            <div class="input-wrapper" style="flex-direction:column;gap:8px;">
+                <!-- Vision Controls Row - ABOVE input -->
+                <div class="vision-controls" id="visionControls" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;">
+                    <!-- Image upload, screen capture, ambient mode will be injected here -->
+                </div>
+                <!-- Input Row -->
+                <div style="display:flex;gap:12px;align-items:flex-end;width:100%;">
+                    <textarea 
+                        class="input-field" 
+                        id="inputField" 
+                        placeholder="Ask anything..." 
+                        rows="1"
+                        disabled
+                    ></textarea>
+                    <button class="send-btn" id="sendBtn" disabled>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
