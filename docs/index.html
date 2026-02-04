@@ -709,6 +709,16 @@
 
     <div class="toast" id="toast"></div>
 
+    <!-- Polyfill for Symbol.dispose/asyncDispose (mobile browser support) -->
+    <script>
+    if (typeof Symbol.dispose === 'undefined') {
+        Symbol.dispose = Symbol('Symbol.dispose');
+    }
+    if (typeof Symbol.asyncDispose === 'undefined') {
+        Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
+    }
+    </script>
+
     <!-- Load Strands SDK -->
     <script type="module">
     // ═══════════════════════════════════════════════════════════════════════════
