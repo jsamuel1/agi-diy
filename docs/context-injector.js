@@ -351,8 +351,9 @@ class BluetoothScanner {
         };
         
         // Agent discovery service UUID (custom)
-        this.AGI_SERVICE_UUID = '0000agi0-0000-1000-8000-00805f9b34fb';
-        this.AGI_CHARACTERISTIC_UUID = '0000agi1-0000-1000-8000-00805f9b34fb';
+        // NOTE: UUID must use valid hex chars (0-9, a-f only). "a610" represents "AGI0"
+        this.AGI_SERVICE_UUID = '0000a610-0000-1000-8000-00805f9b34fb';
+        this.AGI_CHARACTERISTIC_UUID = '0000a611-0000-1000-8000-00805f9b34fb';
     }
     
     async scan(duration = 10000) {
