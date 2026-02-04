@@ -46,11 +46,17 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') return;
   
-  // Skip API requests (Anthropic, OpenAI)
   const url = new URL(event.request.url);
+  
+  // Skip unsupported schemes (chrome-extension, etc)
+  if (!url.protocol.startsWith('http')) return;
+  
+  // Skip API requests (Anthropic, OpenAI, WebLLM CDN)
   if (url.hostname.includes('anthropic.com') || 
       url.hostname.includes('openai.com') ||
-      url.hostname.includes('esm.run')) {
+      url.hostname.includes('esm.run') ||
+      url.hostname.includes('huggingface.co') ||
+      url.hostname.includes('cdn.jsdelivr.net')) {
     return;
   }
 
@@ -61,7 +67,7 @@ self.addEventListener('fetch', (event) => {
           return response;
         }
         return fetch(event.request).then((response) => {
-          // Don't cache non-successful responses
+          // Don't cache non-successful responses or non-basic types
           if (!response || response.status !== 200 || response.type !== 'basic') {
             return response;
           }
@@ -72,6 +78,10 @@ self.addEventListener('fetch', (event) => {
           });
           return response;
         });
+      })
+      .catch(() => {
+        // Return offline fallback if available
+        return caches.match('/');
       })
   );
 });

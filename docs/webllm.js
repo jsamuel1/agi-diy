@@ -5,23 +5,21 @@
  * models locally using WebLLM (MLC-AI). No API keys needed - runs on device!
  * 
  * Supported models: https://github.com/mlc-ai/web-llm#available-models
- * 
- * @example
- * ```javascript
- * import { WebLLMBrowserModel, WEBLLM_MODELS } from './webllm.js';
- * 
- * const model = new WebLLMBrowserModel({
- *   modelId: WEBLLM_MODELS.LLAMA_3_8B,
- *   onProgress: (progress) => console.log(`Loading: ${progress}%`)
- * });
- * 
- * await model.load();
- * 
- * const agent = new Agent({ model, tools: [...] });
- * ```
  */
 
-import { Model } from './strands.js';
+// Import event classes from strands.js for streamAggregated
+import { 
+    Message,
+    TextBlock,
+    ToolUseBlock,
+    ReasoningBlock,
+    ModelMessageStartEvent,
+    ModelContentBlockStartEvent,
+    ModelContentBlockDeltaEvent,
+    ModelContentBlockStopEvent,
+    ModelMessageStopEvent,
+    ModelMetadataEvent
+} from './strands.js';
 
 // Available WebLLM models with tool/function calling support
 export const WEBLLM_MODELS = {
@@ -49,11 +47,10 @@ export const WEBLLM_MODELS = {
 
 /**
  * WebLLM Browser Model - runs LLMs locally via WebGPU
- * Extends Strands Model class for full SDK compatibility
+ * Implements the Strands Model interface directly
  */
-export class WebLLMBrowserModel extends Model {
+export class WebLLMBrowserModel {
     constructor(config = {}) {
-        super();
         this._config = {
             modelId: config.modelId || WEBLLM_MODELS.QWEN_2_5_3B,
             temperature: config.temperature || 0.7,
@@ -64,8 +61,6 @@ export class WebLLMBrowserModel extends Model {
         this._engine = null;
         this._loading = false;
         this._loaded = false;
-        
-        // WebLLM module (loaded dynamically)
         this._webllm = null;
     }
 
@@ -96,7 +91,6 @@ export class WebLLMBrowserModel extends Model {
     async load() {
         if (this._loaded) return;
         if (this._loading) {
-            // Wait for existing load
             while (this._loading) {
                 await new Promise(r => setTimeout(r, 100));
             }
@@ -106,17 +100,14 @@ export class WebLLMBrowserModel extends Model {
         this._loading = true;
 
         try {
-            // Check WebGPU support
             if (!await WebLLMBrowserModel.isSupported()) {
                 throw new Error('WebGPU is not supported in this browser. Try Chrome 113+ or Edge 113+.');
             }
 
-            // Dynamically import WebLLM
             if (!this._webllm) {
                 this._webllm = await import('https://esm.run/@mlc-ai/web-llm');
             }
 
-            // Progress callback
             const initProgressCallback = (report) => {
                 if (this._config.onProgress) {
                     const percent = Math.round(report.progress * 100);
@@ -124,7 +115,6 @@ export class WebLLMBrowserModel extends Model {
                 }
             };
 
-            // Create engine
             this._engine = await this._webllm.CreateMLCEngine(this._config.modelId, {
                 initProgressCallback
             });
@@ -140,20 +130,13 @@ export class WebLLMBrowserModel extends Model {
         }
     }
 
-    /**
-     * Unload the model to free memory
-     */
     async unload() {
         if (this._engine) {
-            // WebLLM doesn't have explicit unload, but we can release reference
             this._engine = null;
             this._loaded = false;
         }
     }
 
-    /**
-     * Build tool-calling system prompt for models that support it
-     */
     _buildToolSystemPrompt(toolSpecs) {
         if (!toolSpecs || toolSpecs.length === 0) return '';
 
@@ -172,9 +155,6 @@ export class WebLLMBrowserModel extends Model {
 </tool_call>`;
     }
 
-    /**
-     * Parse tool calls from model response
-     */
     _parseToolCalls(content) {
         if (!content) return [];
 
@@ -200,21 +180,14 @@ export class WebLLMBrowserModel extends Model {
         return toolCalls;
     }
 
-    /**
-     * Format messages for WebLLM chat format
-     */
     _formatMessages(messages, options) {
         const formatted = [];
-
-        // Build system prompt
         let systemContent = '';
         
-        // Add tool definitions to system prompt
         if (options?.toolSpecs && options.toolSpecs.length > 0) {
             systemContent += this._buildToolSystemPrompt(options.toolSpecs);
         }
 
-        // Add user's system prompt
         if (options?.systemPrompt) {
             const userSystem = typeof options.systemPrompt === 'string'
                 ? options.systemPrompt
@@ -228,13 +201,11 @@ export class WebLLMBrowserModel extends Model {
             formatted.push({ role: 'system', content: systemContent });
         }
 
-        // Convert messages
         for (const msg of messages) {
             if (msg.role === 'user') {
                 const toolResults = msg.content.filter(b => b.type === 'toolResultBlock');
                 const otherContent = msg.content.filter(b => b.type !== 'toolResultBlock');
 
-                // Add regular user content
                 if (otherContent.length > 0) {
                     const text = otherContent.map(block => {
                         if (block.type === 'textBlock') return block.text;
@@ -243,7 +214,6 @@ export class WebLLMBrowserModel extends Model {
                     formatted.push({ role: 'user', content: text });
                 }
 
-                // Add tool results
                 if (toolResults.length > 0) {
                     const results = toolResults.map(tr => {
                         const content = tr.content.map(c => {
@@ -254,7 +224,6 @@ export class WebLLMBrowserModel extends Model {
                         return tr.status === 'error' ? { error: content } : JSON.parse(content || '{}');
                     });
                     
-                    // Format as tool response
                     const toolResponse = `<tool_response>\n${JSON.stringify({ results })}\n</tool_response>`;
                     formatted.push({ role: 'user', content: toolResponse });
                 }
@@ -267,7 +236,6 @@ export class WebLLMBrowserModel extends Model {
                     if (block.type === 'textBlock') {
                         textParts.push(block.text);
                     } else if (block.type === 'toolUseBlock') {
-                        // Format as XML tool call
                         toolUseParts.push(`<tool_call>\n${JSON.stringify({
                             name: block.name,
                             arguments: block.input
@@ -286,26 +254,21 @@ export class WebLLMBrowserModel extends Model {
     }
 
     /**
-     * Stream a conversation with the model
-     * Yields SDK-compatible streaming events
+     * Stream a conversation - required by Strands SDK
      */
     async *stream(messages, options) {
-        // Ensure model is loaded
         if (!this._loaded) {
             await this.load();
         }
 
-        // Format messages
         const formattedMessages = this._formatMessages(messages, options);
 
-        // Emit message start
         yield { type: 'modelMessageStartEvent', role: 'assistant' };
 
         let fullContent = '';
         let contentBlockStarted = false;
 
         try {
-            // Create streaming request
             const stream = await this._engine.chat.completions.create({
                 messages: formattedMessages,
                 temperature: this._config.temperature,
@@ -314,10 +277,8 @@ export class WebLLMBrowserModel extends Model {
                 stream_options: { include_usage: true }
             });
 
-            // Process stream
             for await (const chunk of stream) {
                 if (!chunk.choices || chunk.choices.length === 0) {
-                    // Usage chunk
                     if (chunk.usage) {
                         yield {
                             type: 'modelMetadataEvent',
@@ -334,7 +295,6 @@ export class WebLLMBrowserModel extends Model {
                 const choice = chunk.choices[0];
                 const delta = choice.delta;
 
-                // Handle content delta
                 if (delta?.content) {
                     if (!contentBlockStarted) {
                         contentBlockStarted = true;
@@ -348,19 +308,15 @@ export class WebLLMBrowserModel extends Model {
                     };
                 }
 
-                // Handle finish
                 if (choice.finish_reason) {
-                    // Close text block if open
                     if (contentBlockStarted) {
                         yield { type: 'modelContentBlockStopEvent' };
                         contentBlockStarted = false;
                     }
 
-                    // Parse tool calls from accumulated content
                     const toolCalls = this._parseToolCalls(fullContent);
 
                     if (toolCalls.length > 0) {
-                        // Emit tool use events
                         for (const tc of toolCalls) {
                             yield {
                                 type: 'modelContentBlockStartEvent',
@@ -389,17 +345,127 @@ export class WebLLMBrowserModel extends Model {
 
         } catch (error) {
             console.error('WebLLM stream error:', error);
-            
-            // Close any open blocks
             if (contentBlockStarted) {
                 yield { type: 'modelContentBlockStopEvent' };
             }
             yield { type: 'modelMessageStopEvent', stopReason: 'endTurn' };
-            
             throw error;
         }
     }
+
+    /**
+     * Convert event data to event class - required for streamAggregated
+     */
+    _convert_to_class_event(event_data) {
+        switch (event_data.type) {
+            case 'modelMessageStartEvent':
+                return new ModelMessageStartEvent(event_data);
+            case 'modelContentBlockStartEvent':
+                return new ModelContentBlockStartEvent(event_data);
+            case 'modelContentBlockDeltaEvent':
+                return new ModelContentBlockDeltaEvent(event_data);
+            case 'modelContentBlockStopEvent':
+                return new ModelContentBlockStopEvent(event_data);
+            case 'modelMessageStopEvent':
+                return new ModelMessageStopEvent(event_data);
+            case 'modelMetadataEvent':
+                return new ModelMetadataEvent(event_data);
+            default:
+                throw new Error(`Unsupported event type: ${event_data.type}`);
+        }
+    }
+
+    /**
+     * Stream with aggregation - required by Strands Agent
+     * This method aggregates streaming events into complete messages
+     */
+    async *streamAggregated(messages, options) {
+        let messageRole = null;
+        const contentBlocks = [];
+        let accumulatedText = '';
+        let accumulatedToolInput = '';
+        let toolName = '';
+        let toolUseId = '';
+        let stoppedMessage = null;
+        let finalStopReason = null;
+        let metadata = undefined;
+
+        for await (const event_data of this.stream(messages, options)) {
+            const event = this._convert_to_class_event(event_data);
+            yield event;
+
+            switch (event.type) {
+                case 'modelMessageStartEvent':
+                    messageRole = event.role;
+                    contentBlocks.length = 0;
+                    break;
+
+                case 'modelContentBlockStartEvent':
+                    if (event.start?.type === 'toolUseStart') {
+                        toolName = event.start.name;
+                        toolUseId = event.start.toolUseId;
+                    }
+                    accumulatedToolInput = '';
+                    accumulatedText = '';
+                    break;
+
+                case 'modelContentBlockDeltaEvent':
+                    if (event.delta.type === 'textDelta') {
+                        accumulatedText += event.delta.text;
+                    } else if (event.delta.type === 'toolUseInputDelta') {
+                        accumulatedToolInput += event.delta.input;
+                    }
+                    break;
+
+                case 'modelContentBlockStopEvent': {
+                    let block;
+                    if (toolUseId) {
+                        block = new ToolUseBlock({
+                            name: toolName,
+                            toolUseId: toolUseId,
+                            input: accumulatedToolInput ? JSON.parse(accumulatedToolInput) : {}
+                        });
+                        toolUseId = '';
+                        toolName = '';
+                    } else if (accumulatedText) {
+                        block = new TextBlock(accumulatedText);
+                    }
+                    if (block) {
+                        contentBlocks.push(block);
+                        yield block;
+                    }
+                    break;
+                }
+
+                case 'modelMessageStopEvent':
+                    if (messageRole) {
+                        stoppedMessage = new Message({
+                            role: messageRole,
+                            content: [...contentBlocks]
+                        });
+                        finalStopReason = event.stopReason;
+                    }
+                    break;
+
+                case 'modelMetadataEvent':
+                    metadata = event;
+                    break;
+            }
+        }
+
+        if (!stoppedMessage || !finalStopReason) {
+            throw new Error('Stream ended without completing a message');
+        }
+
+        const result = {
+            message: stoppedMessage,
+            stopReason: finalStopReason
+        };
+        if (metadata !== undefined) {
+            result.metadata = metadata;
+        }
+        return result;
+    }
 }
 
-// Default export
 export default WebLLMBrowserModel;
