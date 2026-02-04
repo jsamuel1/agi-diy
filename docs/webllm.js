@@ -7,19 +7,80 @@
  * Supported models: https://github.com/mlc-ai/web-llm#available-models
  */
 
-// Import event classes from strands.js for streamAggregated
-import { 
-    Message,
-    TextBlock,
-    ToolUseBlock,
-    ReasoningBlock,
-    ModelMessageStartEvent,
-    ModelContentBlockStartEvent,
-    ModelContentBlockDeltaEvent,
-    ModelContentBlockStopEvent,
-    ModelMessageStopEvent,
-    ModelMetadataEvent
-} from './strands.js';
+// ═══════════════════════════════════════════════════════════════════════════
+// Event & Block Classes (local definitions for browser compatibility)
+// ═══════════════════════════════════════════════════════════════════════════
+
+class Message {
+    constructor({ role, content }) {
+        this.role = role;
+        this.content = content || [];
+    }
+}
+
+class TextBlock {
+    constructor(text) {
+        this.type = 'textBlock';
+        this.text = text;
+    }
+}
+
+class ToolUseBlock {
+    constructor({ name, toolUseId, input }) {
+        this.type = 'toolUseBlock';
+        this.name = name;
+        this.toolUseId = toolUseId;
+        this.input = input || {};
+    }
+}
+
+class ReasoningBlock {
+    constructor({ text }) {
+        this.type = 'reasoningBlock';
+        this.text = text;
+    }
+}
+
+class ModelMessageStartEvent {
+    constructor(data) {
+        this.type = 'modelMessageStartEvent';
+        this.role = data.role;
+    }
+}
+
+class ModelContentBlockStartEvent {
+    constructor(data) {
+        this.type = 'modelContentBlockStartEvent';
+        this.start = data?.start;
+    }
+}
+
+class ModelContentBlockDeltaEvent {
+    constructor(data) {
+        this.type = 'modelContentBlockDeltaEvent';
+        this.delta = data.delta;
+    }
+}
+
+class ModelContentBlockStopEvent {
+    constructor(data) {
+        this.type = 'modelContentBlockStopEvent';
+    }
+}
+
+class ModelMessageStopEvent {
+    constructor(data) {
+        this.type = 'modelMessageStopEvent';
+        this.stopReason = data.stopReason;
+    }
+}
+
+class ModelMetadataEvent {
+    constructor(data) {
+        this.type = 'modelMetadataEvent';
+        this.usage = data.usage;
+    }
+}
 
 // Available WebLLM models with tool/function calling support
 export const WEBLLM_MODELS = {
