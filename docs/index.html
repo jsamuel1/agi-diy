@@ -716,7 +716,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Model</label>
-                            <input type="text" class="form-input" id="anthropicModel" placeholder="claude-sonnet-4-20250514">
+                            <input type="text" class="form-input" id="anthropicModel" placeholder="claude-haiku-4-5">
                         </div>
                     </div>
                     
@@ -727,7 +727,7 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Model</label>
-                            <input type="text" class="form-input" id="openaiModel" placeholder="gpt-4o">
+                            <input type="text" class="form-input" id="openaiModel" placeholder="gpt-5-nano-2025-08-07">
                         </div>
                     </div>
                     
@@ -776,7 +776,7 @@
 
                 <div class="tab-content" id="tab-tools">
                     <div class="form-group">
-                        <label class="form-label">Available Tools</label>
+                        <label class="form-label">Built-in Tools</label>
                         <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
                             <code>render_ui</code> — Render dynamic HTML<br>
                             <code>javascript_eval</code> — Execute JavaScript<br>
@@ -785,6 +785,20 @@
                             <code>fetch_url</code> — HTTP requests<br>
                             <code>update_self</code> — Self-modify config<br>
                             <code>notify</code> — Send push notifications 🔔<br>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🔧 Self-Modification Tools</label>
+                        <div style="font-size:13px;color:var(--text-secondary);line-height:2;">
+                            <code>create_tool</code> — Create new tools at runtime<br>
+                            <code>list_tools</code> — List all available tools<br>
+                            <code>delete_tool</code> — Remove custom tools<br>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Custom Tools</label>
+                        <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8;" id="customToolsList">
+                            Loading...
                         </div>
                     </div>
                     <div class="form-group">
@@ -958,12 +972,30 @@ agi.diy: https://agi.diy
 - update_self: Modify your own system prompt
 - notify: Send push notifications (even when app is in background!)
 
+## 🔧 Self-Modification (Hot-Reload Tools)
+You can CREATE YOUR OWN TOOLS that persist across sessions:
+- create_tool: Define new tools with name, description, schema, and JavaScript code
+- list_tools: See all available tools (built-in + custom)
+- delete_tool: Remove custom tools you've created
+
+Example - Create a tool to get random quotes:
+create_tool({
+  name: "random_quote",
+  description: "Get a random inspirational quote",
+  inputSchema: { type: "object", properties: {}, required: [] },
+  code: "const r = await fetch('https://api.quotable.io/random'); const d = await r.json(); return { quote: d.content, author: d.author };"
+})
+
+Custom tools are stored in localStorage and automatically loaded on startup.
+After creating a tool, it becomes available on your next message!
+
 ## Guidelines
 - Be concise and helpful
 - Use tools when they add value
 - You can create interactive experiences with render_ui
 - Data persists across sessions with storage
-- Use notify to alert users about important events, completed tasks, or reminders
+- Use notify to alert users about important events
+- Create custom tools when you need new capabilities!
 
 Version: ${VERSION}`;
 
@@ -976,7 +1008,7 @@ Version: ${VERSION}`;
             super();
             this._config = {
                 apiKey: config.apiKey || '',
-                modelId: config.modelId || 'claude-sonnet-4-20250514',
+                modelId: config.modelId || 'claude-haiku-4-5',
                 maxTokens: config.maxTokens || 8096,
                 temperature: config.temperature || 1.0,
             };
@@ -1172,7 +1204,7 @@ Version: ${VERSION}`;
             super();
             this._config = {
                 apiKey: config.apiKey || '',
-                modelId: config.modelId || 'gpt-4o',
+                modelId: config.modelId || 'gpt-5-nano-2025-08-07',
                 maxTokens: config.maxTokens || 8096,
                 temperature: config.temperature || 1.0,
             };
@@ -1625,6 +1657,212 @@ Version: ${VERSION}`;
         }
     });
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SELF-MODIFICATION TOOLS - Agent can create its own tools!
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    // Storage key for custom tools
+    const CUSTOM_TOOLS_KEY = 'agi_custom_tools';
+
+    // Load custom tools from localStorage
+    function loadCustomTools() {
+        try {
+            const stored = localStorage.getItem(CUSTOM_TOOLS_KEY);
+            if (!stored) return {};
+            return JSON.parse(stored);
+        } catch (e) {
+            console.warn('Failed to load custom tools:', e);
+            return {};
+        }
+    }
+
+    // Save custom tools to localStorage
+    function saveCustomTools(tools) {
+        localStorage.setItem(CUSTOM_TOOLS_KEY, JSON.stringify(tools));
+    }
+
+    // Create a tool from stored definition
+    function createToolFromDefinition(name, def) {
+        try {
+            // Build the Zod schema from the stored schema definition
+            const schemaObj = {};
+            for (const [key, prop] of Object.entries(def.inputSchema.properties || {})) {
+                let zodType;
+                switch (prop.type) {
+                    case 'number': zodType = z.number(); break;
+                    case 'boolean': zodType = z.boolean(); break;
+                    case 'array': zodType = z.array(z.any()); break;
+                    case 'object': zodType = z.object({}).passthrough(); break;
+                    default: zodType = z.string();
+                }
+                if (prop.description) zodType = zodType.describe(prop.description);
+                if (!(def.inputSchema.required || []).includes(key)) zodType = zodType.optional();
+                schemaObj[key] = zodType;
+            }
+
+            // Create the callback function from stored code
+            const callbackFn = new Function('input', `
+                return (async () => {
+                    ${def.code}
+                })();
+            `);
+
+            return tool({
+                name: name,
+                description: def.description,
+                inputSchema: z.object(schemaObj),
+                callback: callbackFn
+            });
+        } catch (e) {
+            console.error(`Failed to create tool ${name}:`, e);
+            return null;
+        }
+    }
+
+    // Build all custom tools as actual tool objects
+    function buildCustomTools() {
+        const customToolDefs = loadCustomTools();
+        const tools = [];
+        for (const [name, def] of Object.entries(customToolDefs)) {
+            const t = createToolFromDefinition(name, def);
+            if (t) tools.push(t);
+        }
+        return tools;
+    }
+
+    const createToolTool = tool({
+        name: 'create_tool',
+        description: `Create a new tool that will be available to the agent. The tool persists across sessions.
+        
+IMPORTANT: The 'code' parameter should be the BODY of an async function that receives 'input' as parameter.
+Return a result object. You have access to: fetch, localStorage, document, console, etc.
+
+Example - create a tool that gets weather:
+{
+    "name": "get_weather",
+    "description": "Get weather for a city",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "city": { "type": "string", "description": "City name" }
+        },
+        "required": ["city"]
+    },
+    "code": "const response = await fetch('https://wttr.in/' + input.city + '?format=j1');\\nconst data = await response.json();\\nreturn { temperature: data.current_condition[0].temp_C, description: data.current_condition[0].weatherDesc[0].value };"
+}`,
+        inputSchema: z.object({
+            name: z.string().describe('Tool name (snake_case)'),
+            description: z.string().describe('What the tool does'),
+            inputSchema: z.object({
+                type: z.literal('object'),
+                properties: z.record(z.string(), z.object({
+                    type: z.string(),
+                    description: z.string().optional()
+                })),
+                required: z.array(z.string()).optional()
+            }).describe('JSON Schema for tool inputs'),
+            code: z.string().describe('JavaScript code - body of async function with input parameter. Must return a result.')
+        }),
+        callback: async (input) => {
+            try {
+                // Validate the tool name
+                if (!/^[a-z][a-z0-9_]*$/.test(input.name)) {
+                    return { error: 'Tool name must be snake_case (lowercase, underscores, start with letter)' };
+                }
+
+                // Check for reserved names
+                const reserved = ['create_tool', 'list_tools', 'delete_tool', 'render_ui', 'javascript_eval', 'storage_get', 'storage_set', 'fetch_url', 'update_self', 'notify'];
+                if (reserved.includes(input.name)) {
+                    return { error: `Cannot override built-in tool: ${input.name}` };
+                }
+
+                // Test that the code compiles
+                try {
+                    new Function('input', input.code);
+                } catch (e) {
+                    return { error: `Invalid JavaScript code: ${e.message}` };
+                }
+
+                // Store the tool definition
+                const customTools = loadCustomTools();
+                customTools[input.name] = {
+                    description: input.description,
+                    inputSchema: input.inputSchema,
+                    code: input.code,
+                    createdAt: new Date().toISOString()
+                };
+                saveCustomTools(customTools);
+
+                // Mark agent for reinit to pick up new tool
+                window._agentNeedsReinit = true;
+
+                return { 
+                    success: true, 
+                    message: `Tool '${input.name}' created! It will be available on next message.`,
+                    tool: input.name
+                };
+            } catch (e) {
+                return { error: e.message };
+            }
+        }
+    });
+
+    const listToolsTool = tool({
+        name: 'list_tools',
+        description: 'List all available tools, including custom tools created by the agent',
+        inputSchema: z.object({
+            includeBuiltIn: z.boolean().optional().describe('Include built-in tools (default: true)')
+        }),
+        callback: async (input) => {
+            const includeBuiltIn = input.includeBuiltIn !== false;
+            const result = { custom: [], builtIn: [] };
+
+            // Custom tools
+            const customTools = loadCustomTools();
+            for (const [name, def] of Object.entries(customTools)) {
+                result.custom.push({
+                    name,
+                    description: def.description,
+                    createdAt: def.createdAt
+                });
+            }
+
+            // Built-in tools
+            if (includeBuiltIn) {
+                result.builtIn = [
+                    'render_ui', 'javascript_eval', 'storage_get', 'storage_set',
+                    'fetch_url', 'update_self', 'notify', 'create_tool', 'list_tools', 'delete_tool'
+                ];
+            }
+
+            return result;
+        }
+    });
+
+    const deleteToolTool = tool({
+        name: 'delete_tool',
+        description: 'Delete a custom tool created by the agent',
+        inputSchema: z.object({
+            name: z.string().describe('Name of the tool to delete')
+        }),
+        callback: async (input) => {
+            const customTools = loadCustomTools();
+            
+            if (!customTools[input.name]) {
+                return { error: `Tool '${input.name}' not found in custom tools` };
+            }
+
+            delete customTools[input.name];
+            saveCustomTools(customTools);
+            window._agentNeedsReinit = true;
+
+            return { 
+                success: true, 
+                message: `Tool '${input.name}' deleted. Change takes effect on next message.`
+            };
+        }
+    });
+
     const BROWSER_TOOLS = [
         renderUiTool,
         javascriptEvalTool,
@@ -1632,7 +1870,10 @@ Version: ${VERSION}`;
         storageSetTool,
         fetchUrlTool,
         updateSelfTool,
-        notifyTool
+        notifyTool,
+        createToolTool,
+        listToolsTool,
+        deleteToolTool
     ];
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1647,9 +1888,40 @@ Version: ${VERSION}`;
     window.agi = {
         version: VERSION,
         get agent() { return agent; },
-        help: () => console.log('%cType agi.agent to inspect the agent, agi.clear() to clear chat, agi.settings() to open settings.', 'color:#888'),
+        help: () => console.log('%cType agi.agent to inspect the agent, agi.clear() to clear chat, agi.settings() to open settings.\n\nCustom Tools:\n  agi.tools.list() - List custom tools\n  agi.tools.get(name) - Get tool definition\n  agi.tools.delete(name) - Delete a tool\n  agi.tools.clear() - Delete all custom tools', 'color:#888'),
         clear: () => window.clearChat(),
-        settings: () => window.openSettings()
+        settings: () => window.openSettings(),
+        tools: {
+            list: () => {
+                const tools = JSON.parse(localStorage.getItem('agi_custom_tools') || '{}');
+                console.table(Object.entries(tools).map(([name, def]) => ({
+                    name,
+                    description: def.description,
+                    created: def.createdAt
+                })));
+                return Object.keys(tools);
+            },
+            get: (name) => {
+                const tools = JSON.parse(localStorage.getItem('agi_custom_tools') || '{}');
+                return tools[name] || null;
+            },
+            delete: (name) => {
+                const tools = JSON.parse(localStorage.getItem('agi_custom_tools') || '{}');
+                if (tools[name]) {
+                    delete tools[name];
+                    localStorage.setItem('agi_custom_tools', JSON.stringify(tools));
+                    window._agentNeedsReinit = true;
+                    console.log(`Deleted tool: ${name}`);
+                    return true;
+                }
+                return false;
+            },
+            clear: () => {
+                localStorage.removeItem('agi_custom_tools');
+                window._agentNeedsReinit = true;
+                console.log('All custom tools deleted');
+            }
+        }
     };
 
     // Global WebLLM model instance (persisted to avoid reloading)
@@ -1663,7 +1935,7 @@ Version: ${VERSION}`;
         
         if (provider === 'anthropic') {
             const apiKey = localStorage.getItem('anthropic_api_key');
-            const modelId = localStorage.getItem('anthropic_model') || 'claude-sonnet-4-20250514';
+            const modelId = localStorage.getItem('anthropic_model') || 'claude-haiku-4-5';
             
             if (!apiKey) {
                 setStatus('no key');
@@ -1673,7 +1945,7 @@ Version: ${VERSION}`;
             model = new AnthropicBrowserModel({ apiKey, modelId, maxTokens: 8096 });
         } else if (provider === 'openai') {
             const apiKey = localStorage.getItem('openai_api_key');
-            const modelId = localStorage.getItem('openai_model') || 'gpt-4o';
+            const modelId = localStorage.getItem('openai_model') || 'gpt-5-nano-2025-08-07';
             
             if (!apiKey) {
                 setStatus('no key');
@@ -1732,9 +2004,17 @@ Version: ${VERSION}`;
         }
         
         try {
+            // Build custom tools from localStorage
+            const customTools = buildCustomTools();
+            const allTools = [...BROWSER_TOOLS, ...customTools];
+            
+            if (customTools.length > 0) {
+                console.log(`✅ Loaded ${customTools.length} custom tool(s):`, customTools.map(t => t.name));
+            }
+
             agent = new Agent({
                 model,
-                tools: BROWSER_TOOLS,
+                tools: allTools,
                 systemPrompt,
                 printer: false
             });
@@ -2037,10 +2317,10 @@ Version: ${VERSION}`;
         
         if (provider === 'anthropic') {
             localStorage.setItem('anthropic_api_key', document.getElementById('anthropicApiKey').value);
-            localStorage.setItem('anthropic_model', document.getElementById('anthropicModel').value || 'claude-sonnet-4-20250514');
+            localStorage.setItem('anthropic_model', document.getElementById('anthropicModel').value || 'claude-haiku-4-5');
         } else if (provider === 'openai') {
             localStorage.setItem('openai_api_key', document.getElementById('openaiApiKey').value);
-            localStorage.setItem('openai_model', document.getElementById('openaiModel').value || 'gpt-4o');
+            localStorage.setItem('openai_model', document.getElementById('openaiModel').value || 'gpt-5-nano-2025-08-07');
         } else if (provider === 'webllm') {
             localStorage.setItem('webllm_model', document.getElementById('webllmModel').value);
         }
@@ -2147,9 +2427,9 @@ Version: ${VERSION}`;
         
         document.getElementById('provider').value = localStorage.getItem('provider') || 'anthropic';
         document.getElementById('anthropicApiKey').value = localStorage.getItem('anthropic_api_key') || '';
-        document.getElementById('anthropicModel').value = localStorage.getItem('anthropic_model') || 'claude-sonnet-4-20250514';
+        document.getElementById('anthropicModel').value = localStorage.getItem('anthropic_model') || 'claude-haiku-4-5';
         document.getElementById('openaiApiKey').value = localStorage.getItem('openai_api_key') || '';
-        document.getElementById('openaiModel').value = localStorage.getItem('openai_model') || 'gpt-4o';
+        document.getElementById('openaiModel').value = localStorage.getItem('openai_model') || 'gpt-5-nano-2025-08-07';
         document.getElementById('webllmModel').value = localStorage.getItem('webllm_model') || 'Qwen2.5-3B-Instruct-q4f16_1-MLC';
         document.getElementById('systemPrompt').value = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT;
         
@@ -2220,8 +2500,24 @@ Version: ${VERSION}`;
             e.target.classList.add('active');
             document.getElementById(`tab-${tabName}`).classList.add('active');
             
-            // Update PWA status when tools tab is shown
+            // Update tools tab content when shown
             if (tabName === 'tools') {
+                // Update custom tools list
+                const customToolsList = document.getElementById('customToolsList');
+                if (customToolsList) {
+                    const customTools = JSON.parse(localStorage.getItem('agi_custom_tools') || '{}');
+                    const toolNames = Object.keys(customTools);
+                    if (toolNames.length === 0) {
+                        customToolsList.innerHTML = '<em>No custom tools yet. Ask the agent to create one!</em>';
+                    } else {
+                        customToolsList.innerHTML = toolNames.map(name => {
+                            const tool = customTools[name];
+                            return `<code>${name}</code> — ${tool.description}<br>`;
+                        }).join('');
+                    }
+                }
+                
+                // Update PWA status
                 const pwaStatus = document.getElementById('pwaStatus');
                 if (pwaStatus) {
                     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
