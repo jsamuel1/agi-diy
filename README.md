@@ -6,455 +6,276 @@
 
 **Build your own AGI. In your browser. Right now.**
 
-[▶️ Launch](https://agi.diy) • [📖 SDK](https://github.com/strands-agents/sdk-typescript) • [📱 Install](#install)
+[▶️ Launch](https://agi.diy) • [📖 SDK Docs](https://github.com/strands-agents/sdk-typescript) • [📱 Install as App](#install-as-pwa)
 
 ---
 
-## What is this?
+## Why agi.diy?
 
-> **One sentence:** An AI assistant that runs entirely in your browser, can create its own tools, and keeps thinking even when you walk away.
+|  | ChatGPT/Claude.ai | agi.diy |
+|--|-------------------|---------|
+| **Privacy** | Data on their servers | 100% in your browser |
+| **Cost** | $20-200/month subscription | Pay only for API usage |
+| **Offline Mode** | ❌ | ✅ WebLLM runs locally |
+| **Custom Tools** | Limited plugins | Create unlimited tools |
+| **Multi-Agent** | ❌ | ✅ Coordinated agent teams |
+| **Self-Modifying** | ❌ | ✅ Agent evolves itself |
+| **Open Source** | ❌ | ✅ Fully auditable |
 
-```mermaid
-graph LR
-    You[👤 You] --> Browser[🌐 Browser]
-    Browser --> Agent[🤖 Agent]
-    Agent --> Tools[🛠️ Tools]
-    Agent --> Memory[💾 Memory]
-    Agent --> Vision[👁️ Vision]
-    
-    style Browser fill:#1a1a2e,stroke:#16213e,color:#fff
-    style Agent fill:#0f3460,stroke:#16213e,color:#fff
+---
+
+## Quick Start
+
+**Use the hosted version:**
+```bash
+open https://agi.diy
 ```
 
-**Nothing leaves your browser.** Your API keys, conversations, and custom tools stay on your device.
+**Or self-host:**
+```bash
+git clone https://github.com/cagataycali/agi-diy.git
+cd agi-diy/docs && python3 -m http.server 8080
+```
+
+Then: **Settings** → Add API key → Start chatting
+
+**Want 100% local?** Select WebLLM → Download model once → Works offline forever
 
 ---
 
 ## How It Works
 
 ```mermaid
-sequenceDiagram
-    participant You
-    participant Browser
-    participant Agent
-    participant AI Provider
+graph LR
+    A[You type message] --> B[Agent selects tools]
+    B --> C[Calls AI model]
+    C --> D[Executes in browser]
+    D --> E[Shows result]
     
-    You->>Browser: "Check my emails"
-    Browser->>Agent: Process request
-    Agent->>Agent: Select tools needed
-    Agent->>AI Provider: Send to Claude/GPT
-    AI Provider-->>Agent: Stream response
-    Agent->>Browser: Execute tools
-    Browser-->>You: Show results
+    style A fill:#3b82f6,color:#fff
+    style E fill:#10b981,color:#fff
 ```
 
-**The flow:**
-1. You type a message
-2. Agent figures out what tools to use
-3. Calls AI provider (or local model)
-4. Executes tools in your browser
-5. Shows you the result
+Everything runs in your browser. The only external call is to the AI provider you choose (or none with WebLLM).
 
 ---
 
-## Quick Start
+## What Can It Do?
 
-```mermaid
-flowchart TD
-    Start([🚀 Start]) --> Choice{API Key?}
-    Choice -->|Yes| Cloud[☁️ Cloud AI]
-    Choice -->|No| Local[💻 Local AI]
-    
-    Cloud --> Settings[Settings → Add Key]
-    Settings --> Chat[💬 Start Chatting]
-    
-    Local --> WebLLM[Select WebLLM]
-    WebLLM --> Download[Download Model ~2GB]
-    Download --> Offline[Works Offline Forever]
-    Offline --> Chat
-    
-    style Start fill:#10b981,stroke:#059669,color:#fff
-    style Chat fill:#3b82f6,stroke:#2563eb,color:#fff
+### 🛠️ Create Custom Tools
+Ask the agent to build tools on the fly:
+```
+"Create a tool that fetches Bitcoin price from CoinGecko"
+```
+The tool saves to localStorage and persists forever. Use it anytime:
+```
+"What's the current Bitcoin price?"
+→ Uses your custom tool → "$67,432"
 ```
 
-**Three commands:**
-```bash
-# Option 1: Use hosted version
-open https://agi.diy
-
-# Option 2: Self-host
-git clone https://github.com/cagataycali/agi-diy.git
-cd agi-diy/docs
-python3 -m http.server 8080
+### 📧 Automate Email
 ```
+"Every morning at 9am, check my Gmail and notify me of urgent emails"
+```
+Agent connects via Google OAuth, schedules a cron job, and sends push notifications.
+
+### 💻 Pair Programming
+```
+"Watch my screen every 30 seconds and help me debug"
+```
+Agent captures your screen, spots errors, and suggests fixes in real-time.
+
+### 👥 Multi-Agent Research
+```
+"Spawn researcher, analyst, and writer agents. Research AI safety."
+```
+Agents coordinate through ring attention—when one learns something, others see it.
+
+### 🌙 Background Thinking
+Ask about a topic, then walk away. Agent keeps exploring while you're gone. When you return, findings are injected into your next message.
+
+### 🗺️ Location Intelligence
+```
+"Mark top 5 coffee shops near me and fly me through them"
+```
+Interactive Google Maps with GPS tracking and smooth camera animations.
 
 ---
 
-## Two Modes Explained
+## Two Modes
 
-### Single Agent Mode (`index.html`)
+| Mode | File | What it's for |
+|------|------|---------------|
+| **Single Agent** | `index.html` | Personal assistant, coding help, quick tasks |
+| **Multi-Agent** | `agi.html` | Research teams, parallel processing, scheduled automation |
+
+### Multi-Agent Architecture
 
 ```mermaid
 graph TD
-    You[👤 You] <--> Agent[🤖 Single Agent]
-    Agent --> Tool1[🔧 Tool]
-    Agent --> Tool2[🔧 Tool]
-    Agent --> Tool3[🔧 Tool]
-```
-
-**Like having one smart assistant** who can do many things.
-
-### Multi-Agent Mode (`agi.html`)
-
-```mermaid
-graph TD
-    You[👤 You] --> Orchestrator[🎯 Main Agent]
-    Orchestrator --> R[📚 Researcher]
-    Orchestrator --> A[📊 Analyst]
-    Orchestrator --> W[✍️ Writer]
+    You[You] --> Main[Main Agent]
+    Main --> R[Researcher]
+    Main --> A[Analyst]  
+    Main --> W[Writer]
     
-    R <-.->|Share Context| Ring[(🔄 Ring Buffer)]
-    A <-.->|Share Context| Ring
-    W <-.->|Share Context| Ring
+    R -.-> Ring[(Ring Buffer)]
+    A -.-> Ring
+    W -.-> Ring
+    Ring -.-> R
+    Ring -.-> A
+    Ring -.-> W
 ```
 
-**Like having a team.** Agents share what they learn through "ring attention" - when one discovers something, others see it too.
+**Ring Attention:** Agents share context automatically. When the researcher finds papers, the analyst and writer see that context immediately.
 
 ---
 
-## The Tool System
+## Models
 
-```mermaid
-mindmap
-  root((🛠️ Tools))
-    Core
-      render_ui
-      javascript_eval
-      storage
-      fetch_url
-      notify
-    Self-Modification
-      create_tool
-      delete_tool
-      update_self
-    Vision
-      screen_capture
-      activity_tracking
-      bluetooth_scan
-    Maps
-      markers
-      fly_to
-      tour
-      gps
-    Google
-      gmail
-      drive
-      calendar
-    Multi-Agent
-      spawn_agent
-      invoke
-      broadcast
-      schedule
-```
+### Cloud Models (API key required)
 
-### How Tool Creation Works
+| Provider | Models | Best for |
+|----------|--------|----------|
+| **Anthropic** | Claude Opus, Sonnet, Haiku | Quality reasoning |
+| **OpenAI** | GPT-4o, GPT-4, GPT-3.5 | General tasks |
+| **Amazon Bedrock** | Claude + extended thinking | Deep analysis |
 
-```mermaid
-sequenceDiagram
-    participant You
-    participant Agent
-    participant localStorage
-    
-    You->>Agent: "Create a weather tool"
-    Agent->>Agent: Write JavaScript code
-    Agent->>localStorage: Save tool definition
-    Note over localStorage: Tool persists forever
-    
-    You->>Agent: "What's the weather?"
-    Agent->>localStorage: Load weather tool
-    Agent->>Agent: Execute tool
-    Agent-->>You: "72°F and sunny"
-```
+### Local Models (free, offline)
 
-**Tools you create stick around.** Close the browser, come back next week - your tools are still there.
+| Model | Size | Notes |
+|-------|------|-------|
+| **Qwen 2.5 3B** ⭐ | ~2GB | Recommended for most users |
+| **Qwen 2.5 1.5B** | ~1GB | Faster, less capable |
+| **Llama 3.2 1B** | ~700MB | Smallest, for mobile |
+| **Hermes 8B** | ~4GB | Best tool usage |
+
+*WebLLM requires Chrome/Edge 113+ with WebGPU*
 
 ---
 
-## Ambient Mode: Background Thinking
+## Tools Reference
 
-```mermaid
-stateDiagram-v2
-    [*] --> Active: You're chatting
-    Active --> Idle: No input for 30s
-    Idle --> Thinking: 🌙 Ambient activates
-    Thinking --> Thinking: Explore topic
-    Thinking --> Ready: 3 cycles done
-    Ready --> Active: You return
-    
-    note right of Thinking: Agent keeps<br/>researching
-    note right of Ready: Findings stored<br/>for next message
-```
+### Core
+- `render_ui` — Dynamic HTML components in chat
+- `javascript_eval` — Execute JS, return results
+- `storage_get/set` — Persistent localStorage
+- `fetch_url` — HTTP requests
+- `notify` — Push notifications (works in background)
 
-**Think of it like this:** You ask about quantum computing, then go make coffee. When you come back, the agent has already explored related topics and will include those findings in your next conversation.
+### Self-Modification
+- `create_tool` — Define new tools at runtime
+- `list_tools` — See all available tools
+- `delete_tool` — Remove tools
+- `update_self` — Rewrite system prompt
 
-### Two Ambient Modes
+### Vision & Context
+- `get_user_context` — Activity state, mouse position, idle time
+- `set_context` — Add custom context
+- `scan_bluetooth` — Find nearby devices and agents
 
-| Mode | Icon | What happens |
-|------|------|--------------|
-| **Standard** 🌙 | Moon | Thinks 3 times when you're idle, then waits |
-| **Autonomous** 🚀 | Rocket | Keeps going until it decides it's done |
+### Maps
+- `add_map_marker` — Place markers with emoji/labels
+- `fly_to_location` — Smooth camera animations
+- `tour_markers` — Animated journey through points
+- `get_map_location` — Current GPS position
 
----
+### Google APIs
+- `google_auth` — OAuth 2.0 authentication
+- `use_google` — Access 200+ Google services
+- `gmail_send` — Send emails directly
 
-## Model Options
-
-### Decision Tree: Which Model?
-
-```mermaid
-flowchart TD
-    Start([Need AI?]) --> Privacy{Privacy Critical?}
-    
-    Privacy -->|Yes| Local[💻 WebLLM Local]
-    Privacy -->|No| Speed{Need Speed?}
-    
-    Speed -->|Yes| Fast[⚡ Claude Haiku / GPT-3.5]
-    Speed -->|No| Quality{Need Best Quality?}
-    
-    Quality -->|Yes| Best[🧠 Claude Opus / GPT-4o]
-    Quality -->|No| Balanced[⚖️ Claude Sonnet]
-    
-    Local --> Qwen[Qwen 2.5 3B ⭐]
-    
-    style Local fill:#10b981,stroke:#059669,color:#fff
-    style Best fill:#8b5cf6,stroke:#7c3aed,color:#fff
-```
-
-### Model Comparison
-
-| Model | Speed | Quality | Privacy | Cost |
-|-------|-------|---------|---------|------|
-| **Claude Opus** | 🐢 | ⭐⭐⭐⭐⭐ | ☁️ Cloud | $$$ |
-| **Claude Sonnet** | 🐇 | ⭐⭐⭐⭐ | ☁️ Cloud | $$ |
-| **Claude Haiku** | 🚀 | ⭐⭐⭐ | ☁️ Cloud | $ |
-| **GPT-4o** | 🐇 | ⭐⭐⭐⭐ | ☁️ Cloud | $$ |
-| **WebLLM Qwen 3B** | 🐇 | ⭐⭐⭐ | 🔒 Local | Free |
-| **WebLLM Qwen 1.5B** | 🚀 | ⭐⭐ | 🔒 Local | Free |
+### Multi-Agent (agi.html only)
+- `use_agent` — Spawn sub-agents
+- `invoke_agent` — Call agent, wait for response
+- `broadcast_to_agents` — Message all agents
+- `scheduler` — Cron-based recurring tasks
 
 ---
 
-## Real Examples
+## Ambient Mode
 
-### Example 1: Email Assistant
+Agent thinks while you're away.
 
-```mermaid
-sequenceDiagram
-    participant You
-    participant Agent
-    participant Google
-    participant Notification
-    
-    You->>Agent: "Every 9am, check Gmail for urgent emails"
-    Agent->>Agent: Create scheduled task
-    
-    Note over Agent: Next morning, 9:00 AM
-    
-    Agent->>Google: Fetch unread emails
-    Google-->>Agent: 5 emails found
-    Agent->>Agent: Analyze urgency
-    Agent->>Notification: 🔔 "2 urgent emails"
-    Notification-->>You: Push notification
-```
+| Mode | Trigger | Behavior |
+|------|---------|----------|
+| 🌙 **Standard** | 30s idle | Runs 3 iterations, then pauses |
+| 🚀 **Autonomous** | Click button | Runs until `[AMBIENT_DONE]` or stopped |
 
-### Example 2: Research Team
-
-```mermaid
-sequenceDiagram
-    participant You
-    participant Main
-    participant Researcher
-    participant Writer
-    participant Ring as Ring Buffer
-    
-    You->>Main: "Research AI safety, write report"
-    Main->>Researcher: Spawn + "Find papers"
-    Main->>Writer: Spawn + "Wait for research"
-    
-    Researcher->>Ring: Papers found
-    Note over Ring: Context shared
-    Ring-->>Writer: Sees research
-    
-    Writer->>Main: Draft report
-    Main-->>You: Final report
-```
-
-### Example 3: Custom Tool Creation
-
-```
-You: "Create a tool that gets cryptocurrency prices"
-
-Agent thinks: I'll use the CoinGecko API...
-
-Agent creates:
-┌─────────────────────────────────────┐
-│ Tool: crypto_price                  │
-│ Input: { coin: "bitcoin" }          │
-│ Output: { price: 45000, change: 2%} │
-└─────────────────────────────────────┘
-
-Tool saved to localStorage ✓
-
-You: "What's the crypto_price of ethereum?"
-Agent: "Ethereum is $3,421 (+1.5% today)"
-```
+**How it works:** You ask about quantum computing, go make coffee. Agent explores applications, recent breakthroughs, industry adoption. When you return, those findings auto-inject into your next message.
 
 ---
 
-## Architecture
+## Privacy & Security
 
-```mermaid
-graph TB
-    subgraph Browser["🌐 Your Browser"]
-        subgraph App["agi.diy"]
-            UI[Chat Interface]
-            Agent[Strands Agent]
-            Tools[Tool Engine]
-            Storage[(localStorage)]
-        end
-        
-        subgraph Models["Model Providers"]
-            Anthropic[Anthropic API]
-            OpenAI[OpenAI API]
-            Bedrock[AWS Bedrock]
-            WebLLM[WebLLM Local]
-        end
-    end
-    
-    UI <--> Agent
-    Agent <--> Tools
-    Agent <--> Storage
-    Agent <--> Models
-    
-    style Browser fill:#1e1e2e,stroke:#45475a,color:#cdd6f4
-    style App fill:#313244,stroke:#45475a,color:#cdd6f4
-```
+**Your data never leaves your browser** (except queries to your chosen AI provider).
 
-**Key insight:** Everything happens in your browser. The only external calls are to the AI provider you choose (or none, with WebLLM).
+| What | Where it's stored |
+|------|-------------------|
+| API Keys | localStorage (never transmitted) |
+| Conversations | localStorage |
+| Custom Tools | localStorage |
+| Settings Sync | AES-256-GCM encrypted |
+
+**With WebLLM:** Zero external calls. Everything runs on your GPU.
 
 ---
 
-## Privacy Model
+## Install as PWA
 
-```mermaid
-flowchart LR
-    subgraph Your Device
-        Browser[🌐 Browser]
-        Keys[🔑 API Keys]
-        Data[💾 Your Data]
-        Tools[🛠️ Custom Tools]
-    end
-    
-    subgraph External
-        AI[☁️ AI Provider]
-    end
-    
-    Browser -->|Queries only| AI
-    AI -->|Responses only| Browser
-    
-    Keys -.->|Never sent| External
-    Data -.->|Never sent| External
-    Tools -.->|Never sent| External
-    
-    style External fill:#ef4444,stroke:#dc2626,color:#fff
-    style Your Device fill:#10b981,stroke:#059669,color:#fff
-```
+| Platform | Steps |
+|----------|-------|
+| **iOS** | Safari → Share → Add to Home Screen |
+| **Android** | Chrome → Menu → Install app |
+| **Desktop** | Click install icon in URL bar |
 
-| What | Where it stays |
-|------|----------------|
-| API Keys | Your browser's localStorage |
-| Conversations | Your browser's localStorage |
-| Custom Tools | Your browser's localStorage |
-| Settings | Your browser's localStorage |
+**Features:** Home screen icon, background notifications, offline support, settings sync between devices.
 
-**With WebLLM:** Even queries stay local. Zero external calls.
+### Sync Settings
+
+1. Settings → Sync → Enter password
+2. Copy encrypted URL
+3. On other device: paste URL, enter password
+4. All settings transfer securely
 
 ---
 
-## Installation
+## Configuration
 
-```mermaid
-flowchart TD
-    Platform{What device?}
-    
-    Platform -->|iPhone/iPad| iOS[Safari → Share → Add to Home Screen]
-    Platform -->|Android| Android[Chrome → Menu → Install App]
-    Platform -->|Desktop| Desktop[Click install icon in URL bar]
-    
-    iOS --> PWA[📱 PWA Installed]
-    Android --> PWA
-    Desktop --> PWA
-    
-    PWA --> Features[✅ Home icon<br/>✅ Offline support<br/>✅ Push notifications]
-```
-
-### Sync Between Devices
-
-```mermaid
-sequenceDiagram
-    participant Phone
-    participant Desktop
-    
-    Desktop->>Desktop: Settings → Sync → Set password
-    Desktop->>Desktop: Generate encrypted URL
-    Desktop-->>Phone: Copy URL (any method)
-    Phone->>Phone: Paste URL + Enter password
-    Phone->>Phone: All settings imported ✓
-    
-    Note over Phone,Desktop: Uses AES-256-GCM encryption
-```
-
----
-
-## Configuration Cheat Sheet
-
-### API Keys
-| Provider | Where to get |
-|----------|--------------|
-| Anthropic | [console.anthropic.com](https://console.anthropic.com) |
-| OpenAI | [platform.openai.com](https://platform.openai.com) |
-| Bedrock | [AWS Console](https://console.aws.amazon.com/bedrock) → API Keys |
+### Get API Keys
+- **Anthropic:** [console.anthropic.com](https://console.anthropic.com)
+- **OpenAI:** [platform.openai.com](https://platform.openai.com)
+- **Bedrock:** [AWS Console](https://console.aws.amazon.com/bedrock) → API Keys
 
 ### Extended Thinking (Bedrock)
+Paste in Settings → API → Additional Request Fields:
 ```json
 {
-  "thinking": { 
-    "type": "enabled", 
-    "budget_tokens": 10000 
-  }
+  "thinking": { "type": "enabled", "budget_tokens": 10000 }
 }
 ```
 
-### Google OAuth Setup
-```mermaid
-flowchart LR
-    A[Cloud Console] --> B[Create OAuth Client]
-    B --> C[Add origin: agi.diy]
-    C --> D[Copy Client ID]
-    D --> E[Paste in Settings]
+### Google OAuth
+1. [Cloud Console](https://console.cloud.google.com/apis/credentials) → Create OAuth Client
+2. Add authorized origin: `https://agi.diy`
+3. Settings → Google → Paste Client ID
+
+### URL Shortcuts
 ```
+https://agi.diy/?q=what+time+is+it
+```
+Great for iOS Shortcuts—one tap to query.
 
 ---
 
-## Console Commands
+## Console API
 
 ```javascript
-// Quick reference
-agi.agent           // Get agent instance
-agi.clear()         // Clear conversation
-agi.tools.list()    // See your custom tools
-agi.tools.delete(x) // Remove a tool
+agi.agent              // Agent instance
+agi.clear()            // Clear conversation
+agi.tools.list()       // List custom tools
+agi.tools.delete(name) // Remove tool
 
-// Context
-agiContext.getContext()      // What agent knows about you
+agiContext.getContext()      // All context data
 agiContext.scanBluetooth()   // Find nearby devices
 ```
 
@@ -462,31 +283,27 @@ agiContext.scanBluetooth()   // Find nearby devices
 
 ## Troubleshooting
 
-```mermaid
-flowchart TD
-    Problem{What's wrong?}
-    
-    Problem -->|No response| Key[Check API key in Settings]
-    Problem -->|WebLLM won't load| GPU[Use Chrome/Edge 113+]
-    Problem -->|Model stuck| Refresh[Refresh the page]
-    Problem -->|No notifications| Perms[Enable in browser settings]
-    Problem -->|Screen capture fails| Allow[Allow permission when prompted]
-```
+| Issue | Solution |
+|-------|----------|
+| No response | Settings → Check API key |
+| WebLLM won't load | Use Chrome/Edge 113+ |
+| Model download stuck | Refresh page |
+| Screen capture denied | Allow browser permission |
+| No notifications | Enable in browser settings |
 
 ---
 
-## File Structure
+## Project Structure
 
 ```
 docs/
 ├── index.html      # Single agent mode
 ├── agi.html        # Multi-agent mode
-├── strands.js      # Strands SDK
+├── strands.js      # Strands SDK bundle
 ├── vision.js       # Screen capture, ambient mode
 ├── webllm.js       # Local model inference
 ├── map.js          # Google Maps integration
-├── tools/
-│   └── google.js   # Gmail, Drive, Calendar
+├── tools/google.js # Google API tools
 ├── sw.js           # Service worker (PWA)
 └── manifest.json   # PWA config
 ```
@@ -495,25 +312,24 @@ docs/
 
 ## Contributing
 
-```mermaid
-flowchart LR
-    A[Your idea] --> B{Type?}
-    B -->|New tool| C[✅ Welcome!]
-    B -->|Bug fix| C
-    B -->|New provider| C
-    B -->|Add framework| D[❌ Keep it simple]
-    B -->|Build system| D
-```
+PRs welcome for:
+- ✅ New tools
+- ✅ Model providers
+- ✅ Bug fixes
+- ❌ Build systems
+- ❌ Framework dependencies
+
+The project is intentionally minimal—single HTML files, no build step, fully auditable.
 
 ---
 
 ## License
 
-Apache 2.0 - Do whatever you want, just include the license.
+Apache 2.0
 
 ---
 
 <p align="center">
-Built with <a href="https://github.com/strands-agents/sdk-typescript">Strands Agents SDK</a><br/>
-<strong><a href="https://agi.diy">agi.diy</a></strong>
+Built with <a href="https://github.com/strands-agents/sdk-typescript">Strands Agents SDK</a><br>
+<a href="https://agi.diy"><strong>agi.diy</strong></a>
 </p>
