@@ -2387,10 +2387,28 @@ ${getRingContext()}`;
     
     let streamingEl = null;
     
+    // Message queue per agent to handle concurrent requests
+    const messageQueues = new Map();
+    
     async function runAgentMessage(agentId, message) {
         const agentData = state.agents.get(agentId);
         if (!agentData) return;
         
+        // Initialize queue for this agent if needed
+        if (!messageQueues.has(agentId)) {
+            messageQueues.set(agentId, { processing: false, queue: [] });
+        }
+        const queueData = messageQueues.get(agentId);
+        
+        // If already processing, queue the message
+        if (queueData.processing) {
+            queueData.queue.push(message);
+            showToast(`Message queued (${queueData.queue.length} pending)`);
+            console.log(`Agent ${agentId} busy, queued message. Queue size: ${queueData.queue.length}`);
+            return;
+        }
+        
+        queueData.processing = true;
         agentData.status = 'processing';
         updateAgentUI();
         
@@ -2448,6 +2466,18 @@ ${getRingContext()}`;
         
         updateAgentUI();
         saveState();
+        
+        // Process next queued message if any
+        const queueData = messageQueues.get(agentId);
+        if (queueData) {
+            queueData.processing = false;
+            if (queueData.queue.length > 0) {
+                const nextMessage = queueData.queue.shift();
+                console.log(`Processing queued message for ${agentId}. Remaining: ${queueData.queue.length}`);
+                // Use setTimeout to prevent stack overflow on long queues
+                setTimeout(() => runAgentMessage(agentId, nextMessage), 100);
+            }
+        }
     }
     
     window.sendMessage = async function() {
