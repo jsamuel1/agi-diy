@@ -985,6 +985,7 @@
                             <polyline points="12 5 19 12 12 19"></polyline>
                         </svg>
                     </button>
+                    <button class="send-btn" id="interruptBtn" title="Send as interrupt (inject into running agent)" onclick="sendInterrupt()" style="background:var(--warning);display:none;">⚡</button>
                 </div>
             </div>
         </main>
@@ -1318,7 +1319,7 @@
     </script>
 
     <script type="module">
-    import { Agent, tool, Model, z } from './strands.js';
+    import { Agent, tool, Model, z, BeforeModelCallEvent, AfterInvocationEvent, SlidingWindowConversationManager } from './strands.js';
     
     // ═══════════════════════════════════════════════════════════════════════════
     // STATE
@@ -3127,6 +3128,115 @@ Example - create a tool that gets weather:
         callback: async (input) => { const all = getSandboxes(); if (!all[input.id]) return { error: 'Not found' }; delete all[input.id]; saveSandboxes(all); return { deleted: input.id }; }
     });
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 3: SYNCHRONOUS AGENT DELEGATION
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const delegateToAgentTool = tool({
+        name: 'delegate_to_agent',
+        description: 'Delegate a task to a child agent. Creates a temporary agent that runs to completion and returns the result. Use for subtasks like research, coding, analysis. The child agent has the same tools as the parent.',
+        inputSchema: z.object({
+            task: z.string().describe('The task/prompt for the child agent'),
+            systemPrompt: z.string().optional().describe('Optional system prompt override for the child'),
+            provider: z.string().optional().describe('Model provider override (anthropic/openai/bedrock)')
+        }),
+        callback: async (input) => {
+            const parentId = state.activeAgentId || 'main';
+            const parentData = state.agents.get(parentId);
+            if (!parentData) return { error: 'No active agent context' };
+            const childId = `${parentId}-child-${Date.now().toString(36)}`;
+            addMessageToUI('system', `⏳ Delegating to child agent: ${childId}`, parentId, parentData.color);
+            try {
+                const model = createModel(input.provider || parentData.config.provider, {
+                    modelId: parentData.config.modelId,
+                    maxTokens: parentData.config.maxTokens || DEFAULT_MAX_TOKENS,
+                    additionalRequestFields: parentData.config.additionalRequestFields || null
+                });
+                const customTools = buildCustomTools();
+                const childAgent = new Agent({
+                    model,
+                    tools: [...TOOLS, ...customTools],
+                    systemPrompt: input.systemPrompt || `You are a focused sub-agent. Complete the given task concisely and return the result.`,
+                    printer: false
+                });
+                const result = await childAgent(input.task);
+                const text = typeof result === 'string' ? result : (result?.message?.content?.[0]?.text || JSON.stringify(result));
+                addMessageToUI('assistant', `✅ Child ${childId} result:\n${text}`, parentId, parentData.color);
+                return { childId, result: text };
+            } catch (e) {
+                addMessageToUI('error', `❌ Child ${childId} failed: ${e.message}`, parentId, parentData.color);
+                return { error: e.message };
+            }
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 4: MID-EXECUTION INTERRUPT HOOK
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const interruptQueues = new Map(); // agentId -> [message strings]
+
+    function queueInterrupt(agentId, message) {
+        if (!interruptQueues.has(agentId)) interruptQueues.set(agentId, []);
+        interruptQueues.get(agentId).push(message);
+    }
+
+    class InterruptHook {
+        registerCallbacks(registry) {
+            registry.addCallback(BeforeModelCallEvent, (event) => {
+                const agentId = state.activeAgentId || 'main';
+                const queue = interruptQueues.get(agentId);
+                if (queue?.length) {
+                    const msgs = queue.splice(0);
+                    const injected = msgs.map(m => `[USER INTERRUPT]: ${m}`).join('\n');
+                    event.agent.messages.push({ role: 'user', content: [{ type: 'textBlock', text: injected }] });
+                    addMessageToUI('system', `💬 Interrupt injected: ${msgs.length} message(s)`, agentId);
+                }
+            });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PHASE 5: CONVERSATION SUMMARIZATION
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    class SummarizingManager {
+        constructor({ windowSize = 40, summarizeAfter = 30 } = {}) {
+            this.inner = new SlidingWindowConversationManager({ windowSize });
+            this.summarizeAfter = summarizeAfter;
+            this.summaries = new Map(); // agentId -> summary string
+        }
+        registerCallbacks(registry) {
+            this.inner.registerCallbacks(registry);
+            registry.addCallback(AfterInvocationEvent, async (event) => {
+                const msgs = event.agent.messages;
+                if (msgs.length < this.summarizeAfter) return;
+                const agentId = state.activeAgentId || 'main';
+                // Build summary from first half of messages
+                const half = Math.floor(msgs.length / 2);
+                const toSummarize = msgs.slice(0, half);
+                const texts = toSummarize.map(m => {
+                    const c = m.content || m;
+                    if (typeof c === 'string') return c;
+                    if (Array.isArray(c)) return c.map(b => b.text || '').join(' ');
+                    return '';
+                }).filter(Boolean).join('\n');
+                if (texts.length < 200) return;
+                const summary = `[CONVERSATION SUMMARY]: ${texts.slice(0, 2000)}...`;
+                this.summaries.set(agentId, summary);
+                // Replace first half with summary message
+                const kept = msgs.slice(half);
+                event.agent.messages.length = 0;
+                event.agent.messages.push({ role: 'user', content: [{ type: 'textBlock', text: summary }] });
+                kept.forEach(m => event.agent.messages.push(m));
+                console.log(`Summarized ${half} messages for ${agentId}, kept ${kept.length}`);
+            });
+        }
+    }
+
+    // Make interrupt queue accessible for UI
+    window.queueInterrupt = queueInterrupt;
+
     const TOOLS = [
         // Core
         renderUiTool, javascriptEvalTool, storageGetTool, storageSetTool, fetchUrlTool, notifyTool,
@@ -3139,7 +3249,9 @@ Example - create a tool that gets weather:
         // Pipeline
         createPipelineTool, readPipelineTool, addTaskTool, updateTaskStatusTool, updateTaskDepsTool, completePipelineTool, emitStatusTool,
         // Sandbox
-        sandboxCreateTool, sandboxUpdateTool, sandboxReadTool, sandboxListTool, sandboxDeleteTool
+        sandboxCreateTool, sandboxUpdateTool, sandboxReadTool, sandboxListTool, sandboxDeleteTool,
+        // Delegation
+        delegateToAgentTool
     ];
     
     // ═══════════════════════════════════════════════════════════════════════════
@@ -3450,7 +3562,9 @@ ${getRingContext()}`;
                 model,
                 tools: allTools,
                 systemPrompt: buildSystemPrompt(agentId, agentData.config.systemPrompt),
-                printer: false
+                printer: false,
+                conversationManager: new SummarizingManager(),
+                hooks: [new InterruptHook()]
             });
             
             // Inject conversation history from this agent's messages
@@ -3515,9 +3629,11 @@ ${getRingContext()}`;
             updateRingUI();
             
             agentData.status = 'ready';
+            document.getElementById('interruptBtn').style.display = 'none';
         } catch (e) {
             console.error(`Agent ${agentId} error:`, e);
             agentData.status = 'error';
+            document.getElementById('interruptBtn').style.display = 'none';
             
             if (shouldShow) {
                 removeThinking();
@@ -3533,6 +3649,7 @@ ${getRingContext()}`;
         const input = document.getElementById('inputField');
         const text = input.value.trim();
         if (!text) return;
+        document.getElementById('interruptBtn').style.display = 'inline-flex';
         
         const target = document.getElementById('targetAgent').value;
         
@@ -3595,6 +3712,16 @@ ${getRingContext()}`;
         }
     };
     
+    window.sendInterrupt = function() {
+        const input = document.getElementById('inputField');
+        const text = input.value.trim();
+        if (!text) return;
+        const agentId = state.activeAgentId || 'main';
+        queueInterrupt(agentId, text);
+        addMessageToUI('user', `⚡ [Interrupt]: ${text}`, agentId);
+        input.value = '';
+    };
+
     window.handleKeyDown = function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
