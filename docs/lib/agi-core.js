@@ -321,11 +321,11 @@ class AGICore {
       worker,
       config: {
         id: agentId,
-        model: config.model || 'anthropic',
-        modelId: config.modelId,
+        model: config.model || 'bedrock',
+        modelId: config.modelId || 'global.anthropic.claude-opus-4-6-v1',
         systemPrompt: config.systemPrompt || 'You are a helpful assistant.',
         tools: config.tools || [],
-        maxTokens: config.maxTokens || 4096,
+        maxTokens: config.maxTokens || 60000,
         temperature: config.temperature || 1.0,
         apiKey
       },
