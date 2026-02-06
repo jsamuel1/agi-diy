@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>AGI.diy - Multi-Agent</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="icon-192.svg">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #2a2a2a;
+      --text-primary: #ffffff;
+      --text-secondary: #888888;
+      --accent: #00ff88;
+      --accent-dim: #00aa66;
+      --danger: #ff4444;
+      --warning: #ffaa00;
+      --border: #333333;
+      --agent-1: #00ff88;
+      --agent-2: #00aaff;
+      --agent-3: #ff88ff;
+      --agent-4: #ffaa00;
+      --agent-5: #ff6666;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    
+    /* ============================================
+       LAYOUT
+    ============================================ */
+    .app {
+      display: grid;
+      grid-template-columns: 280px 1fr 300px;
+      grid-template-rows: 60px 1fr 80px;
+      height: 100vh;
+    }
+    
+    @media (max-width: 1024px) {
+      .app {
+        grid-template-columns: 1fr;
+        grid-template-rows: 50px 1fr 80px;
+      }
+      .sidebar, .context-panel { display: none; }
+    }
+    
+    /* ============================================
+       HEADER
+    ============================================ */
+    .header {
+      grid-column: 1 / -1;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+    
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    
+    .logo span {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .header-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    
+    .header-btn:hover {
+      background: var(--bg-secondary);
+      border-color: var(--accent);
+    }
+    
+    .header-btn.primary {
+      background: var(--accent);
+      color: var(--bg-primary);
+      border-color: var(--accent);
+    }
+    
+    /* ============================================
+       SIDEBAR (Agent List)
+    ============================================ */
+    .sidebar {
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 16px;
+    }
+    
+    .sidebar-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+    
+    .agent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .agent-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .agent-card:hover {
+      border-color: var(--accent-dim);
+    }
+    
+    .agent-card.active {
+      border-color: var(--accent);
+      background: rgba(0, 255, 136, 0.1);
+    }
+    
+    .agent-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .agent-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--agent-1);
+    }
+    
+    .agent-card:nth-child(2) .agent-indicator { background: var(--agent-2); }
+    .agent-card:nth-child(3) .agent-indicator { background: var(--agent-3); }
+    .agent-card:nth-child(4) .agent-indicator { background: var(--agent-4); }
+    .agent-card:nth-child(5) .agent-indicator { background: var(--agent-5); }
+    
+    .agent-name {
+      font-weight: 600;
+      font-size: 14px;
+      flex: 1;
+    }
+    
+    .agent-status {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+    
+    .agent-status.processing {
+      background: var(--warning);
+    }
+    
+    .agent-status.error {
+      background: var(--danger);
+    }
+    
+    .agent-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    
+    .spawn-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      background: transparent;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .spawn-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    
+    /* ============================================
+       MAIN CHAT AREA
+    ============================================ */
+    .main {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    
+    .messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      animation: fadeIn 0.2s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .message.user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+    
+    .message.assistant {
+      align-self: flex-start;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+    }
+    
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+    
+    .message-agent {
+      font-weight: 600;
+      color: var(--agent-1);
+    }
+    
+    .message-time {
+      color: var(--text-secondary);
+    }
+    
+    .message-content {
+      font-size: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    
+    .message-content code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'SF Mono', monospace;
+      font-size: 13px;
+    }
+    
+    .message-content pre {
+      background: var(--bg-primary);
+      padding: 12px;
+      border-radius: 8px;
+      margin: 8px 0;
+      overflow-x: auto;
+    }
+    
+    .message.streaming .message-content::after {
+      content: '▌';
+      animation: blink 0.8s infinite;
+    }
+    
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+    
+    /* ============================================
+       INPUT AREA
+    ============================================ */
+    .input-area {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      gap: 12px;
+    }
+    
+    .input-target {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+    
+    .input-target select {
+      background: transparent;
+      border: none;
+      color: var(--accent);
+      font-size: 13px;
+      cursor: pointer;
+      outline: none;
+    }
+    
+    .input-wrapper {
+      flex: 1;
+      display: flex;
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    
+    .input-wrapper:focus-within {
+      border-color: var(--accent);
+    }
+    
+    .chat-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+      resize: none;
+    }
+    
+    .send-btn {
+      background: var(--accent);
+      border: none;
+      padding: 12px 20px;
+      color: var(--bg-primary);
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .send-btn:hover {
+      background: var(--accent-dim);
+    }
+    
+    .send-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    /* ============================================
+       CONTEXT PANEL (Ring Attention)
+    ============================================ */
+    .context-panel {
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 16px;
+    }
+    
+    .context-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .ring-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .context-entries {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .context-entry {
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 12px;
+    }
+    
+    .context-entry-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    
+    .context-entry-agent {
+      color: var(--agent-1);
+      font-weight: 600;
+    }
+    
+    .context-entry-time {
+      color: var(--text-secondary);
+    }
+    
+    .context-entry-content {
+      color: var(--text-secondary);
+      line-height: 1.4;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+    }
+    
+    /* ============================================
+       MODALS
+    ============================================ */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+    }
+    
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 80vh;
+      overflow-y: auto;
+      transform: scale(0.9);
+      transition: transform 0.3s;
+    }
+    
+    .modal-overlay.active .modal {
+      transform: scale(1);
+    }
+    
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .modal-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    
+    .modal-body {
+      padding: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    
+    .form-input {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+    
+    .form-input:focus {
+      border-color: var(--accent);
+    }
+    
+    .form-input.textarea {
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+    
+    .form-select {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+    }
+    
+    .modal-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      border: none;
+      color: var(--bg-primary);
+    }
+    
+    .btn-primary:hover {
+      background: var(--accent-dim);
+    }
+    
+    .btn-danger {
+      background: var(--danger);
+      border: none;
+      color: white;
+    }
+    
+    /* ============================================
+       SETTINGS PANEL
+    ============================================ */
+    .settings-section {
+      margin-bottom: 24px;
+    }
+    
+    .settings-section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+    
+    .credential-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .credential-provider {
+      font-weight: 500;
+      flex: 1;
+    }
+    
+    .credential-status {
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: var(--accent);
+      color: var(--bg-primary);
+    }
+    
+    .credential-status.missing {
+      background: var(--border);
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">AGI<span>.diy</span> Multi-Agent</div>
+      <div class="header-actions">
+        <button class="header-btn" onclick="showSettings()">⚙️ Settings</button>
+        <button class="header-btn" onclick="exportState()">📦 Export</button>
+        <button class="header-btn primary" onclick="broadcastMessage()">📢 Broadcast</button>
+      </div>
+    </header>
+    
+    <!-- Sidebar: Agent List -->
+    <aside class="sidebar">
+      <div class="sidebar-title">🤖 Agents</div>
+      <div class="agent-list" id="agent-list">
+        <!-- Agents populated dynamically -->
+      </div>
+      <button class="spawn-btn" onclick="showSpawnModal()">+ Spawn New Agent</button>
+    </aside>
+    
+    <!-- Main Chat Area -->
+    <main class="main">
+      <div class="messages" id="messages">
+        <div style="text-align: center; color: var(--text-secondary); margin-top: 40vh;">
+          <div style="font-size: 48px; margin-bottom: 16px;">🦆</div>
+          <div>Spawn an agent to get started</div>
+        </div>
+      </div>
+    </main>
+    
+    <!-- Input Area -->
+    <div class="input-area" style="grid-column: 2;">
+      <div class="input-target">
+        <span>To:</span>
+        <select id="target-agent">
+          <option value="all">All Agents</option>
+        </select>
+      </div>
+      <div class="input-wrapper">
+        <textarea 
+          class="chat-input" 
+          id="chat-input" 
+          placeholder="Type your message..."
+          rows="1"
+          onkeydown="handleKeyDown(event)"
+        ></textarea>
+        <button class="send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+    
+    <!-- Context Panel: Ring Attention -->
+    <aside class="context-panel">
+      <div class="context-title">
+        <span class="ring-indicator"></span>
+        Ring Context
+      </div>
+      <div class="context-entries" id="context-entries">
+        <!-- Context entries populated dynamically -->
+      </div>
+    </aside>
+  </div>
+  
+  <!-- Spawn Agent Modal -->
+  <div class="modal-overlay" id="spawn-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Spawn New Agent</h2>
+        <button class="modal-close" onclick="closeModal('spawn-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Agent ID</label>
+          <input type="text" class="form-input" id="spawn-id" placeholder="e.g., researcher, coder, analyst">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model Provider</label>
+          <select class="form-select" id="spawn-model">
+            <option value="anthropic">Anthropic (Claude)</option>
+            <option value="openai">OpenAI (GPT)</option>
+            <option value="bedrock">AWS Bedrock</option>
+            <option value="webllm">WebLLM (Local)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model ID</label>
+          <input type="text" class="form-input" id="spawn-model-id" placeholder="e.g., claude-sonnet-4-20250514">
+        </div>
+        <div class="form-group">
+          <label class="form-label">System Prompt</label>
+          <textarea class="form-input textarea" id="spawn-prompt" placeholder="You are a helpful assistant specialized in..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Tokens</label>
+          <input type="number" class="form-input" id="spawn-max-tokens" value="4096">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('spawn-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="spawnAgent()">Spawn Agent</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Settings</h2>
+        <button class="modal-close" onclick="closeModal('settings-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <div class="settings-section-title">🔑 API Credentials</div>
+          <div id="credentials-list">
+            <!-- Credentials populated dynamically -->
+          </div>
+          <button class="btn btn-secondary" style="width: 100%; margin-top: 8px;" onclick="addCredential()">
+            + Add Credential
+          </button>
+        </div>
+        
+        <div class="settings-section">
+          <div class="settings-section-title">🔐 Security</div>
+          <button class="btn btn-secondary" style="width: 100%;" onclick="setupBiometrics()">
+            Setup Biometric Authentication
+          </button>
+        </div>
+        
+        <div class="settings-section">
+          <div class="settings-section-title">💾 Data</div>
+          <button class="btn btn-secondary" style="width: 100%; margin-bottom: 8px;" onclick="clearAllData()">
+            Clear All Data
+          </button>
+          <button class="btn btn-secondary" style="width: 100%;" onclick="importState()">
+            Import State
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add Credential Modal -->
+  <div class="modal-overlay" id="credential-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Add API Credential</h2>
+        <button class="modal-close" onclick="closeModal('credential-modal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Provider</label>
+          <select class="form-select" id="cred-provider">
+            <option value="anthropic">Anthropic</option>
+            <option value="openai">OpenAI</option>
+            <option value="bedrock">AWS Bedrock</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" class="form-input" id="cred-api-key" placeholder="sk-...">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('credential-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveCredential()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="lib/agi-core.js"></script>
+  <script>
+    // ============================================
+    // STATE
+    // ============================================
+    let activeAgentId = null;
+    const agentColors = ['#00ff88', '#00aaff', '#ff88ff', '#ffaa00', '#ff6666'];
+    let colorIndex = 0;
+    
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    async function init() {
+      try {
+        // Initialize AGI core
+        await window.agi.init();
+        
+        // Set up event handlers
+        setupEventHandlers();
+        
+        // Render initial state
+        renderAgentList();
+        renderContext();
+        
+        console.log('[UI] Initialized');
+      } catch (error) {
+        console.error('[UI] Init error:', error);
+        alert('Failed to initialize: ' + error.message);
+      }
+    }
+    
+    function setupEventHandlers() {
+      // Agent events
+      agi.on('agent_spawned', (data) => {
+        renderAgentList();
+        updateTargetSelect();
+        showNotification(`Agent ${data.agentId} spawned`);
+      });
+      
+      agi.on('agent_ready', (data) => {
+        updateAgentStatus(data.agentId, 'ready');
+      });
+      
+      agi.on('agent_killed', (data) => {
+        renderAgentList();
+        updateTargetSelect();
+        if (activeAgentId === data.agentId) {
+          activeAgentId = null;
+        }
+        showNotification(`Agent ${data.agentId} terminated`);
+      });
+      
+      agi.on('agent_error', (data) => {
+        updateAgentStatus(data.agentId, 'error');
+        showNotification(`Error in ${data.agentId}: ${data.error}`, 'error');
+      });
+      
+      // Message events
+      agi.on('message_start', (data) => {
+        updateAgentStatus(data.agentId, 'processing');
+      });
+      
+      agi.on('chunk', (data) => {
+        appendChunk(data.agentId, data.messageId, data.chunk);
+      });
+      
+      agi.on('message_done', (data) => {
+        updateAgentStatus(data.agentId, 'ready');
+        finalizeMessage(data.agentId, data.messageId, data.response);
+      });
+      
+      // Ring context events
+      agi.on('ring_update', (data) => {
+        renderContext();
+      });
+    }
+    
+    // ============================================
+    // AGENT MANAGEMENT
+    // ============================================
+    function showSpawnModal() {
+      document.getElementById('spawn-modal').classList.add('active');
+      document.getElementById('spawn-id').focus();
+    }
+    
+    async function spawnAgent() {
+      const id = document.getElementById('spawn-id').value.trim();
+      const model = document.getElementById('spawn-model').value;
+      const modelId = document.getElementById('spawn-model-id').value.trim();
+      const systemPrompt = document.getElementById('spawn-prompt').value.trim();
+      const maxTokens = parseInt(document.getElementById('spawn-max-tokens').value) || 4096;
+      
+      if (!id) {
+        alert('Please enter an agent ID');
+        return;
+      }
+      
+      try {
+        await agi.spawn(id, {
+          model,
+          modelId: modelId || undefined,
+          systemPrompt: systemPrompt || 'You are a helpful assistant.',
+          maxTokens
+        });
+        
+        closeModal('spawn-modal');
+        
+        // Clear form
+        document.getElementById('spawn-id').value = '';
+        document.getElementById('spawn-model-id').value = '';
+        document.getElementById('spawn-prompt').value = '';
+        
+        // Select the new agent
+        selectAgent(id);
+        
+      } catch (error) {
+        alert('Failed to spawn agent: ' + error.message);
+      }
+    }
+    
+    function selectAgent(agentId) {
+      activeAgentId = agentId;
+      renderAgentList();
+      renderMessages();
+    }
+    
+    async function killAgent(agentId, event) {
+      event.stopPropagation();
+      
+      if (!confirm(`Are you sure you want to terminate ${agentId}?`)) {
+        return;
+      }
+      
+      await agi.kill(agentId);
+    }
+    
+    function renderAgentList() {
+      const list = document.getElementById('agent-list');
+      const agents = Array.from(agi.agents.entries());
+      
+      if (agents.length === 0) {
+        list.innerHTML = '<div style="color: var(--text-secondary); font-size: 13px; text-align: center; padding: 20px;">No agents yet</div>';
+        return;
+      }
+      
+      list.innerHTML = agents.map(([id, agent], index) => `
+        <div class="agent-card ${id === activeAgentId ? 'active' : ''}" onclick="selectAgent('${id}')">
+          <div class="agent-card-header">
+            <span class="agent-indicator" style="background: ${agentColors[index % agentColors.length]}"></span>
+            <span class="agent-name">${id}</span>
+            <span class="agent-status ${agent.status}">${agent.status}</span>
+          </div>
+          <div class="agent-meta">
+            ${agent.config.model} • ${agent.messages.length} msgs
+            <button onclick="killAgent('${id}', event)" style="float: right; background: none; border: none; color: var(--danger); cursor: pointer;">×</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function updateAgentStatus(agentId, status) {
+      const agent = agi.agents.get(agentId);
+      if (agent) {
+        agent.status = status;
+        renderAgentList();
+      }
+    }
+    
+    function updateTargetSelect() {
+      const select = document.getElementById('target-agent');
+      const agents = Array.from(agi.agents.keys());
+      
+      select.innerHTML = '<option value="all">All Agents</option>' +
+        agents.map(id => `<option value="${id}">${id}</option>`).join('');
+    }
+    
+    // ============================================
+    // MESSAGING
+    // ============================================
+    const streamingMessages = new Map(); // messageId -> DOM element
+    
+    function handleKeyDown(event) {
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+      }
+    }
+    
+    function sendMessage() {
+      const input = document.getElementById('chat-input');
+      const content = input.value.trim();
+      const target = document.getElementById('target-agent').value;
+      
+      if (!content) return;
+      
+      if (agi.agents.size === 0) {
+        alert('Spawn an agent first');
+        return;
+      }
+      
+      // Add user message to UI
+      addMessageToUI({
+        role: 'user',
+        content,
+        agentId: target,
+        timestamp: Date.now()
+      });
+      
+      // Send to agent(s)
+      if (target === 'all') {
+        agi.broadcast(content);
+      } else {
+        agi.send(target, content);
+      }
+      
+      input.value = '';
+      input.style.height = 'auto';
+    }
+    
+    function broadcastMessage() {
+      const content = prompt('Broadcast message to all agents:');
+      if (content && content.trim()) {
+        addMessageToUI({
+          role: 'user',
+          content: content.trim(),
+          agentId: 'all',
+          timestamp: Date.now()
+        });
+        agi.broadcast(content.trim());
+      }
+    }
+    
+    function addMessageToUI(message) {
+      const container = document.getElementById('messages');
+      
+      // Remove placeholder if present
+      if (container.children.length === 1 && container.children[0].style.textAlign === 'center') {
+        container.innerHTML = '';
+      }
+      
+      const el = document.createElement('div');
+      el.className = `message ${message.role}`;
+      
+      const time = new Date(message.timestamp).toLocaleTimeString();
+      const agentLabel = message.agentId === 'all' ? 'All Agents' : message.agentId;
+      
+      el.innerHTML = `
+        <div class="message-header">
+          <span class="message-agent" style="color: ${getAgentColor(message.agentId)}">${agentLabel}</span>
+          <span class="message-time">${time}</span>
+        </div>
+        <div class="message-content">${escapeHtml(message.content)}</div>
+      `;
+      
+      container.appendChild(el);
+      container.scrollTop = container.scrollHeight;
+      
+      return el;
+    }
+    
+    function appendChunk(agentId, messageId, chunk) {
+      let el = streamingMessages.get(messageId);
+      
+      if (!el) {
+        // Create new message element
+        el = addMessageToUI({
+          role: 'assistant',
+          content: '',
+          agentId,
+          timestamp: Date.now()
+        });
+        el.classList.add('streaming');
+        streamingMessages.set(messageId, el);
+      }
+      
+      const contentEl = el.querySelector('.message-content');
+      contentEl.textContent += chunk;
+      
+      const container = document.getElementById('messages');
+      container.scrollTop = container.scrollHeight;
+    }
+    
+    function finalizeMessage(agentId, messageId, response) {
+      const el = streamingMessages.get(messageId);
+      
+      if (el) {
+        el.classList.remove('streaming');
+        const contentEl = el.querySelector('.message-content');
+        contentEl.innerHTML = formatMessageContent(response);
+        streamingMessages.delete(messageId);
+      }
+    }
+    
+    function renderMessages() {
+      const container = document.getElementById('messages');
+      
+      if (!activeAgentId) {
+        container.innerHTML = `
+          <div style="text-align: center; color: var(--text-secondary); margin-top: 40vh;">
+            <div style="font-size: 48px; margin-bottom: 16px;">🦆</div>
+            <div>Select an agent to view messages</div>
+          </div>
+        `;
+        return;
+      }
+      
+      const agent = agi.agents.get(activeAgentId);
+      if (!agent) return;
+      
+      container.innerHTML = '';
+      
+      for (const msg of agent.messages) {
+        addMessageToUI({
+          ...msg,
+          agentId: activeAgentId,
+          timestamp: msg.timestamp || Date.now()
+        });
+      }
+    }
+    
+    // ============================================
+    // RING CONTEXT
+    // ============================================
+    function renderContext() {
+      const container = document.getElementById('context-entries');
+      const context = agi.getContext(20);
+      
+      if (context.length === 0) {
+        container.innerHTML = '<div style="color: var(--text-secondary); font-size: 12px; text-align: center;">No context yet</div>';
+        return;
+      }
+      
+      container.innerHTML = context.reverse().map(entry => `
+        <div class="context-entry">
+          <div class="context-entry-header">
+            <span class="context-entry-agent" style="color: ${getAgentColor(entry.agentId)}">${entry.agentId}</span>
+            <span class="context-entry-time">${formatTime(entry.timestamp)}</span>
+          </div>
+          <div class="context-entry-content">${escapeHtml(entry.content)}</div>
+        </div>
+      `).join('');
+    }
+    
+    // ============================================
+    // SETTINGS & CREDENTIALS
+    // ============================================
+    function showSettings() {
+      renderCredentialsList();
+      document.getElementById('settings-modal').classList.add('active');
+    }
+    
+    function renderCredentialsList() {
+      const container = document.getElementById('credentials-list');
+      const providers = ['anthropic', 'openai', 'bedrock'];
+      
+      container.innerHTML = providers.map(provider => `
+        <div class="credential-item">
+          <span class="credential-provider">${provider.charAt(0).toUpperCase() + provider.slice(1)}</span>
+          <span class="credential-status" id="cred-status-${provider}">Checking...</span>
+        </div>
+      `).join('');
+      
+      // Check each credential
+      providers.forEach(async (provider) => {
+        const status = document.getElementById(`cred-status-${provider}`);
+        const cred = await agi.credentials.get(provider);
+        
+        if (cred && cred.apiKey) {
+          status.textContent = 'Configured';
+          status.classList.remove('missing');
+        } else {
+          status.textContent = 'Not Set';
+          status.classList.add('missing');
+        }
+      });
+    }
+    
+    function addCredential() {
+      closeModal('settings-modal');
+      document.getElementById('credential-modal').classList.add('active');
+    }
+    
+    async function saveCredential() {
+      const provider = document.getElementById('cred-provider').value;
+      const apiKey = document.getElementById('cred-api-key').value.trim();
+      
+      if (!apiKey) {
+        alert('Please enter an API key');
+        return;
+      }
+      
+      try {
+        await agi.credentials.set(provider, { apiKey });
+        closeModal('credential-modal');
+        showNotification(`${provider} credential saved`);
+      } catch (error) {
+        alert('Failed to save credential: ' + error.message);
+      }
+    }
+    
+    async function setupBiometrics() {
+      try {
+        const credential = await agi.credentials.registerWebAuthn();
+        if (credential) {
+          showNotification('Biometric authentication enabled');
+        } else {
+          alert('WebAuthn not supported on this device');
+        }
+      } catch (error) {
+        alert('Failed to setup biometrics: ' + error.message);
+      }
+    }
+    
+    // ============================================
+    // IMPORT/EXPORT
+    // ============================================
+    async function exportState() {
+      const includeCredentials = confirm('Include encrypted credentials in export?');
+      await agi.exportToFile(includeCredentials);
+      showNotification('State exported');
+    }
+    
+    async function importState() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+          const text = await file.text();
+          const data = JSON.parse(text);
+          await agi.import(data);
+          renderAgentList();
+          updateTargetSelect();
+          renderContext();
+          showNotification('State imported');
+        } catch (error) {
+          alert('Failed to import: ' + error.message);
+        }
+      };
+      
+      input.click();
+    }
+    
+    async function clearAllData() {
+      if (!confirm('This will delete all agents, messages, and credentials. Continue?')) {
+        return;
+      }
+      
+      // Kill all agents
+      for (const agentId of agi.agents.keys()) {
+        await agi.kill(agentId);
+      }
+      
+      // Clear IndexedDB
+      indexedDB.deleteDatabase('agi-diy-multi');
+      
+      // Refresh
+      location.reload();
+    }
+    
+    // ============================================
+    // UTILITIES
+    // ============================================
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('active');
+    }
+    
+    function getAgentColor(agentId) {
+      if (agentId === 'all') return '#888888';
+      const agents = Array.from(agi.agents.keys());
+      const index = agents.indexOf(agentId);
+      return agentColors[index % agentColors.length];
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    function formatMessageContent(content) {
+      // Basic markdown-like formatting
+      return escapeHtml(content)
+        .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>');
+    }
+    
+    function formatTime(timestamp) {
+      const date = new Date(timestamp);
+      const now = new Date();
+      
+      if (date.toDateString() === now.toDateString()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+    
+    function showNotification(message, type = 'success') {
+      // Simple toast notification
+      const toast = document.createElement('div');
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: ${type === 'error' ? 'var(--danger)' : 'var(--accent)'};
+        color: ${type === 'error' ? 'white' : 'var(--bg-primary)'};
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 2000;
+        animation: fadeIn 0.2s ease-out;
+      `;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'fadeIn 0.2s ease-out reverse';
+        setTimeout(() => toast.remove(), 200);
+      }, 3000);
+    }
+    
+    // Click outside modal to close
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+        }
+      });
+    });
+    
+    // Auto-resize textarea
+    document.getElementById('chat-input').addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+    });
+    
+    // Initialize on load
+    init();
+  </script>
+</body>
+</html>
