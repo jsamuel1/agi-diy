@@ -881,6 +881,30 @@
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
         }
+        /* Pipeline Panel */
+        .pipeline-panel { width: 380px; display: flex; flex-direction: column; flex-shrink: 0; border-left: 1px solid var(--divider); background: var(--bg); }
+        .pipeline-header { padding: 16px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center; }
+        .pipeline-header-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+        .pipeline-pills { display: flex; align-items: center; gap: 4px; padding: 12px 16px; overflow-x: auto; flex-wrap: wrap; border-bottom: 1px solid var(--divider); min-height: 48px; }
+        .phase-pill { padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.3s; }
+        .phase-pending { border: 1px dashed #555; color: #888; }
+        .phase-working { border: 1px solid var(--task-color, #ffaa00); color: var(--task-color, #ffaa00); animation: pillPulse 2s infinite; }
+        .phase-done { border: 1px solid #00ff88; color: #00ff88; background: rgba(0,255,136,0.08); }
+        .phase-error { border: 1px solid #ff6666; color: #ff6666; }
+        .phase-connector { width: 16px; border-top: 1px dashed #444; display: inline-block; vertical-align: middle; }
+        @keyframes pillPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.65; } }
+        .activity-log { flex: 1; overflow-y: auto; padding: 12px 16px; }
+        .activity-heading { font-size: 13px; font-weight: 600; margin-top: 12px; margin-bottom: 4px; }
+        .activity-heading:first-child { margin-top: 0; }
+        .activity-line { font-size: 12px; color: #ccc; padding: 2px 0; line-height: 1.5; }
+        .activity-done { color: #00ff88; }
+        .completion-cards { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--divider); }
+        .completion-card { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--glass); text-decoration: none; display: flex; flex-direction: column; gap: 4px; transition: background 0.2s; }
+        .completion-card:hover { background: var(--glass-hover); }
+        .completion-card strong { font-size: 12px; color: var(--text); }
+        .completion-card span { font-size: 11px; color: var(--text-tertiary); }
+        .pipeline-empty { padding: 40px 16px; text-align: center; color: var(--text-tertiary); font-size: 12px; }
+        @media (max-width: 1100px) { .pipeline-panel { display: none; } }
     </style>
 </head>
 <body>
@@ -962,19 +986,16 @@
         </main>
         
         <!-- Ring Context Panel -->
-        <aside class="ring-panel">
-            <div class="ring-header">
-                <div class="ring-title">
-                    <span class="ring-dot"></span>
-                    Ring Context
-                </div>
-                <button class="ring-clear-btn" onclick="clearRingContext()" title="Clear all ring context">Clear</button>
+        <aside class="pipeline-panel" id="pipelinePanel">
+            <div class="pipeline-header">
+                <span class="pipeline-header-title">Pipeline</span>
+                <button class="ring-clear-btn" onclick="clearRingContext()" title="Ring context">Ring</button>
             </div>
-            <div class="ring-content" id="ringContent">
-                <div style="font-size:11px;color:var(--text-tertiary);text-align:center;padding:20px;">
-                    Shared context will appear here
-                </div>
+            <div class="pipeline-pills" id="pipelinePills"></div>
+            <div class="activity-log" id="activityLog">
+                <div class="pipeline-empty">No active pipeline. Agents will create one for complex tasks.</div>
             </div>
+            <div class="completion-cards" id="completionCards" style="display:none;"></div>
         </aside>
     </div>
     
@@ -1312,6 +1333,80 @@
         agentColors: ['#00ff88', '#00aaff', '#ff88ff', '#ffaa00', '#ff6666', '#88ffff'],
         colorIndex: 0
     };
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PIPELINE MODEL
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const TASK_COLORS = { requirements:'#00ff88', planning:'#9966ff', coding:'#ff8800', testing:'#00cccc', review:'#00ff88', pr:'#00ff88', docs:'#00ff88', custom:'#ffaa00' };
+
+    function getPipelines() { try { return JSON.parse(localStorage.getItem('agi_pipelines') || '{}'); } catch { return {}; } }
+    function savePipelines(p) { localStorage.setItem('agi_pipelines', JSON.stringify(p)); }
+    function getActivePipeline() { const p = getPipelines(); const keys = Object.keys(p); return keys.length ? p[keys[keys.length - 1]] : null; }
+
+    function getReadyTasks(pipeline) {
+        return pipeline.tasks.filter(t => t.status === 'pending' && t.dependsOn.every(d => pipeline.tasks.find(x => x.id === d)?.status === 'done'));
+    }
+
+    function topoSort(tasks) {
+        const visited = new Set(), result = [], taskMap = Object.fromEntries(tasks.map(t => [t.id, t]));
+        function visit(id) { if (visited.has(id)) return; visited.add(id); const t = taskMap[id]; if (t) { t.dependsOn.forEach(visit); result.push(t); } }
+        tasks.forEach(t => visit(t.id));
+        return result;
+    }
+
+    function renderPipelinePills(pipeline) {
+        const el = document.getElementById('pipelinePills');
+        if (!pipeline) { el.innerHTML = ''; return; }
+        el.innerHTML = '';
+        topoSort(pipeline.tasks).forEach((task, i) => {
+            if (i > 0) { const c = document.createElement('span'); c.className = 'phase-connector'; el.appendChild(c); }
+            const pill = document.createElement('span');
+            pill.className = `phase-pill phase-${task.status}`;
+            if (task.status === 'working') pill.style.setProperty('--task-color', task.color || TASK_COLORS.custom);
+            pill.textContent = task.name;
+            pill.onclick = () => { const h = document.querySelector(`[data-task-id="${task.id}"]`); if (h) h.scrollIntoView({ behavior: 'smooth' }); };
+            el.appendChild(pill);
+        });
+    }
+
+    function renderPipelineActivity() {
+        const pipeline = getActivePipeline();
+        const log = document.getElementById('activityLog');
+        if (!pipeline) { log.innerHTML = '<div class="pipeline-empty">No active pipeline. Agents will create one for complex tasks.</div>'; return; }
+        log.innerHTML = '';
+        const active = pipeline.tasks.filter(t => t.activities && t.activities.length > 0).sort((a, b) => a.activities[0].ts - b.activities[0].ts);
+        active.forEach(task => {
+            const h = document.createElement('div');
+            h.className = 'activity-heading'; h.dataset.taskId = task.id;
+            h.style.color = task.status === 'done' ? '#00ff88' : (task.color || '#ccc');
+            h.textContent = task.name;
+            log.appendChild(h);
+            task.activities.forEach(a => {
+                const line = document.createElement('div');
+                line.className = 'activity-line';
+                if (a.done) { line.style.color = '#00ff88'; line.textContent = a.text + ' ✓'; }
+                else { line.textContent = a.text; }
+                log.appendChild(line);
+            });
+        });
+        log.scrollTop = log.scrollHeight;
+        renderCompletionCards(pipeline);
+    }
+
+    function renderCompletionCards(pipeline) {
+        const el = document.getElementById('completionCards');
+        if (!pipeline.completionActions || !pipeline.completionActions.length) { el.style.display = 'none'; return; }
+        el.style.display = 'flex'; el.innerHTML = '';
+        pipeline.completionActions.forEach(a => {
+            const card = document.createElement('a');
+            card.className = 'completion-card'; card.href = a.url || '#'; card.target = '_blank';
+            card.innerHTML = `<strong>${a.label}</strong><span>${a.description || ''}</span>`;
+            el.appendChild(card);
+        });
+    }
+
+    function updatePipelineUI() { const p = getActivePipeline(); renderPipelinePills(p); renderPipelineActivity(); }
     
     // ═══════════════════════════════════════════════════════════════════════════
     // MODEL PROVIDERS
@@ -2849,7 +2944,109 @@ Example - create a tool that gets weather:
             };
         }
     });
-    
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PIPELINE TOOLS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const createPipelineTool = tool({
+        name: 'create_pipeline', description: 'Create a pipeline with tasks and dependencies. Tasks with all deps done can run in parallel.',
+        inputSchema: z.object({
+            name: z.string().describe('Pipeline name'),
+            tasks: z.array(z.object({
+                id: z.string(), name: z.string(),
+                dependsOn: z.array(z.string()).default([]),
+                color: z.string().optional().describe('Hex color for active state')
+            })).describe('Tasks with dependency IDs')
+        }),
+        callback: async (input) => {
+            const id = 'pipe-' + Date.now().toString(36);
+            const pipelines = getPipelines();
+            pipelines[id] = {
+                id, name: input.name,
+                tasks: input.tasks.map(t => ({ ...t, status: 'pending', assignedTo: null, color: t.color || TASK_COLORS[t.id] || TASK_COLORS.custom, activities: [] })),
+                completionActions: []
+            };
+            savePipelines(pipelines); updatePipelineUI();
+            return { created: id, readyTasks: getReadyTasks(pipelines[id]).map(t => t.id) };
+        }
+    });
+
+    const readPipelineTool = tool({
+        name: 'read_pipeline', description: 'Read the current active pipeline state.',
+        inputSchema: z.object({}),
+        callback: async () => { const p = getActivePipeline(); return p || { error: 'No active pipeline' }; }
+    });
+
+    const addTaskTool = tool({
+        name: 'add_task', description: 'Add a task to the active pipeline (for new requirements or review fixes).',
+        inputSchema: z.object({ id: z.string(), name: z.string(), dependsOn: z.array(z.string()).default([]), color: z.string().optional() }),
+        callback: async (input) => {
+            const pipelines = getPipelines(); const p = getActivePipeline();
+            if (!p) return { error: 'No active pipeline' };
+            p.tasks.push({ id: input.id, name: input.name, dependsOn: input.dependsOn, status: 'pending', assignedTo: null, color: input.color || TASK_COLORS[input.id] || TASK_COLORS.custom, activities: [] });
+            savePipelines(pipelines); updatePipelineUI();
+            return { added: input.id, readyTasks: getReadyTasks(p).map(t => t.id) };
+        }
+    });
+
+    const updateTaskStatusTool = tool({
+        name: 'update_task_status', description: 'Update a pipeline task status and optionally add an activity message.',
+        inputSchema: z.object({ taskId: z.string(), status: z.enum(['pending', 'working', 'done', 'error']), agentId: z.string().optional(), activity: z.string().optional() }),
+        callback: async (input) => {
+            const pipelines = getPipelines(); const p = getActivePipeline();
+            if (!p) return { error: 'No active pipeline' };
+            const task = p.tasks.find(t => t.id === input.taskId);
+            if (!task) return { error: 'Task not found' };
+            if (input.status === 'working' && task.assignedTo && task.assignedTo !== input.agentId) return { error: `Locked by ${task.assignedTo}` };
+            task.status = input.status;
+            task.assignedTo = input.status === 'working' ? (input.agentId || null) : null;
+            if (input.activity) task.activities.push({ text: input.activity, ts: Date.now(), done: input.status === 'done' });
+            savePipelines(pipelines); updatePipelineUI();
+            return { updated: input.taskId, status: input.status, readyTasks: getReadyTasks(p).map(t => t.id) };
+        }
+    });
+
+    const updateTaskDepsTool = tool({
+        name: 'update_task_deps', description: 'Change a task\'s dependencies (e.g. for review cycles).',
+        inputSchema: z.object({ taskId: z.string(), dependsOn: z.array(z.string()) }),
+        callback: async (input) => {
+            const pipelines = getPipelines(); const p = getActivePipeline();
+            if (!p) return { error: 'No active pipeline' };
+            const task = p.tasks.find(t => t.id === input.taskId);
+            if (!task) return { error: 'Task not found' };
+            task.dependsOn = input.dependsOn;
+            savePipelines(pipelines); updatePipelineUI();
+            return { updated: input.taskId, dependsOn: input.dependsOn };
+        }
+    });
+
+    const completePipelineTool = tool({
+        name: 'complete_pipeline', description: 'Mark pipeline complete and set action cards.',
+        inputSchema: z.object({ actions: z.array(z.object({ label: z.string(), description: z.string().optional(), url: z.string().optional() })).optional() }),
+        callback: async (input) => {
+            const pipelines = getPipelines(); const p = getActivePipeline();
+            if (!p) return { error: 'No active pipeline' };
+            p.completionActions = input.actions || [];
+            savePipelines(pipelines); updatePipelineUI();
+            return { completed: p.id };
+        }
+    });
+
+    const emitStatusTool = tool({
+        name: 'emit_status', description: 'Emit a short status update for the pipeline activity log. Keep under 100 chars.',
+        inputSchema: z.object({ taskId: z.string(), text: z.string(), done: z.boolean().optional() }),
+        callback: async (input) => {
+            const pipelines = getPipelines(); const p = getActivePipeline();
+            if (!p) return { error: 'No active pipeline' };
+            const task = p.tasks.find(t => t.id === input.taskId);
+            if (!task) return { error: 'Task not found' };
+            task.activities.push({ text: input.text, ts: Date.now(), done: input.done || false });
+            savePipelines(pipelines); renderPipelineActivity();
+            return { emitted: true };
+        }
+    });
+
     const TOOLS = [
         // Core
         renderUiTool, javascriptEvalTool, storageGetTool, storageSetTool, fetchUrlTool, notifyTool,
@@ -2858,7 +3055,9 @@ Example - create a tool that gets weather:
         // Agent management
         useAgentTool, schedulerTool,
         // Mesh communication (local + remote)
-        invokeAgentTool, broadcastToAgentsTool, listAgentsTool, invokeRemoteAgentTool, subscribeTopicTool, publishTopicTool
+        invokeAgentTool, broadcastToAgentsTool, listAgentsTool, invokeRemoteAgentTool, subscribeTopicTool, publishTopicTool,
+        // Pipeline
+        createPipelineTool, readPipelineTool, addTaskTool, updateTaskStatusTool, updateTaskDepsTool, completePipelineTool, emitStatusTool
     ];
     
     // ═══════════════════════════════════════════════════════════════════════════
@@ -4121,6 +4320,7 @@ ${getRingContext()}`;
     updateRingUI();
     updateScheduleUI();
     renderMessages();
+    updatePipelineUI();
     
     // Check for ?q= query parameter (iPhone shortcut support)
     function checkForQueryParam() {
