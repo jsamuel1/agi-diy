@@ -1038,7 +1038,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Model ID (optional)</label>
-                    <input type="text" class="form-input" id="spawnModelId" placeholder="Leave empty for default" value="global.anthropic.claude-opus-4-6-v1">
+                    <input type="text" class="form-input" id="spawnModelId" list="spawnModelList" placeholder="Leave empty for default" value="global.anthropic.claude-opus-4-6-v1" oninput="onModelSelected('spawn')">
                     <div class="form-hint" id="spawnModelHint">Default: global.anthropic.claude-opus-4-6-v1</div>
                 </div>
                 <div class="form-group">
@@ -1253,7 +1253,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Model ID</label>
-                    <input type="text" class="form-input" id="editModelId" placeholder="Leave empty for default">
+                    <input type="text" class="form-input" id="editModelId" list="editModelList" placeholder="Leave empty for default" oninput="onModelSelected('edit')">
                     <div class="form-hint" id="editModelHint">Default: global.anthropic.claude-opus-4-6-v1</div>
                 </div>
                 <div class="form-group">
@@ -1737,26 +1737,29 @@
     
     function createModel(provider, customConfig = {}) {
         const creds = state.credentials[provider];
+        const modelId = customConfig.modelId || creds?.model || DEFAULT_MODELS[provider];
+        const catalogFlags = getModelFlags(provider, modelId);
+        const additionalFields = customConfig.additionalRequestFields ?? catalogFlags ?? (provider === 'bedrock' ? DEFAULT_BEDROCK_ADDITIONAL_FIELDS : null);
         if (provider === 'anthropic') {
             return new AnthropicModel({
                 apiKey: creds.apiKey,
-                modelId: customConfig.modelId || creds.model || 'claude-opus-4-6',
+                modelId,
                 maxTokens: customConfig.maxTokens || DEFAULT_MAX_TOKENS,
-                additionalRequestFields: customConfig.additionalRequestFields || null
+                additionalRequestFields: additionalFields
             });
         } else if (provider === 'openai') {
             return new OpenAIModel({
                 apiKey: creds.apiKey,
-                modelId: customConfig.modelId || creds.model || 'gpt-5.2-2025-12-11',
+                modelId,
                 maxTokens: customConfig.maxTokens || DEFAULT_MAX_TOKENS
             });
         } else if (provider === 'bedrock') {
             return new BedrockModel({
                 apiKey: creds.apiKey,
                 region: creds.region || 'us-east-1',
-                modelId: customConfig.modelId || creds.model || 'global.anthropic.claude-opus-4-6-v1',
+                modelId,
                 maxTokens: customConfig.maxTokens || DEFAULT_MAX_TOKENS,
-                additionalRequestFields: customConfig.additionalRequestFields || DEFAULT_BEDROCK_ADDITIONAL_FIELDS
+                additionalRequestFields: additionalFields
             });
         }
         throw new Error(`Unknown provider: ${provider}`);
@@ -1769,6 +1772,55 @@
         openai: 'gpt-5.2-2025-12-11'
     };
     
+    // Model catalog: autocomplete + per-model feature flags
+    const MODEL_CATALOG = {
+        bedrock: [
+            { id: 'global.anthropic.claude-opus-4-6-v1', name: 'Opus 4.6 (Global)', flags: { thinking: { type: 'adaptive' } } },
+            { id: 'us.anthropic.claude-opus-4-6-v1', name: 'Opus 4.6 (US)', flags: { thinking: { type: 'adaptive' } } },
+            { id: 'eu.anthropic.claude-opus-4-6-v1', name: 'Opus 4.6 (EU)', flags: { thinking: { type: 'adaptive' } } },
+            { id: 'apac.anthropic.claude-opus-4-6-v1', name: 'Opus 4.6 (APAC)', flags: { thinking: { type: 'adaptive' } } },
+            { id: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Sonnet 4.5 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Sonnet 4.5 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Sonnet 4.5 (EU)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'apac.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Sonnet 4.5 (APAC)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'global.anthropic.claude-sonnet-4-20250514-v1:0', name: 'Sonnet 4 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'us.anthropic.claude-sonnet-4-20250514-v1:0', name: 'Sonnet 4 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'eu.anthropic.claude-sonnet-4-20250514-v1:0', name: 'Sonnet 4 (EU)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'apac.anthropic.claude-sonnet-4-20250514-v1:0', name: 'Sonnet 4 (APAC)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'global.anthropic.claude-opus-4-5-20251101-v1:0', name: 'Opus 4.5 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'us.anthropic.claude-opus-4-5-20251101-v1:0', name: 'Opus 4.5 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'global.anthropic.claude-opus-4-20250514-v1:0', name: 'Opus 4 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'us.anthropic.claude-opus-4-20250514-v1:0', name: 'Opus 4 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'global.anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Haiku 4.5 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 5000 } } },
+            { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Haiku 4.5 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 5000 } } },
+        ],
+        anthropic: [
+            { id: 'claude-opus-4-6', name: 'Opus 4.6', flags: { thinking: { type: 'adaptive' } } },
+            { id: 'claude-sonnet-4-5-20250929', name: 'Sonnet 4.5', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'claude-sonnet-4-20250514', name: 'Sonnet 4', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'claude-opus-4-5-20251101', name: 'Opus 4.5', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'claude-opus-4-20250514', name: 'Opus 4', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
+            { id: 'claude-haiku-4-5-20251001', name: 'Haiku 4.5', flags: { thinking: { type: 'enabled', budget_tokens: 5000 } } },
+        ],
+        openai: [
+            { id: 'gpt-5.2-2025-12-11', name: 'GPT-5.2' },
+            { id: 'gpt-5-2025-04-14', name: 'GPT-5' },
+            { id: 'o3-2025-04-16', name: 'o3 (Reasoning)' },
+            { id: 'o4-mini-2025-04-16', name: 'o4-mini (Reasoning)' },
+            { id: 'gpt-4.1-2025-04-14', name: 'GPT-4.1' },
+        ]
+    };
+
+    function getModelFlags(provider, modelId) {
+        return (MODEL_CATALOG[provider] || []).find(m => m.id === modelId)?.flags || null;
+    }
+
+    function updateModelDatalist(provider, datalistId) {
+        let dl = document.getElementById(datalistId);
+        if (!dl) { dl = document.createElement('datalist'); dl.id = datalistId; document.body.appendChild(dl); }
+        dl.innerHTML = (MODEL_CATALOG[provider] || []).map(m => `<option value="${m.id}" label="${m.name}">`).join('');
+    }
+
     // Default additional request fields for bedrock (extended thinking)
     const DEFAULT_BEDROCK_ADDITIONAL_FIELDS = {
         "thinking": {"type": "adaptive"}
@@ -4108,6 +4160,7 @@ ${getRingContext()}`;
         const provider = document.getElementById('spawnProvider').value;
         const hintEl = document.getElementById('spawnModelHint');
         hintEl.textContent = `Default: ${DEFAULT_MODELS[provider] || 'unknown'}`;
+        updateModelDatalist(provider, 'spawnModelList');
         
         // Show/hide additional fields based on provider
         const additionalFieldsGroup = document.getElementById('spawnAdditionalFieldsGroup');
@@ -4115,7 +4168,6 @@ ${getRingContext()}`;
         
         if (provider === 'bedrock') {
             additionalFieldsGroup.style.display = 'block';
-            // Pre-populate with default bedrock fields if empty
             if (!additionalFieldsInput.value.trim()) {
                 additionalFieldsInput.value = JSON.stringify(DEFAULT_BEDROCK_ADDITIONAL_FIELDS, null, 2);
             }
@@ -4123,6 +4175,15 @@ ${getRingContext()}`;
             additionalFieldsGroup.style.display = 'block';
         } else {
             additionalFieldsGroup.style.display = 'none';
+        }
+    };
+
+    window.onModelSelected = function(prefix) {
+        const provider = document.getElementById(prefix + 'Provider').value;
+        const modelId = document.getElementById(prefix + 'ModelId').value;
+        const flags = getModelFlags(provider, modelId);
+        if (flags) {
+            document.getElementById(prefix + 'AdditionalFields').value = JSON.stringify(flags, null, 2);
         }
     };
     
@@ -4229,6 +4290,7 @@ ${getRingContext()}`;
         const provider = document.getElementById('editProvider').value;
         const hintEl = document.getElementById('editModelHint');
         hintEl.textContent = `Default: ${DEFAULT_MODELS[provider] || 'unknown'}`;
+        updateModelDatalist(provider, 'editModelList');
         
         // Show/hide additional fields based on provider
         document.getElementById('editAdditionalFieldsGroup').style.display = 
