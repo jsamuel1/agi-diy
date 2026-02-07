@@ -924,9 +924,11 @@
         .pipeline-flow-inner { display: flex; align-items: center; gap: 0; min-height: 40px; position: relative; }
         .pf-node { width: 20ch; height: 40px; padding: 4px 8px; border-radius: 6px; font-size: 11px; line-height: 1.4; overflow: hidden; display: flex; align-items: center; justify-content: center; text-align: center; border: 1px dashed #555; color: #888; background: transparent; transition: all .3s; flex-shrink: 0; box-sizing: border-box; }
 .pf-node span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .pf-node.pending { border: 1px dashed #555; color: #888; }
         .pf-node.working { border: 1px solid var(--task-color, #ffaa00); color: var(--task-color, #ffaa00); animation: pillPulse 2s infinite; background: rgba(255,170,0,.06); }
-        .pf-node.done { border: 1px solid #00ff88; color: #00ff88; background: rgba(0,255,136,.08); }
-        .pf-node.error { border: 1px solid #ff6666; color: #ff6666; }
+        .pf-node.done, .pf-node.success { border: 1px solid #00ff88; color: #00ff88; background: rgba(0,255,136,.08); }
+        .pf-node.error, .pf-node.failed { border: 1px solid #ff6666; color: #ff6666; background: rgba(255,102,102,.08); }
+        .pf-node.partial { border: 1px solid #ff9933; color: #ff9933; background: rgba(255,153,51,.08); animation: pillPulse 3s infinite; }
         .pf-edge { width: 24px; height: 0; border-top: 1px solid #444; flex-shrink: 0; }
         .pf-edge.done { border-color: #00ff88; }
         .pf-edge.working { border-color: var(--task-color, #ffaa00); border-style: solid; }
@@ -1495,7 +1497,7 @@
         sorted.forEach((task, i) => {
             if (i > 0) {
                 const edge = document.createElement('span');
-                edge.className = 'pf-edge' + (task.status === 'done' ? ' done' : task.status === 'working' ? ' working' : '');
+                edge.className = 'pf-edge' + (task.status === 'done' || task.status === 'success' ? ' done' : task.status === 'working' ? ' working' : task.status === 'error' || task.status === 'failed' ? ' error' : '');
                 inner.appendChild(edge);
             }
             const node = document.createElement('span');
@@ -1522,7 +1524,7 @@
         el.appendChild(inner);
         // Scroll active (working/pending) box into view, prefer working
         requestAnimationFrame(() => {
-            const target = inner.querySelector('.pf-node.working') || inner.querySelector('.pf-node.pending');
+            const target = inner.querySelector('.pf-node.working') || inner.querySelector('.pf-node.partial') || inner.querySelector('.pf-node.pending');
             if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
         });
         // Draw back-lines for deps that go backward (iteration)
@@ -3207,7 +3209,7 @@ Example - create a tool that gets weather:
 
     const updateTaskStatusTool = tool({
         name: 'update_task_status', description: 'Update a pipeline task status and optionally add an activity message.',
-        inputSchema: z.object({ taskId: z.string(), status: z.enum(['pending', 'working', 'done', 'error']), agentId: z.string().optional(), activity: z.string().optional() }),
+        inputSchema: z.object({ taskId: z.string(), status: z.enum(['pending', 'working', 'done', 'success', 'error', 'failed', 'partial']), agentId: z.string().optional(), activity: z.string().optional() }),
         callback: async (input) => {
             const pipelines = getPipelines(); const p = getActivePipeline();
             if (!p) return { error: 'No active pipeline' };
