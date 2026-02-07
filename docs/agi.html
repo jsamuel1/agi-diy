@@ -4069,8 +4069,12 @@ ${getRingContext()}`;
         for (const [id, data] of state.agents) { data.status = 'ready'; }
         updateAgentUI();
         
+        // Clear pipeline
+        localStorage.removeItem('agi_pipelines');
+        updatePipelineUI();
+        
         if (!state.activeAgentId) {
-            showToast('No active agent to clear');
+            showToast('Cleared');
             return;
         }
         
@@ -4078,13 +4082,13 @@ ${getRingContext()}`;
         if (agentData) {
             agentData.messages = [];
             renderMessages();
-            showToast('Chat cleared');
+            showToast('Cleared');
             saveState();
             // Reset activity feed
             const feed = document.getElementById('activityFeed');
             if (feed) { feed.innerHTML = ''; feed.lastAgent = null; }
             const sel = document.getElementById('activityFilter');
-            if (sel) { sel.value = 'all'; }
+            if (sel) { sel.value = 'all'; updateActivityFilterOptions(); }
         }
     };
     
