@@ -2462,7 +2462,9 @@
                         });
                     }
                     else if (event?.type === 'beforeToolCallEvent') {
-                        appendActivityFeed(agentId, `🔧 ${event.toolUse?.name}`, 'tool', { input: event.toolUse?.input });
+                        const tn = event.toolUse?.name, ti = event.toolUse?.input;
+                        const fl = tn === 'invoke_agent' && ti?.targetAgentId ? `🔧 invoke_agent → ${ti.targetAgentId}` : `🔧 ${tn}`;
+                        appendActivityFeed(agentId, fl, 'tool', { input: ti });
                     }
                     else if (event?.type === 'afterToolCallEvent') {
                         const last = activityLog.findLast(e => e.type === 'tool' && e.agentId === agentId);
@@ -2499,6 +2501,7 @@
             
             agentData.status = 'ready';
             updateAgentUI();
+            updatePipelineUI(); // Refresh pipeline in case tools modified it
         },
         
         // ─────────────────────────────────────────────────────────────────────────
@@ -4000,7 +4003,12 @@ ${getRingContext()}`;
                         const se = streamingEls.get(agentId);
                         if (se) document.getElementById('messagesInner').appendChild(se);
                     }
-                    appendActivityFeed(agentId, `🔧 ${event.toolUse?.name}`, 'tool', { input: event.toolUse?.input });
+                    const toolName = event.toolUse?.name;
+                    const toolInput = event.toolUse?.input;
+                    const feedLabel = toolName === 'invoke_agent' && toolInput?.targetAgentId
+                        ? `🔧 invoke_agent → ${toolInput.targetAgentId}`
+                        : `🔧 ${toolName}`;
+                    appendActivityFeed(agentId, feedLabel, 'tool', { input: toolInput });
                     // Store toolId for afterToolCallEvent
                     event._toolId = toolId;
                 }
@@ -4280,11 +4288,14 @@ ${getRingContext()}`;
         msg.className = `message ${role}`;
         
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const userColor = '#3b82f6';
+        const arrow = role === 'user' 
+            ? `<span style="color:${userColor}">you</span> → <span style="color:${color}">${agentId}</span>`
+            : `<span style="color:${color}">${agentId}</span> → <span style="color:${userColor}">you</span>`;
         
         msg.innerHTML = `
             <div class="message-header">
-                <span class="message-role">${role === 'user' ? 'you' : role === 'assistant' ? 'agi' : role}</span>
-                <span class="message-agent" style="background:${color}20;color:${color}">${agentId}</span>
+                ${arrow}
                 <span class="message-time">${time}</span>
             </div>
             <div class="message-content">${role === 'user' ? escapeHtml(content) : `<div class="markdown-content">${marked.parse(content)}</div>`}</div>
