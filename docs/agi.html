@@ -904,6 +904,18 @@
         .completion-card strong { font-size: 12px; color: var(--text); }
         .completion-card span { font-size: 11px; color: var(--text-tertiary); }
         .pipeline-empty { padding: 40px 16px; text-align: center; color: var(--text-tertiary); font-size: 12px; }
+        /* Pipeline Flow (above chat) */
+        .pipeline-flow { display: none; padding: 12px 24px; border-bottom: 1px solid var(--divider); overflow-x: auto; }
+        .pipeline-flow.active { display: block; }
+        .pipeline-flow-inner { display: flex; align-items: center; gap: 0; min-height: 40px; position: relative; }
+        .pf-node { padding: 6px 14px; border-radius: 6px; font-size: 11px; white-space: nowrap; border: 1px dashed #555; color: #888; background: transparent; transition: all .3s; flex-shrink: 0; }
+        .pf-node.working { border: 1px solid var(--task-color, #ffaa00); color: var(--task-color, #ffaa00); animation: pillPulse 2s infinite; background: rgba(255,170,0,.06); }
+        .pf-node.done { border: 1px solid #00ff88; color: #00ff88; background: rgba(0,255,136,.08); }
+        .pf-node.error { border: 1px solid #ff6666; color: #ff6666; }
+        .pf-edge { width: 24px; height: 0; border-top: 1px solid #444; flex-shrink: 0; }
+        .pf-edge.done { border-color: #00ff88; }
+        .pf-edge.working { border-color: var(--task-color, #ffaa00); border-style: solid; }
+        .pf-back { position: absolute; border: 1px dashed #ff6666; border-radius: 0 0 8px 8px; pointer-events: none; }
         /* Sandbox */
         .sandbox-wrap { margin: 8px 0; border: 1px solid var(--glass-border); border-radius: 8px; overflow: hidden; }
         .sandbox-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: var(--glass); font-size: 12px; color: var(--text-secondary); }
@@ -956,6 +968,7 @@
                 </div>
             </header>
             
+            <div class="pipeline-flow" id="pipelineFlow"></div>
             <div class="messages-container" id="messagesContainer">
                 <div class="messages-inner" id="messagesInner">
                     <div class="message system">
@@ -1427,7 +1440,33 @@
         });
     }
 
-    function updatePipelineUI() { const p = getActivePipeline(); renderPipelinePills(p); renderPipelineActivity(); }
+    function updatePipelineUI() { const p = getActivePipeline(); renderPipelinePills(p); renderPipelineActivity(); renderPipelineFlow(p); }
+
+    function renderPipelineFlow(pipeline) {
+        const el = document.getElementById('pipelineFlow');
+        if (!pipeline || !pipeline.tasks.length) { el.classList.remove('active'); el.innerHTML = ''; return; }
+        el.classList.add('active');
+        const sorted = topoSort(pipeline.tasks);
+        // Compute layers via BFS depth
+        const depth = {};
+        sorted.forEach(t => { depth[t.id] = t.dependsOn.length ? Math.max(...t.dependsOn.map(d => (depth[d] || 0) + 1)) : 0; });
+        const inner = document.createElement('div');
+        inner.className = 'pipeline-flow-inner';
+        sorted.forEach((task, i) => {
+            if (i > 0) {
+                const edge = document.createElement('span');
+                edge.className = 'pf-edge' + (task.status === 'done' ? ' done' : task.status === 'working' ? ' working' : '');
+                inner.appendChild(edge);
+            }
+            const node = document.createElement('span');
+            node.className = 'pf-node ' + task.status;
+            if (task.status === 'working') node.style.setProperty('--task-color', task.color || '#ffaa00');
+            node.textContent = task.name;
+            inner.appendChild(node);
+        });
+        el.innerHTML = '';
+        el.appendChild(inner);
+    }
     
     // ═══════════════════════════════════════════════════════════════════════════
     // MODEL PROVIDERS
@@ -3149,10 +3188,10 @@ Example - create a tool that gets weather:
     function renderSandboxIframe(sandbox) {
         const wrap = document.createElement('div');
         wrap.className = 'sandbox-wrap';
-        wrap.innerHTML = `<div class="sandbox-header"><span>🔒 ${sandbox.name || sandbox.id}</span><button onclick="this.closest('.sandbox-wrap').querySelector('iframe').style.height=this.closest('.sandbox-wrap').querySelector('iframe').style.height==='600px'?'300px':'600px'">↕</button></div>`;
+        wrap.innerHTML = `<div class="sandbox-header"><span>🔒 ${sandbox.name || sandbox.id}</span><button onclick="this.closest('.sandbox-wrap').querySelector('iframe').style.height=this.closest('.sandbox-wrap').querySelector('iframe').style.height==='80vh'?'500px':'80vh'">↕</button></div>`;
         const iframe = document.createElement('iframe');
         iframe.sandbox = 'allow-scripts';
-        iframe.style.cssText = 'width:100%;height:300px;border:none;border-radius:0 0 8px 8px;background:#fff;';
+        iframe.style.cssText = 'width:100%;height:500px;border:none;border-radius:0 0 8px 8px;background:#fff;';
         iframe.srcdoc = `<!DOCTYPE html><html><head><style>${sandbox.css||''}</style></head><body>${sandbox.html||''}<script>${sandbox.js||''}<\/script></body></html>`;
         wrap.appendChild(iframe);
         return wrap;
