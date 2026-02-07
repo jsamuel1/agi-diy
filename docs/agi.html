@@ -916,7 +916,7 @@
         .pipeline-flow { display: none; padding: 12px 24px; border-bottom: 1px solid var(--divider); overflow-x: auto; }
         .pipeline-flow.active { display: block; }
         .pipeline-flow-inner { display: flex; align-items: center; gap: 0; min-height: 40px; position: relative; }
-        .pf-node { padding: 6px 14px; border-radius: 6px; font-size: 11px; white-space: nowrap; border: 1px dashed #555; color: #888; background: transparent; transition: all .3s; flex-shrink: 0; }
+        .pf-node { width: 20ch; height: 2.8em; padding: 4px 8px; border-radius: 6px; font-size: 11px; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-overflow: ellipsis; border: 1px dashed #555; color: #888; background: transparent; transition: all .3s; flex-shrink: 0; text-align: center; }
         .pf-node.working { border: 1px solid var(--task-color, #ffaa00); color: var(--task-color, #ffaa00); animation: pillPulse 2s infinite; background: rgba(255,170,0,.06); }
         .pf-node.done { border: 1px solid #00ff88; color: #00ff88; background: rgba(0,255,136,.08); }
         .pf-node.error { border: 1px solid #ff6666; color: #ff6666; }
@@ -3851,10 +3851,16 @@ ${getRingContext()}`;
     
     let streamingEls = new Map(); // agentId -> streaming element
     let broadcastMode = false; // true when sending to all agents
+    let abortControllers = new Map(); // agentId -> AbortController
     
     async function runAgentMessage(agentId, message) {
         const agentData = state.agents.get(agentId);
         if (!agentData) return;
+        
+        // Cancel any existing run for this agent
+        if (abortControllers.has(agentId)) abortControllers.get(agentId).abort();
+        const ac = new AbortController();
+        abortControllers.set(agentId, ac);
         
         // Add to ring buffer FIRST so it's included in system prompt
         state.ringBuffer.push({ agentId, role: 'user', content: message, timestamp: Date.now() });
@@ -3928,6 +3934,7 @@ ${getRingContext()}`;
             let currentText = '';
             
             for await (const event of activeAgent.stream(message)) {
+                if (ac.signal.aborted) break;
                 if (!event?.type) continue;
                 
                 if (event.type === 'modelContentBlockDeltaEvent' && event.delta?.type === 'textDelta') {
@@ -4026,6 +4033,12 @@ ${getRingContext()}`;
     };
     
     window.clearChat = function() {
+        // Abort all running agents
+        for (const [id, ac] of abortControllers) ac.abort();
+        abortControllers.clear();
+        for (const [id, data] of state.agents) { data.status = 'ready'; }
+        updateAgentUI();
+        
         if (!state.activeAgentId) {
             showToast('No active agent to clear');
             return;
