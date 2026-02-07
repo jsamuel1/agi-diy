@@ -2754,10 +2754,13 @@
             const response = result.responses[0];
             if (response?.error) return { error: response.error };
             
+            const fullResponse = result.streamed[input.targetAgentId] || response?.result || 'No response';
+            // Return only the tail — the sub-agent's final summary, not its full narration
+            const trimmed = fullResponse.length > 2000 ? '...' + fullResponse.slice(-2000) : fullResponse;
             return {
                 success: true,
                 from: input.targetAgentId,
-                response: (result.streamed[input.targetAgentId] || response?.result || 'No response').substring(0, 50000),
+                response: trimmed,
                 chunks: response?.chunks || 0
             };
         }
