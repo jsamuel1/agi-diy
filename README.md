@@ -297,16 +297,26 @@ agiContext.scanBluetooth()   // Find nearby devices
 
 ```
 docs/
-├── index.html      # Single agent mode
-├── agi.html        # Multi-agent mode (~5100 lines, single file)
-├── strands.js      # Strands SDK bundle
-├── vision.js       # Screen capture, ambient mode
-├── webllm.js       # Local model inference
-├── map.js          # Google Maps integration
-├── tools/google.js # Google API tools
-├── sw.js           # Service worker (PWA)
-└── manifest.json   # PWA config
+├── index.html        # Single agent mode
+├── agi.html          # Multi-agent mode (upstream stable)
+├── sauhsoj-ii.html   # Multi-agent mode (fork — structured transcript refactor)
+├── strands.js        # Strands SDK bundle
+├── vision.js         # Screen capture, ambient mode
+├── webllm.js         # Local model inference
+├── map.js            # Google Maps integration
+├── tools/google.js   # Google API tools
+├── sw.js             # Service worker (PWA)
+└── manifest.json     # PWA config
 ```
+
+### Fork Strategy
+
+`sauhsoj-ii.html` is a fork of `agi.html` for experimental refactoring (structured transcripts, improved agent messaging). Both files share the same codebase origin.
+
+- **`agi.html`** — tracks upstream (`cagataycali/agi-diy`), receives upstream changes directly
+- **`sauhsoj-ii.html`** — diverges from `agi.html` at a recorded baseline commit, evolves independently
+
+Baseline commits are recorded in a comment at the top of `sauhsoj-ii.html`. To incorporate upstream changes, diff `agi.html` from the recorded baseline to HEAD and apply to `sauhsoj-ii.html`.
 
 ### Navigating agi.html
 
