@@ -1477,7 +1477,7 @@
         const clearBtn = document.createElement('span');
         clearBtn.textContent = '×';
         clearBtn.style.cssText = 'cursor:pointer;color:#666;font-size:16px;margin-right:8px;flex-shrink:0;';
-        clearBtn.onclick = () => { localStorage.removeItem('agi_pipelines'); updatePipelineUI(); };
+        clearBtn.onclick = () => { localStorage.removeItem('agi_pipelines'); updatePipelineUI(); updateActivityFilterOptions(); const sel = document.getElementById('activityFilter'); if (sel) sel.value = 'all'; filterActivityFeed(); };
         inner.appendChild(clearBtn);
         const nodeEls = [];
         sorted.forEach((task, i) => {
@@ -4037,6 +4037,11 @@ ${getRingContext()}`;
             renderMessages();
             showToast('Chat cleared');
             saveState();
+            // Reset activity feed
+            const feed = document.getElementById('activityFeed');
+            if (feed) { feed.innerHTML = ''; feed.lastAgent = null; }
+            const sel = document.getElementById('activityFilter');
+            if (sel) { sel.value = 'all'; }
         }
     };
     
