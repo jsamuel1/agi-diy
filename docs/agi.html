@@ -3996,7 +3996,16 @@ ${getRingContext()}`;
         
         try {
             let currentText = '';
-            const watchdog = setTimeout(() => { console.error(`⏰ Agent ${agentId} timeout`); ac.abort(); }, 300000);
+            const watchdog = setTimeout(() => {
+                console.error(`⏰ Agent ${agentId} timeout`);
+                ac.abort();
+                agentData.status = 'error';
+                abortControllers.delete(agentId);
+                document.getElementById('interruptBtn').style.display = 'none';
+                if (shouldShow) { removeThinking(); addMessageToUI('error', 'Agent timed out (5 min)', agentId, agentData.color); }
+                appendActivityFeed(agentId, '❌ Timed out after 5 minutes', 'msg');
+                updateAgentUI(); saveState();
+            }, 300000);
             
             for await (const event of activeAgent.stream(message)) {
                 if (ac.signal.aborted) break;
