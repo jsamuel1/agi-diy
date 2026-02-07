@@ -298,7 +298,7 @@ agiContext.scanBluetooth()   // Find nearby devices
 ```
 docs/
 ├── index.html      # Single agent mode
-├── agi.html        # Multi-agent mode
+├── agi.html        # Multi-agent mode (~5100 lines, single file)
 ├── strands.js      # Strands SDK bundle
 ├── vision.js       # Screen capture, ambient mode
 ├── webllm.js       # Local model inference
@@ -307,6 +307,35 @@ docs/
 ├── sw.js           # Service worker (PWA)
 └── manifest.json   # PWA config
 ```
+
+### Navigating agi.html
+
+`agi.html` contains a **Section Index TOC** at the top of its `<script>` block. Search for `═══ SECTION_NAME` to jump to any section. Each heading lists the key functions it contains.
+
+```
+STATE ................ App state, constants, config
+PIPELINE MODEL ....... getPipelines, topoSort, renderPipelineFlow
+MODEL PROVIDERS ...... AnthropicModel, OpenAIModel, BedrockModel
+TOOLS ................ render_ui, javascript_eval, storage, fetch
+AGENT MESH ........... P2P messaging, processIncomingCommand
+MESH TOOLS ........... invoke_agent, broadcast, list_agents
+SELF-MODIFICATION .... create_tool, update_self, custom tools
+PIPELINE TOOLS ....... create_pipeline, add_task, update_task_status
+SANDBOX TOOLS ........ sandbox_create, sandbox_update, preview mode
+HOOKS ................ InterruptHook, SummarizingManager
+GITHUB ............... auth, search, read, create PR
+AGENT MANAGEMENT ..... createAgent, updateAgentUI, selectAgent
+MESSAGING ............ runAgentMessage, sendMessage, clearChat
+ACTIVITY FEED ........ appendActivityFeed, filterActivityFeed
+UI RENDERING ......... addMessageToUI, streaming, tool calls, ring
+MODALS ............... spawn, edit, settings
+SYNC ................. encrypted export/import via URL
+PERSISTENCE .......... saveState, loadState, credentials
+CUSTOM TOOLS UI ...... tool management panel
+INIT ................. DOMContentLoaded, query params, startup
+```
+
+> **For AI agents:** Use this TOC as a fast lookup — grep for the section heading to find the right code block. When adding new functions, update both the section heading's function list and the TOC at the top of the script to keep them in sync.
 
 ---
 
