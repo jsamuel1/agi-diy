@@ -2433,6 +2433,9 @@
                             timestamp: Date.now()
                         });
                     }
+                    else if (event?.type === 'beforeToolCallEvent') {
+                        appendActivityFeed(agentId, `🔧 ${event.toolUse?.name}`, 'tool');
+                    }
                 }
                 
                 this.publish({
@@ -2446,6 +2449,7 @@
                 
                 agentData.messages.push({ role: 'user', content: `${sourceLabel}: ${command}`, timestamp: Date.now() });
                 agentData.messages.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
+                if (fullText) appendActivityFeed(agentId, fullText.replace(/[#*`]/g, '').substring(0, 200));
                 
                 state.ringBuffer.push({ agentId, role: 'assistant', content: fullText, timestamp: Date.now() });
                 updateRingUI();
