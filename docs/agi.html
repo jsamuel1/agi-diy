@@ -3965,16 +3965,19 @@ ${getRingContext()}`;
                     if (shouldShow) updateStreaming(currentText, agentId, agentData.color);
                 }
                 else if (event.type === 'beforeToolCallEvent') {
+                    const toolId = event.toolUse?.toolUseId || `tool-${event.toolUse?.name}-${Date.now()}`;
                     if (shouldShow) {
-                        addToolCall(event.toolUse?.name, event.toolUse?.input, 'running');
+                        addToolCall(event.toolUse?.name, event.toolUse?.input, 'running', toolId);
                         // Move streaming element after tool block so text stays in one place
                         const se = streamingEls.get(agentId);
                         if (se) document.getElementById('messagesInner').appendChild(se);
                     }
                     appendActivityFeed(agentId, `🔧 ${event.toolUse?.name}`, 'tool');
+                    // Store toolId for afterToolCallEvent
+                    event._toolId = toolId;
                 }
                 else if (event.type === 'afterToolCallEvent') {
-                    if (shouldShow) updateToolStatus(event.toolUse?.name, event.result?.status || 'success', event.result);
+                    if (shouldShow) updateToolStatus(event.toolUse?.toolUseId, event.toolUse?.name, event.result?.status || 'success', event.result);
                 }
             }
             
@@ -4085,8 +4088,9 @@ ${getRingContext()}`;
             showToast('Cleared');
             saveState();
             // Reset activity feed
+            activityLog.length = 0;
             const feed = document.getElementById('activityFeed');
-            if (feed) { feed.innerHTML = ''; feed.lastAgent = null; }
+            if (feed) { feed.innerHTML = ''; feed._lastAgent = null; }
             const sel = document.getElementById('activityFilter');
             if (sel) { sel.value = 'all'; updateActivityFilterOptions(); }
         }
@@ -4138,48 +4142,52 @@ ${getRingContext()}`;
         scrollToBottom();
     }
     
+    // ── Activity Feed (data-driven) ──────────────────────────────────────
+    const activityLog = []; // { agentId, text, type, ts }
+
     function appendActivityFeed(agentId, text, type = 'msg') {
+        const agentData = state.agents.get(agentId);
+        activityLog.push({ agentId, text, type, ts: Date.now(), color: agentData?.color || '#888' });
         const feed = document.getElementById('activityFeed');
         if (!feed) return;
         const filter = document.getElementById('activityFilter')?.value;
-        const agentData = state.agents.get(agentId);
-        const color = agentData?.color || '#888';
-        if (!feed.lastAgent || feed.lastAgent !== agentId) {
+        if (filter && filter.startsWith('task:')) return; // don't append while viewing task
+        if (filter && filter !== 'all' && filter !== agentId) return;
+        renderActivityEntry(feed, activityLog[activityLog.length - 1]);
+        feed.scrollTop = feed.scrollHeight;
+    }
+
+    function renderActivityEntry(feed, entry) {
+        if (!feed._lastAgent || feed._lastAgent !== entry.agentId) {
             const h = document.createElement('div');
             h.className = 'af-agent';
-            h.dataset.agent = agentId;
-            h.style.color = color;
-            h.textContent = agentId;
-            if (filter && filter !== 'all' && !filter.startsWith('task:') && filter !== agentId) h.style.display = 'none';
+            h.style.color = entry.color;
+            h.textContent = entry.agentId;
             feed.appendChild(h);
-            feed.lastAgent = agentId;
+            feed._lastAgent = entry.agentId;
         }
         const line = document.createElement('div');
-        line.className = type === 'tool' ? 'af-tool tool-block' : 'af-msg';
-        line.dataset.agent = agentId;
-        line.style.setProperty('--agent-color', color);
-        line.textContent = text.length > 120 ? text.substring(0, 120) + '…' : text;
-        if (filter && filter !== 'all' && !filter.startsWith('task:') && filter !== agentId) line.style.display = 'none';
+        line.className = entry.type === 'tool' ? 'af-tool tool-block' : 'af-msg';
+        line.style.setProperty('--agent-color', entry.color);
+        line.textContent = entry.text.length > 300 ? entry.text.substring(0, 300) + '…' : entry.text;
         feed.appendChild(line);
-        feed.scrollTop = feed.scrollHeight;
     }
 
     function filterActivityFeed() {
         const filter = document.getElementById('activityFilter').value;
         const feed = document.getElementById('activityFeed');
+        feed.innerHTML = '';
+        feed._lastAgent = null;
         if (filter.startsWith('task:')) {
-            // Show pipeline task details
-            const taskId = filter.substring(5);
             const p = getActivePipeline();
-            const task = p?.tasks.find(t => t.id === taskId);
-            feed.innerHTML = '';
-            feed.lastAgent = null;
+            const task = p?.tasks.find(t => t.id === filter.substring(5));
             if (!task) return;
             const h = document.createElement('div');
             h.className = 'af-agent';
             h.style.color = task.color || '#ccc';
             h.textContent = `${task.name} [${task.status}]${task.assignedTo ? ' → ' + task.assignedTo : ''}`;
             feed.appendChild(h);
+            // Show task activities from pipeline
             (task.activities || []).forEach(a => {
                 const line = document.createElement('div');
                 line.className = a.done ? 'af-msg' : 'af-tool';
@@ -4187,12 +4195,14 @@ ${getRingContext()}`;
                 line.textContent = (a.done ? '✓ ' : '') + a.text;
                 feed.appendChild(line);
             });
+            // Also show matching entries from activity log
+            activityLog.filter(e => e.text.includes(task.name.split(' — ')[0])).forEach(e => renderActivityEntry(feed, e));
             return;
         }
-        // Filter by agent
-        feed.querySelectorAll('[data-agent]').forEach(el => {
-            el.style.display = (filter === 'all' || el.dataset.agent === filter) ? '' : 'none';
-        });
+        // Re-render from backing store
+        const entries = filter === 'all' ? activityLog : activityLog.filter(e => e.agentId === filter);
+        entries.forEach(e => renderActivityEntry(feed, e));
+        feed.scrollTop = feed.scrollHeight;
     }
 
     function updateActivityFilterOptions() {
@@ -4266,11 +4276,11 @@ ${getRingContext()}`;
         }
     }
     
-    function addToolCall(name, input, status) {
+    function addToolCall(name, input, status, toolId) {
         const inner = document.getElementById('messagesInner');
         const tool = document.createElement('div');
         tool.className = 'tool-block';
-        tool.id = `tool-${name}-${Date.now()}`;
+        tool.id = toolId || `tool-${name}-${Date.now()}`;
         tool.innerHTML = `
             <div class="tool-header">
                 <div class="tool-status ${status}"></div>
@@ -4283,20 +4293,17 @@ ${getRingContext()}`;
         scrollToBottom();
     }
     
-    function updateToolStatus(name, status, result) {
-        const blocks = document.querySelectorAll('.tool-block');
-        for (let i = blocks.length - 1; i >= 0; i--) {
-            if (blocks[i].querySelector('.tool-name')?.textContent === name) {
-                blocks[i].querySelector('.tool-status').className = `tool-status ${status === 'error' ? 'error' : ''}`;
-                if (result) {
-                    const out = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-                    if (out && out.length > 2) {
-                        const d = document.createElement('details');
-                        d.innerHTML = `<summary style="cursor:pointer;color:var(--text-tertiary);font-size:10px;margin-top:4px;">output</summary><div class="tool-input">${escapeHtml(out.substring(0, 2000))}</div>`;
-                        blocks[i].appendChild(d);
-                    }
-                }
-                break;
+    function updateToolStatus(toolId, name, status, result) {
+        const block = toolId ? document.getElementById(toolId) : null
+            || [...document.querySelectorAll('.tool-block')].reverse().find(b => b.querySelector('.tool-name')?.textContent === name);
+        if (!block) return;
+        block.querySelector('.tool-status').className = `tool-status ${status === 'error' ? 'error' : ''}`;
+        if (result) {
+            const out = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+            if (out && out.length > 2) {
+                const d = document.createElement('details');
+                d.innerHTML = `<summary style="cursor:pointer;color:var(--text-tertiary);font-size:10px;margin-top:4px;">output</summary><div class="tool-input">${escapeHtml(out.substring(0, 2000))}</div>`;
+                block.appendChild(d);
             }
         }
     }
