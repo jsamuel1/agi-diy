@@ -3763,15 +3763,21 @@ ${getRingContext()}`;
     function updateAgentUI() {
         const agentListHtml = [];
         const targetOptions = ['<option value="all">All Agents</option>'];
+        const pipeline = getActivePipeline();
         
         for (const [id, data] of state.agents) {
             const isActive = id === state.activeAgentId;
+            let statusText = data.status;
+            if (data.status === 'processing' && pipeline) {
+                const task = pipeline.tasks.find(t => t.assignedTo === id && t.status === 'working');
+                if (task) statusText = '▶ ' + (task.id.length > 16 ? task.id.substring(0, 16) + '…' : task.id);
+            }
             agentListHtml.push(`
                 <div class="agent-card ${isActive ? 'active' : ''}" onclick="selectAgent('${id}')">
                     <div class="agent-card-header">
                         <span class="agent-dot" style="background:${data.color}"></span>
                         <span class="agent-name">${id}</span>
-                        <span class="agent-status ${data.status}">${data.status}</span>
+                        <span class="agent-status ${data.status}">${statusText}</span>
                     </div>
                     <div class="agent-meta">
                         <span>${data.config.provider}</span>
