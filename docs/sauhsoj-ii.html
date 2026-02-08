@@ -360,10 +360,13 @@
             margin-bottom: 8px;
         }
         .message-role {
-            font-size: 11px;
+            font-size: 9px;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.08em;
+            padding: 1px 4px;
+            border-radius: 3px;
+            background: var(--glass);
             color: var(--text-tertiary);
         }
         .message-agent {
@@ -371,6 +374,11 @@
             padding: 2px 6px;
             border-radius: 4px;
             background: var(--glass);
+        }
+        .message-arrow {
+            color: var(--text-tertiary);
+            opacity: 0.6;
+            font-size: 14px;
         }
         .message-time {
             font-size: 10px;
@@ -4304,8 +4312,7 @@ ${getRingContext()}`;
         if (!feed._lastAgent || feed._lastAgent !== entry.agentId) {
             const h = document.createElement('div');
             h.className = 'af-agent';
-            h.style.color = entry.color;
-            h.textContent = entry.agentId;
+            h.innerHTML = `<span class="message-role">agi</span><span class="message-agent" style="background:${entry.color}20;color:${entry.color}">${entry.agentId}</span>`;
             feed.appendChild(h);
             feed._lastAgent = entry.agentId;
         }
@@ -4396,9 +4403,10 @@ ${getRingContext()}`;
         
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const userColor = '#3b82f6';
+        const arr = '<span class="message-arrow">›</span>';
         const header = role === 'user' 
-            ? `<span style="color:${userColor}">you</span> → <span class="message-agent" style="background:${color}20;color:${color}">${agentId}</span>`
-            : `<span class="message-role">agi</span><span class="message-agent" style="background:${color}20;color:${color}">${agentId}</span> → <span style="color:${userColor}">you</span>`;
+            ? `<span class="message-agent" style="background:${userColor}20;color:${userColor}">you</span>${arr}<span class="message-agent" style="background:${color}20;color:${color}">${agentId}</span>`
+            : `<span class="message-role">agi</span><span class="message-agent" style="background:${color}20;color:${color}">${agentId}</span>${arr}<span class="message-agent" style="background:${userColor}20;color:${userColor}">you</span>`;
         
         msg.innerHTML = `
             <div class="message-header">
