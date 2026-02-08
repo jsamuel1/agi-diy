@@ -573,7 +573,7 @@ function handleRelayMsg(msg){
                     model:meshAgent?`${meshAgent.config?.provider||'browser'} ${meshAgent.config?.modelId||'agent'}`:'browser-agent',
                     tools:['render_ui','javascript_eval','fetch_url','storage_get','storage_set'],
                     tool_count:5,
-                    system_prompt_preview:meshAgent?.config?.systemPrompt?.slice(0,100)||'Browser mesh agent',
+                    system_prompt:meshAgent?.config?.systemPrompt?.slice(0,100)||'Browser mesh agent',
                 }));
             }
             break;
@@ -606,7 +606,7 @@ function handleRelayMsg(msg){
                     id:p.id,type,name:p.name||p.hostname||p.id,
                     hostname:p.hostname,model:p.model,status:p.status||'active',
                     is_self:!!p.is_self,tools:p.tools||[],tool_count:p.tool_count||0,
-                    system_prompt_preview:p.system_prompt_preview||'',
+                    system_prompt:p.system_prompt||'',
                     cwd:p.cwd||'',pplatform:p.platform||'',
                     description:p.description||`${p.hostname||''} (${p.model||''})`+(p.is_self?' [self]':''),
                 })
@@ -632,7 +632,7 @@ function handleRelayMsg(msg){
                 id:p.id,type:'browser',name:p.name||p.id,
                 model:p.model,status:'active',
                 tools:p.tools||[],tool_count:p.tool_count||0,
-                system_prompt_preview:p.system_prompt_preview||'',
+                system_prompt:p.system_prompt||'',
                 description:`${p.model||'browser agent'}`,
                 ws_id:p.ws_id,
             }));break;
@@ -1096,7 +1096,7 @@ function getDesc(a){
     if(a.type==='browser')return`<strong>Browser Agent</strong><br><br>${a.config?.provider||'unknown'} — runs in-browser`;
     if(a.type==='github')return`<strong>${esc(a.repo||a.name)}</strong><br><br>${esc(a.description||'GitHub Actions agent')}<br>${a.workflow?`Workflow: <code>${esc(a.workflow)}</code><br>`:''}${a.stars?`⭐ ${a.stars} stars<br>`:''}${a.last_run?`Last run: ${a.last_run.conclusion||a.last_run.status||'?'}<br>`:''}Send prompt to trigger workflow`;
     if(a.type==='agentcore')return`<strong>AgentCore</strong><br><br>Cloud: ${a.region||'us-west-2'}<br>${esc(a.name||a.id)}`;
-    if(a.type==='zenoh'){let d=`<strong>Zenoh Peer</strong><br>Host: ${esc(a.hostname||'?')} &middot; Model: ${esc(a.model||'?')}`;if(a.is_self)d+=`<br><em style="color:var(--c-zenoh)">This is you (local DevDuck)</em>`;if(a.cwd)d+=`<br>📁 <code>${esc(a.cwd)}</code>`;if(a.pplatform)d+=`<br>💻 ${esc(a.pplatform)}`;if(a.system_prompt_preview)d+=`<br><br><strong>System Prompt:</strong><br><span style="color:var(--t2);font-size:10px">${esc(a.system_prompt_preview)}</span>`;if(a.tools?.length){d+=`<br><br><strong>Tools (${a.tool_count||a.tools.length}):</strong><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${a.tools.map(t=>`<span style="font-size:8px;padding:2px 6px;background:rgba(48,209,88,.1);border:1px solid rgba(48,209,88,.2);border-radius:4px;color:var(--c-zenoh)">${esc(t)}</span>`).join('')}</div>`}return d}
+    if(a.type==='zenoh'){let d=`<strong>Zenoh Peer</strong><br>Host: ${esc(a.hostname||'?')} &middot; Model: ${esc(a.model||'?')}`;if(a.is_self)d+=`<br><em style="color:var(--c-zenoh)">This is you (local DevDuck)</em>`;if(a.cwd)d+=`<br>📁 <code>${esc(a.cwd)}</code>`;if(a.pplatform)d+=`<br>💻 ${esc(a.pplatform)}`;if(a.system_prompt)d+=`<br><br><strong>System Prompt:</strong><br><span style="color:var(--t2);font-size:10px">${esc(a.system_prompt)}</span>`;if(a.tools?.length){d+=`<br><br><strong>Tools (${a.tool_count||a.tools.length}):</strong><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${a.tools.map(t=>`<span style="font-size:8px;padding:2px 6px;background:rgba(48,209,88,.1);border:1px solid rgba(48,209,88,.2);border-radius:4px;color:var(--c-zenoh)">${esc(t)}</span>`).join('')}</div>`}return d}
     return'Agent ready';
 }
 
