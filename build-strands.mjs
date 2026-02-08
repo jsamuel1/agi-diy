@@ -52,6 +52,9 @@ const STUBS = resolve(__dirname, 'stubs');
 
 // OpenAI resources to keep (chat, responses, shared). Stub everything else.
 const OPENAI_KEEP = new Set(['chat', 'responses', 'shared', 'index']);
+// Anthropic resources to keep (messages). Stub everything else.
+const ANTHROPIC_KEEP = new Set(['messages', 'shared', 'index']);
+const STUB_CLASS = `const S = class { constructor() {} }; export { S as default };`;
 const trimPlugin = {
   name: 'trim-unused',
   setup(build) {
@@ -59,9 +62,7 @@ const trimPlugin = {
     build.onLoad({ filter: /openai\/resources\/.*\.mjs$/ }, args => {
       const match = args.path.match(/resources\/([^/.]+)/);
       if (match && !OPENAI_KEEP.has(match[1])) {
-        return { contents: `
-          const S = class { constructor() {} };
-          export { S as default };
+        return { contents: `${STUB_CLASS}
           export const Audio=S, Batches=S, Beta=S, Completions=S, Containers=S;
           export const Conversations=S, Embeddings=S, Evals=S, Files=S;
           export const FineTuning=S, Graders=S, Images=S, Models=S;
@@ -69,6 +70,22 @@ const trimPlugin = {
           export const Videos=S, Webhooks=S;
         `, loader: 'js' };
       }
+    });
+    // Anthropic: stub beta, completions, models, batches
+    build.onLoad({ filter: /@anthropic-ai\/sdk\/resources\/.*\.mjs$/ }, args => {
+      const match = args.path.match(/resources\/([^/.]+)/);
+      if (match && !ANTHROPIC_KEEP.has(match[1])) {
+        return { contents: `${STUB_CLASS}
+          export const Beta=S, Completions=S, Models=S, Messages=S, Batches=S;
+          export const Files=S, Skills=S, Versions=S;
+        `, loader: 'js' };
+      }
+    });
+    // Anthropic: stub BetaMessageStream, BetaToolRunner
+    build.onLoad({ filter: /@anthropic-ai\/sdk\/lib\/Beta.*\.mjs$/ }, args => {
+      return { contents: `${STUB_CLASS}
+        export const BetaMessageStream=S, BetaToolRunner=S;
+      `, loader: 'js' };
     });
     // MCP SDK: replace 73KB types.js with minimal runtime-only version
     const MCP_TYPES_STUB = resolve(STUBS, 'mcp-types.js');

@@ -8395,36 +8395,6 @@ var Page = class extends AbstractPage {
     };
   }
 };
-var PageCursor = class extends AbstractPage {
-  constructor(client, response, body, options) {
-    super(client, response, body, options);
-    this.data = body.data || [];
-    this.has_more = body.has_more || false;
-    this.next_page = body.next_page || null;
-  }
-  getPaginatedItems() {
-    return this.data ?? [];
-  }
-  hasNextPage() {
-    if (this.has_more === false) {
-      return false;
-    }
-    return super.hasNextPage();
-  }
-  nextPageRequestOptions() {
-    const cursor = this.next_page;
-    if (!cursor) {
-      return null;
-    }
-    return {
-      ...this.options,
-      query: {
-        ...maybeObj(this.options.query),
-        page: cursor
-      }
-    };
-  }
-};
 
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/uploads.mjs
 var checkFileSupport = () => {
@@ -8442,66 +8412,6 @@ function getName(value) {
   return (typeof value === "object" && value !== null && ("name" in value && value.name && String(value.name) || "url" in value && value.url && String(value.url) || "filename" in value && value.filename && String(value.filename) || "path" in value && value.path && String(value.path)) || "").split(/[\\/]/).pop() || void 0;
 }
 var isAsyncIterable = (value) => value != null && typeof value === "object" && typeof value[Symbol.asyncIterator] === "function";
-var multipartFormRequestOptions = async (opts, fetch2) => {
-  return { ...opts, body: await createForm(opts.body, fetch2) };
-};
-var supportsFormDataMap = /* @__PURE__ */ new WeakMap();
-function supportsFormData(fetchObject) {
-  const fetch2 = typeof fetchObject === "function" ? fetchObject : fetchObject.fetch;
-  const cached = supportsFormDataMap.get(fetch2);
-  if (cached)
-    return cached;
-  const promise = (async () => {
-    try {
-      const FetchResponse = "Response" in fetch2 ? fetch2.Response : (await fetch2("data:,")).constructor;
-      const data = new FormData();
-      if (data.toString() === await new FetchResponse(data).text()) {
-        return false;
-      }
-      return true;
-    } catch {
-      return true;
-    }
-  })();
-  supportsFormDataMap.set(fetch2, promise);
-  return promise;
-}
-var createForm = async (body, fetch2) => {
-  if (!await supportsFormData(fetch2)) {
-    throw new TypeError("The provided fetch function does not support file uploads with the current global FormData class.");
-  }
-  const form = new FormData();
-  await Promise.all(Object.entries(body || {}).map(([key, value]) => addFormValue(form, key, value)));
-  return form;
-};
-var isNamedBlob = (value) => value instanceof Blob && "name" in value;
-var addFormValue = async (form, key, value) => {
-  if (value === void 0)
-    return;
-  if (value == null) {
-    throw new TypeError(`Received null for "${key}"; to pass null in FormData, you must use the string 'null'`);
-  }
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-    form.append(key, String(value));
-  } else if (value instanceof Response) {
-    let options = {};
-    const contentType = value.headers.get("Content-Type");
-    if (contentType) {
-      options = { type: contentType };
-    }
-    form.append(key, makeFile([await value.blob()], getName(value), options));
-  } else if (isAsyncIterable(value)) {
-    form.append(key, makeFile([await new Response(ReadableStreamFrom(value)).blob()], getName(value)));
-  } else if (isNamedBlob(value)) {
-    form.append(key, makeFile([value], getName(value), { type: value.type }));
-  } else if (Array.isArray(value)) {
-    await Promise.all(value.map((entry) => addFormValue(form, key + "[]", entry)));
-  } else if (typeof value === "object") {
-    await Promise.all(Object.entries(value).map(([name, prop]) => addFormValue(form, `${key}[${name}]`, prop)));
-  } else {
-    throw new TypeError(`Invalid value given to form, expected a string, number, boolean, object, Array, File or Blob but got ${value} instead`);
-  }
-};
 
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/to-file.mjs
 var isBlobLike = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
@@ -8559,375 +8469,26 @@ function propsForError(value) {
   return `; props: [${props.map((p) => `"${p}"`).join(", ")}]`;
 }
 
+// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
+var S = class {
+  constructor() {
+  }
+};
+var Beta = S;
+
+// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/completions.mjs
+var S2 = class {
+  constructor() {
+  }
+};
+var Completions = S2;
+
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/core/resource.mjs
 var APIResource = class {
   constructor(client) {
     this._client = client;
   }
 };
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/headers.mjs
-var brand_privateNullableHeaders = /* @__PURE__ */ Symbol.for("brand.privateNullableHeaders");
-function* iterateHeaders(headers) {
-  if (!headers)
-    return;
-  if (brand_privateNullableHeaders in headers) {
-    const { values, nulls } = headers;
-    yield* values.entries();
-    for (const name of nulls) {
-      yield [name, null];
-    }
-    return;
-  }
-  let shouldClear = false;
-  let iter;
-  if (headers instanceof Headers) {
-    iter = headers.entries();
-  } else if (isReadonlyArray(headers)) {
-    iter = headers;
-  } else {
-    shouldClear = true;
-    iter = Object.entries(headers ?? {});
-  }
-  for (let row of iter) {
-    const name = row[0];
-    if (typeof name !== "string")
-      throw new TypeError("expected header name to be a string");
-    const values = isReadonlyArray(row[1]) ? row[1] : [row[1]];
-    let didClear = false;
-    for (const value of values) {
-      if (value === void 0)
-        continue;
-      if (shouldClear && !didClear) {
-        didClear = true;
-        yield [name, null];
-      }
-      yield [name, value];
-    }
-  }
-}
-var buildHeaders = (newHeaders) => {
-  const targetHeaders = new Headers();
-  const nullHeaders = /* @__PURE__ */ new Set();
-  for (const headers of newHeaders) {
-    const seenHeaders = /* @__PURE__ */ new Set();
-    for (const [name, value] of iterateHeaders(headers)) {
-      const lowerName = name.toLowerCase();
-      if (!seenHeaders.has(lowerName)) {
-        targetHeaders.delete(name);
-        seenHeaders.add(lowerName);
-      }
-      if (value === null) {
-        targetHeaders.delete(name);
-        nullHeaders.add(lowerName);
-      } else {
-        targetHeaders.append(name, value);
-        nullHeaders.delete(lowerName);
-      }
-    }
-  }
-  return { [brand_privateNullableHeaders]: true, values: targetHeaders, nulls: nullHeaders };
-};
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
-function encodeURIPath(str2) {
-  return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
-}
-var EMPTY = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
-var createPathTagFunction = (pathEncoder = encodeURIPath) => function path3(statics, ...params) {
-  if (statics.length === 1)
-    return statics[0];
-  let postPath = false;
-  const invalidSegments = [];
-  const path4 = statics.reduce((previousValue, currentValue, index) => {
-    if (/[?#]/.test(currentValue)) {
-      postPath = true;
-    }
-    const value = params[index];
-    let encoded = (postPath ? encodeURIComponent : pathEncoder)("" + value);
-    if (index !== params.length && (value == null || typeof value === "object" && // handle values from other realms
-    value.toString === Object.getPrototypeOf(Object.getPrototypeOf(value.hasOwnProperty ?? EMPTY) ?? EMPTY)?.toString)) {
-      encoded = value + "";
-      invalidSegments.push({
-        start: previousValue.length + currentValue.length,
-        length: encoded.length,
-        error: `Value of type ${Object.prototype.toString.call(value).slice(8, -1)} is not a valid path parameter`
-      });
-    }
-    return previousValue + currentValue + (index === params.length ? "" : encoded);
-  }, "");
-  const pathOnly = path4.split(/[?#]/, 1)[0];
-  const invalidSegmentPattern = /(?<=^|\/)(?:\.|%2e){1,2}(?=\/|$)/gi;
-  let match;
-  while ((match = invalidSegmentPattern.exec(pathOnly)) !== null) {
-    invalidSegments.push({
-      start: match.index,
-      length: match[0].length,
-      error: `Value "${match[0]}" can't be safely passed as a path parameter`
-    });
-  }
-  invalidSegments.sort((a, b) => a.start - b.start);
-  if (invalidSegments.length > 0) {
-    let lastEnd = 0;
-    const underline = invalidSegments.reduce((acc, segment) => {
-      const spaces = " ".repeat(segment.start - lastEnd);
-      const arrows = "^".repeat(segment.length);
-      lastEnd = segment.start + segment.length;
-      return acc + spaces + arrows;
-    }, "");
-    throw new AnthropicError(`Path parameters result in path with invalid segments:
-${invalidSegments.map((e) => e.error).join("\n")}
-${path4}
-${underline}`);
-  }
-  return path4;
-};
-var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/beta/files.mjs
-var Files = class extends APIResource {
-  /**
-   * List Files
-   *
-   * @example
-   * ```ts
-   * // Automatically fetches more pages as needed.
-   * for await (const fileMetadata of client.beta.files.list()) {
-   *   // ...
-   * }
-   * ```
-   */
-  list(params = {}, options) {
-    const { betas, ...query } = params ?? {};
-    return this._client.getAPIList("/v1/files", Page, {
-      query,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * Delete File
-   *
-   * @example
-   * ```ts
-   * const deletedFile = await client.beta.files.delete(
-   *   'file_id',
-   * );
-   * ```
-   */
-  delete(fileID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.delete(path`/v1/files/${fileID}`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * Download File
-   *
-   * @example
-   * ```ts
-   * const response = await client.beta.files.download(
-   *   'file_id',
-   * );
-   *
-   * const content = await response.blob();
-   * console.log(content);
-   * ```
-   */
-  download(fileID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.get(path`/v1/files/${fileID}/content`, {
-      ...options,
-      headers: buildHeaders([
-        {
-          "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString(),
-          Accept: "application/binary"
-        },
-        options?.headers
-      ]),
-      __binaryResponse: true
-    });
-  }
-  /**
-   * Get File Metadata
-   *
-   * @example
-   * ```ts
-   * const fileMetadata =
-   *   await client.beta.files.retrieveMetadata('file_id');
-   * ```
-   */
-  retrieveMetadata(fileID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.get(path`/v1/files/${fileID}`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * Upload File
-   *
-   * @example
-   * ```ts
-   * const fileMetadata = await client.beta.files.upload({
-   *   file: fs.createReadStream('path/to/file'),
-   * });
-   * ```
-   */
-  upload(params, options) {
-    const { betas, ...body } = params;
-    return this._client.post("/v1/files", multipartFormRequestOptions({
-      body,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "files-api-2025-04-14"].toString() },
-        options?.headers
-      ])
-    }, this._client));
-  }
-};
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/beta/models.mjs
-var Models = class extends APIResource {
-  /**
-   * Get a specific model.
-   *
-   * The Models API response can be used to determine information about a specific
-   * model or resolve a model alias to a model ID.
-   *
-   * @example
-   * ```ts
-   * const betaModelInfo = await client.beta.models.retrieve(
-   *   'model_id',
-   * );
-   * ```
-   */
-  retrieve(modelID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.get(path`/v1/models/${modelID}?beta=true`, {
-      ...options,
-      headers: buildHeaders([
-        { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * List available models.
-   *
-   * The Models API response can be used to determine which models are available for
-   * use in the API. More recently released models are listed first.
-   *
-   * @example
-   * ```ts
-   * // Automatically fetches more pages as needed.
-   * for await (const betaModelInfo of client.beta.models.list()) {
-   *   // ...
-   * }
-   * ```
-   */
-  list(params = {}, options) {
-    const { betas, ...query } = params ?? {};
-    return this._client.getAPIList("/v1/models?beta=true", Page, {
-      query,
-      ...options,
-      headers: buildHeaders([
-        { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
-        options?.headers
-      ])
-    });
-  }
-};
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/constants.mjs
-var MODEL_NONSTREAMING_TOKENS = {
-  "claude-opus-4-20250514": 8192,
-  "claude-opus-4-0": 8192,
-  "claude-4-opus-20250514": 8192,
-  "anthropic.claude-opus-4-20250514-v1:0": 8192,
-  "claude-opus-4@20250514": 8192,
-  "claude-opus-4-1-20250805": 8192,
-  "anthropic.claude-opus-4-1-20250805-v1:0": 8192,
-  "claude-opus-4-1@20250805": 8192
-};
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/lib/beta-parser.mjs
-function maybeParseBetaMessage(message, params, opts) {
-  if (!params || !("parse" in (params.output_format ?? {}))) {
-    return {
-      ...message,
-      content: message.content.map((block) => {
-        if (block.type === "text") {
-          const parsedBlock = Object.defineProperty({ ...block }, "parsed_output", {
-            value: null,
-            enumerable: false
-          });
-          return Object.defineProperty(parsedBlock, "parsed", {
-            get() {
-              opts.logger.warn("The `parsed` property on `text` blocks is deprecated, please use `parsed_output` instead.");
-              return null;
-            },
-            enumerable: false
-          });
-        }
-        return block;
-      }),
-      parsed_output: null
-    };
-  }
-  return parseBetaMessage(message, params, opts);
-}
-function parseBetaMessage(message, params, opts) {
-  let firstParsedOutput = null;
-  const content = message.content.map((block) => {
-    if (block.type === "text") {
-      const parsedOutput = parseBetaOutputFormat(params, block.text);
-      if (firstParsedOutput === null) {
-        firstParsedOutput = parsedOutput;
-      }
-      const parsedBlock = Object.defineProperty({ ...block }, "parsed_output", {
-        value: parsedOutput,
-        enumerable: false
-      });
-      return Object.defineProperty(parsedBlock, "parsed", {
-        get() {
-          opts.logger.warn("The `parsed` property on `text` blocks is deprecated, please use `parsed_output` instead.");
-          return parsedOutput;
-        },
-        enumerable: false
-      });
-    }
-    return block;
-  });
-  return {
-    ...message,
-    content,
-    parsed_output: firstParsedOutput
-  };
-}
-function parseBetaOutputFormat(params, content) {
-  if (params.output_format?.type !== "json_schema") {
-    return null;
-  }
-  try {
-    if ("parse" in params.output_format) {
-      return params.output_format.parse(content);
-    }
-    return JSON.parse(content);
-  } catch (error) {
-    throw new AnthropicError(`Failed to parse structured output: ${error}`);
-  }
-}
 
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs
 var tokenize = (input) => {
@@ -9149,1504 +8710,6 @@ var generate = (tokens) => {
 };
 var partialParse = (input) => JSON.parse(generate(unstrip(strip(tokenize(input)))));
 
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/lib/BetaMessageStream.mjs
-var _BetaMessageStream_instances;
-var _BetaMessageStream_currentMessageSnapshot;
-var _BetaMessageStream_params;
-var _BetaMessageStream_connectedPromise;
-var _BetaMessageStream_resolveConnectedPromise;
-var _BetaMessageStream_rejectConnectedPromise;
-var _BetaMessageStream_endPromise;
-var _BetaMessageStream_resolveEndPromise;
-var _BetaMessageStream_rejectEndPromise;
-var _BetaMessageStream_listeners;
-var _BetaMessageStream_ended;
-var _BetaMessageStream_errored;
-var _BetaMessageStream_aborted;
-var _BetaMessageStream_catchingPromiseCreated;
-var _BetaMessageStream_response;
-var _BetaMessageStream_request_id;
-var _BetaMessageStream_logger;
-var _BetaMessageStream_getFinalMessage;
-var _BetaMessageStream_getFinalText;
-var _BetaMessageStream_handleError;
-var _BetaMessageStream_beginRequest;
-var _BetaMessageStream_addStreamEvent;
-var _BetaMessageStream_endRequest;
-var _BetaMessageStream_accumulateMessage;
-var JSON_BUF_PROPERTY = "__json_buf";
-function tracksToolInput(content) {
-  return content.type === "tool_use" || content.type === "server_tool_use" || content.type === "mcp_tool_use";
-}
-var BetaMessageStream = class _BetaMessageStream {
-  constructor(params, opts) {
-    _BetaMessageStream_instances.add(this);
-    this.messages = [];
-    this.receivedMessages = [];
-    _BetaMessageStream_currentMessageSnapshot.set(this, void 0);
-    _BetaMessageStream_params.set(this, null);
-    this.controller = new AbortController();
-    _BetaMessageStream_connectedPromise.set(this, void 0);
-    _BetaMessageStream_resolveConnectedPromise.set(this, () => {
-    });
-    _BetaMessageStream_rejectConnectedPromise.set(this, () => {
-    });
-    _BetaMessageStream_endPromise.set(this, void 0);
-    _BetaMessageStream_resolveEndPromise.set(this, () => {
-    });
-    _BetaMessageStream_rejectEndPromise.set(this, () => {
-    });
-    _BetaMessageStream_listeners.set(this, {});
-    _BetaMessageStream_ended.set(this, false);
-    _BetaMessageStream_errored.set(this, false);
-    _BetaMessageStream_aborted.set(this, false);
-    _BetaMessageStream_catchingPromiseCreated.set(this, false);
-    _BetaMessageStream_response.set(this, void 0);
-    _BetaMessageStream_request_id.set(this, void 0);
-    _BetaMessageStream_logger.set(this, void 0);
-    _BetaMessageStream_handleError.set(this, (error) => {
-      __classPrivateFieldSet(this, _BetaMessageStream_errored, true, "f");
-      if (isAbortError(error)) {
-        error = new APIUserAbortError();
-      }
-      if (error instanceof APIUserAbortError) {
-        __classPrivateFieldSet(this, _BetaMessageStream_aborted, true, "f");
-        return this._emit("abort", error);
-      }
-      if (error instanceof AnthropicError) {
-        return this._emit("error", error);
-      }
-      if (error instanceof Error) {
-        const anthropicError = new AnthropicError(error.message);
-        anthropicError.cause = error;
-        return this._emit("error", anthropicError);
-      }
-      return this._emit("error", new AnthropicError(String(error)));
-    });
-    __classPrivateFieldSet(this, _BetaMessageStream_connectedPromise, new Promise((resolve, reject) => {
-      __classPrivateFieldSet(this, _BetaMessageStream_resolveConnectedPromise, resolve, "f");
-      __classPrivateFieldSet(this, _BetaMessageStream_rejectConnectedPromise, reject, "f");
-    }), "f");
-    __classPrivateFieldSet(this, _BetaMessageStream_endPromise, new Promise((resolve, reject) => {
-      __classPrivateFieldSet(this, _BetaMessageStream_resolveEndPromise, resolve, "f");
-      __classPrivateFieldSet(this, _BetaMessageStream_rejectEndPromise, reject, "f");
-    }), "f");
-    __classPrivateFieldGet(this, _BetaMessageStream_connectedPromise, "f").catch(() => {
-    });
-    __classPrivateFieldGet(this, _BetaMessageStream_endPromise, "f").catch(() => {
-    });
-    __classPrivateFieldSet(this, _BetaMessageStream_params, params, "f");
-    __classPrivateFieldSet(this, _BetaMessageStream_logger, opts?.logger ?? console, "f");
-  }
-  get response() {
-    return __classPrivateFieldGet(this, _BetaMessageStream_response, "f");
-  }
-  get request_id() {
-    return __classPrivateFieldGet(this, _BetaMessageStream_request_id, "f");
-  }
-  /**
-   * Returns the `MessageStream` data, the raw `Response` instance and the ID of the request,
-   * returned vie the `request-id` header which is useful for debugging requests and resporting
-   * issues to Anthropic.
-   *
-   * This is the same as the `APIPromise.withResponse()` method.
-   *
-   * This method will raise an error if you created the stream using `MessageStream.fromReadableStream`
-   * as no `Response` is available.
-   */
-  async withResponse() {
-    __classPrivateFieldSet(this, _BetaMessageStream_catchingPromiseCreated, true, "f");
-    const response = await __classPrivateFieldGet(this, _BetaMessageStream_connectedPromise, "f");
-    if (!response) {
-      throw new Error("Could not resolve a `Response` object");
-    }
-    return {
-      data: this,
-      response,
-      request_id: response.headers.get("request-id")
-    };
-  }
-  /**
-   * Intended for use on the frontend, consuming a stream produced with
-   * `.toReadableStream()` on the backend.
-   *
-   * Note that messages sent to the model do not appear in `.on('message')`
-   * in this context.
-   */
-  static fromReadableStream(stream) {
-    const runner = new _BetaMessageStream(null);
-    runner._run(() => runner._fromReadableStream(stream));
-    return runner;
-  }
-  static createMessage(messages, params, options, { logger: logger2 } = {}) {
-    const runner = new _BetaMessageStream(params, { logger: logger2 });
-    for (const message of params.messages) {
-      runner._addMessageParam(message);
-    }
-    __classPrivateFieldSet(runner, _BetaMessageStream_params, { ...params, stream: true }, "f");
-    runner._run(() => runner._createMessage(messages, { ...params, stream: true }, { ...options, headers: { ...options?.headers, "X-Stainless-Helper-Method": "stream" } }));
-    return runner;
-  }
-  _run(executor) {
-    executor().then(() => {
-      this._emitFinal();
-      this._emit("end");
-    }, __classPrivateFieldGet(this, _BetaMessageStream_handleError, "f"));
-  }
-  _addMessageParam(message) {
-    this.messages.push(message);
-  }
-  _addMessage(message, emit = true) {
-    this.receivedMessages.push(message);
-    if (emit) {
-      this._emit("message", message);
-    }
-  }
-  async _createMessage(messages, params, options) {
-    const signal = options?.signal;
-    let abortHandler;
-    if (signal) {
-      if (signal.aborted)
-        this.controller.abort();
-      abortHandler = this.controller.abort.bind(this.controller);
-      signal.addEventListener("abort", abortHandler);
-    }
-    try {
-      __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_beginRequest).call(this);
-      const { response, data: stream } = await messages.create({ ...params, stream: true }, { ...options, signal: this.controller.signal }).withResponse();
-      this._connected(response);
-      for await (const event of stream) {
-        __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_addStreamEvent).call(this, event);
-      }
-      if (stream.controller.signal?.aborted) {
-        throw new APIUserAbortError();
-      }
-      __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_endRequest).call(this);
-    } finally {
-      if (signal && abortHandler) {
-        signal.removeEventListener("abort", abortHandler);
-      }
-    }
-  }
-  _connected(response) {
-    if (this.ended)
-      return;
-    __classPrivateFieldSet(this, _BetaMessageStream_response, response, "f");
-    __classPrivateFieldSet(this, _BetaMessageStream_request_id, response?.headers.get("request-id"), "f");
-    __classPrivateFieldGet(this, _BetaMessageStream_resolveConnectedPromise, "f").call(this, response);
-    this._emit("connect");
-  }
-  get ended() {
-    return __classPrivateFieldGet(this, _BetaMessageStream_ended, "f");
-  }
-  get errored() {
-    return __classPrivateFieldGet(this, _BetaMessageStream_errored, "f");
-  }
-  get aborted() {
-    return __classPrivateFieldGet(this, _BetaMessageStream_aborted, "f");
-  }
-  abort() {
-    this.controller.abort();
-  }
-  /**
-   * Adds the listener function to the end of the listeners array for the event.
-   * No checks are made to see if the listener has already been added. Multiple calls passing
-   * the same combination of event and listener will result in the listener being added, and
-   * called, multiple times.
-   * @returns this MessageStream, so that calls can be chained
-   */
-  on(event, listener) {
-    const listeners = __classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event] || (__classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event] = []);
-    listeners.push({ listener });
-    return this;
-  }
-  /**
-   * Removes the specified listener from the listener array for the event.
-   * off() will remove, at most, one instance of a listener from the listener array. If any single
-   * listener has been added multiple times to the listener array for the specified event, then
-   * off() must be called multiple times to remove each instance.
-   * @returns this MessageStream, so that calls can be chained
-   */
-  off(event, listener) {
-    const listeners = __classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event];
-    if (!listeners)
-      return this;
-    const index = listeners.findIndex((l) => l.listener === listener);
-    if (index >= 0)
-      listeners.splice(index, 1);
-    return this;
-  }
-  /**
-   * Adds a one-time listener function for the event. The next time the event is triggered,
-   * this listener is removed and then invoked.
-   * @returns this MessageStream, so that calls can be chained
-   */
-  once(event, listener) {
-    const listeners = __classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event] || (__classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event] = []);
-    listeners.push({ listener, once: true });
-    return this;
-  }
-  /**
-   * This is similar to `.once()`, but returns a Promise that resolves the next time
-   * the event is triggered, instead of calling a listener callback.
-   * @returns a Promise that resolves the next time given event is triggered,
-   * or rejects if an error is emitted.  (If you request the 'error' event,
-   * returns a promise that resolves with the error).
-   *
-   * Example:
-   *
-   *   const message = await stream.emitted('message') // rejects if the stream errors
-   */
-  emitted(event) {
-    return new Promise((resolve, reject) => {
-      __classPrivateFieldSet(this, _BetaMessageStream_catchingPromiseCreated, true, "f");
-      if (event !== "error")
-        this.once("error", reject);
-      this.once(event, resolve);
-    });
-  }
-  async done() {
-    __classPrivateFieldSet(this, _BetaMessageStream_catchingPromiseCreated, true, "f");
-    await __classPrivateFieldGet(this, _BetaMessageStream_endPromise, "f");
-  }
-  get currentMessage() {
-    return __classPrivateFieldGet(this, _BetaMessageStream_currentMessageSnapshot, "f");
-  }
-  /**
-   * @returns a promise that resolves with the the final assistant Message response,
-   * or rejects if an error occurred or the stream ended prematurely without producing a Message.
-   * If structured outputs were used, this will be a ParsedMessage with a `parsed` field.
-   */
-  async finalMessage() {
-    await this.done();
-    return __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_getFinalMessage).call(this);
-  }
-  /**
-   * @returns a promise that resolves with the the final assistant Message's text response, concatenated
-   * together if there are more than one text blocks.
-   * Rejects if an error occurred or the stream ended prematurely without producing a Message.
-   */
-  async finalText() {
-    await this.done();
-    return __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_getFinalText).call(this);
-  }
-  _emit(event, ...args) {
-    if (__classPrivateFieldGet(this, _BetaMessageStream_ended, "f"))
-      return;
-    if (event === "end") {
-      __classPrivateFieldSet(this, _BetaMessageStream_ended, true, "f");
-      __classPrivateFieldGet(this, _BetaMessageStream_resolveEndPromise, "f").call(this);
-    }
-    const listeners = __classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event];
-    if (listeners) {
-      __classPrivateFieldGet(this, _BetaMessageStream_listeners, "f")[event] = listeners.filter((l) => !l.once);
-      listeners.forEach(({ listener }) => listener(...args));
-    }
-    if (event === "abort") {
-      const error = args[0];
-      if (!__classPrivateFieldGet(this, _BetaMessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
-        Promise.reject(error);
-      }
-      __classPrivateFieldGet(this, _BetaMessageStream_rejectConnectedPromise, "f").call(this, error);
-      __classPrivateFieldGet(this, _BetaMessageStream_rejectEndPromise, "f").call(this, error);
-      this._emit("end");
-      return;
-    }
-    if (event === "error") {
-      const error = args[0];
-      if (!__classPrivateFieldGet(this, _BetaMessageStream_catchingPromiseCreated, "f") && !listeners?.length) {
-        Promise.reject(error);
-      }
-      __classPrivateFieldGet(this, _BetaMessageStream_rejectConnectedPromise, "f").call(this, error);
-      __classPrivateFieldGet(this, _BetaMessageStream_rejectEndPromise, "f").call(this, error);
-      this._emit("end");
-    }
-  }
-  _emitFinal() {
-    const finalMessage = this.receivedMessages.at(-1);
-    if (finalMessage) {
-      this._emit("finalMessage", __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_getFinalMessage).call(this));
-    }
-  }
-  async _fromReadableStream(readableStream, options) {
-    const signal = options?.signal;
-    let abortHandler;
-    if (signal) {
-      if (signal.aborted)
-        this.controller.abort();
-      abortHandler = this.controller.abort.bind(this.controller);
-      signal.addEventListener("abort", abortHandler);
-    }
-    try {
-      __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_beginRequest).call(this);
-      this._connected(null);
-      const stream = Stream.fromReadableStream(readableStream, this.controller);
-      for await (const event of stream) {
-        __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_addStreamEvent).call(this, event);
-      }
-      if (stream.controller.signal?.aborted) {
-        throw new APIUserAbortError();
-      }
-      __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_endRequest).call(this);
-    } finally {
-      if (signal && abortHandler) {
-        signal.removeEventListener("abort", abortHandler);
-      }
-    }
-  }
-  [(_BetaMessageStream_currentMessageSnapshot = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_params = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_connectedPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_resolveConnectedPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_rejectConnectedPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_endPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_resolveEndPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_rejectEndPromise = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_listeners = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_ended = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_errored = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_aborted = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_catchingPromiseCreated = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_response = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_request_id = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_logger = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_handleError = /* @__PURE__ */ new WeakMap(), _BetaMessageStream_instances = /* @__PURE__ */ new WeakSet(), _BetaMessageStream_getFinalMessage = function _BetaMessageStream_getFinalMessage2() {
-    if (this.receivedMessages.length === 0) {
-      throw new AnthropicError("stream ended without producing a Message with role=assistant");
-    }
-    return this.receivedMessages.at(-1);
-  }, _BetaMessageStream_getFinalText = function _BetaMessageStream_getFinalText2() {
-    if (this.receivedMessages.length === 0) {
-      throw new AnthropicError("stream ended without producing a Message with role=assistant");
-    }
-    const textBlocks = this.receivedMessages.at(-1).content.filter((block) => block.type === "text").map((block) => block.text);
-    if (textBlocks.length === 0) {
-      throw new AnthropicError("stream ended without producing a content block with type=text");
-    }
-    return textBlocks.join(" ");
-  }, _BetaMessageStream_beginRequest = function _BetaMessageStream_beginRequest2() {
-    if (this.ended)
-      return;
-    __classPrivateFieldSet(this, _BetaMessageStream_currentMessageSnapshot, void 0, "f");
-  }, _BetaMessageStream_addStreamEvent = function _BetaMessageStream_addStreamEvent2(event) {
-    if (this.ended)
-      return;
-    const messageSnapshot = __classPrivateFieldGet(this, _BetaMessageStream_instances, "m", _BetaMessageStream_accumulateMessage).call(this, event);
-    this._emit("streamEvent", event, messageSnapshot);
-    switch (event.type) {
-      case "content_block_delta": {
-        const content = messageSnapshot.content.at(-1);
-        switch (event.delta.type) {
-          case "text_delta": {
-            if (content.type === "text") {
-              this._emit("text", event.delta.text, content.text || "");
-            }
-            break;
-          }
-          case "citations_delta": {
-            if (content.type === "text") {
-              this._emit("citation", event.delta.citation, content.citations ?? []);
-            }
-            break;
-          }
-          case "input_json_delta": {
-            if (tracksToolInput(content) && content.input) {
-              this._emit("inputJson", event.delta.partial_json, content.input);
-            }
-            break;
-          }
-          case "thinking_delta": {
-            if (content.type === "thinking") {
-              this._emit("thinking", event.delta.thinking, content.thinking);
-            }
-            break;
-          }
-          case "signature_delta": {
-            if (content.type === "thinking") {
-              this._emit("signature", content.signature);
-            }
-            break;
-          }
-          default:
-            checkNever(event.delta);
-        }
-        break;
-      }
-      case "message_stop": {
-        this._addMessageParam(messageSnapshot);
-        this._addMessage(maybeParseBetaMessage(messageSnapshot, __classPrivateFieldGet(this, _BetaMessageStream_params, "f"), { logger: __classPrivateFieldGet(this, _BetaMessageStream_logger, "f") }), true);
-        break;
-      }
-      case "content_block_stop": {
-        this._emit("contentBlock", messageSnapshot.content.at(-1));
-        break;
-      }
-      case "message_start": {
-        __classPrivateFieldSet(this, _BetaMessageStream_currentMessageSnapshot, messageSnapshot, "f");
-        break;
-      }
-      case "content_block_start":
-      case "message_delta":
-        break;
-    }
-  }, _BetaMessageStream_endRequest = function _BetaMessageStream_endRequest2() {
-    if (this.ended) {
-      throw new AnthropicError(`stream has ended, this shouldn't happen`);
-    }
-    const snapshot = __classPrivateFieldGet(this, _BetaMessageStream_currentMessageSnapshot, "f");
-    if (!snapshot) {
-      throw new AnthropicError(`request ended without sending any chunks`);
-    }
-    __classPrivateFieldSet(this, _BetaMessageStream_currentMessageSnapshot, void 0, "f");
-    return maybeParseBetaMessage(snapshot, __classPrivateFieldGet(this, _BetaMessageStream_params, "f"), { logger: __classPrivateFieldGet(this, _BetaMessageStream_logger, "f") });
-  }, _BetaMessageStream_accumulateMessage = function _BetaMessageStream_accumulateMessage2(event) {
-    let snapshot = __classPrivateFieldGet(this, _BetaMessageStream_currentMessageSnapshot, "f");
-    if (event.type === "message_start") {
-      if (snapshot) {
-        throw new AnthropicError(`Unexpected event order, got ${event.type} before receiving "message_stop"`);
-      }
-      return event.message;
-    }
-    if (!snapshot) {
-      throw new AnthropicError(`Unexpected event order, got ${event.type} before "message_start"`);
-    }
-    switch (event.type) {
-      case "message_stop":
-        return snapshot;
-      case "message_delta":
-        snapshot.container = event.delta.container;
-        snapshot.stop_reason = event.delta.stop_reason;
-        snapshot.stop_sequence = event.delta.stop_sequence;
-        snapshot.usage.output_tokens = event.usage.output_tokens;
-        snapshot.context_management = event.context_management;
-        if (event.usage.input_tokens != null) {
-          snapshot.usage.input_tokens = event.usage.input_tokens;
-        }
-        if (event.usage.cache_creation_input_tokens != null) {
-          snapshot.usage.cache_creation_input_tokens = event.usage.cache_creation_input_tokens;
-        }
-        if (event.usage.cache_read_input_tokens != null) {
-          snapshot.usage.cache_read_input_tokens = event.usage.cache_read_input_tokens;
-        }
-        if (event.usage.server_tool_use != null) {
-          snapshot.usage.server_tool_use = event.usage.server_tool_use;
-        }
-        return snapshot;
-      case "content_block_start":
-        snapshot.content.push(event.content_block);
-        return snapshot;
-      case "content_block_delta": {
-        const snapshotContent = snapshot.content.at(event.index);
-        switch (event.delta.type) {
-          case "text_delta": {
-            if (snapshotContent?.type === "text") {
-              snapshot.content[event.index] = {
-                ...snapshotContent,
-                text: (snapshotContent.text || "") + event.delta.text
-              };
-            }
-            break;
-          }
-          case "citations_delta": {
-            if (snapshotContent?.type === "text") {
-              snapshot.content[event.index] = {
-                ...snapshotContent,
-                citations: [...snapshotContent.citations ?? [], event.delta.citation]
-              };
-            }
-            break;
-          }
-          case "input_json_delta": {
-            if (snapshotContent && tracksToolInput(snapshotContent)) {
-              let jsonBuf = snapshotContent[JSON_BUF_PROPERTY] || "";
-              jsonBuf += event.delta.partial_json;
-              const newContent = { ...snapshotContent };
-              Object.defineProperty(newContent, JSON_BUF_PROPERTY, {
-                value: jsonBuf,
-                enumerable: false,
-                writable: true
-              });
-              if (jsonBuf) {
-                try {
-                  newContent.input = partialParse(jsonBuf);
-                } catch (err) {
-                  const error = new AnthropicError(`Unable to parse tool parameter JSON from model. Please retry your request or adjust your prompt. Error: ${err}. JSON: ${jsonBuf}`);
-                  __classPrivateFieldGet(this, _BetaMessageStream_handleError, "f").call(this, error);
-                }
-              }
-              snapshot.content[event.index] = newContent;
-            }
-            break;
-          }
-          case "thinking_delta": {
-            if (snapshotContent?.type === "thinking") {
-              snapshot.content[event.index] = {
-                ...snapshotContent,
-                thinking: snapshotContent.thinking + event.delta.thinking
-              };
-            }
-            break;
-          }
-          case "signature_delta": {
-            if (snapshotContent?.type === "thinking") {
-              snapshot.content[event.index] = {
-                ...snapshotContent,
-                signature: event.delta.signature
-              };
-            }
-            break;
-          }
-          default:
-            checkNever(event.delta);
-        }
-        return snapshot;
-      }
-      case "content_block_stop":
-        return snapshot;
-    }
-  }, Symbol.asyncIterator)]() {
-    const pushQueue = [];
-    const readQueue = [];
-    let done = false;
-    this.on("streamEvent", (event) => {
-      const reader = readQueue.shift();
-      if (reader) {
-        reader.resolve(event);
-      } else {
-        pushQueue.push(event);
-      }
-    });
-    this.on("end", () => {
-      done = true;
-      for (const reader of readQueue) {
-        reader.resolve(void 0);
-      }
-      readQueue.length = 0;
-    });
-    this.on("abort", (err) => {
-      done = true;
-      for (const reader of readQueue) {
-        reader.reject(err);
-      }
-      readQueue.length = 0;
-    });
-    this.on("error", (err) => {
-      done = true;
-      for (const reader of readQueue) {
-        reader.reject(err);
-      }
-      readQueue.length = 0;
-    });
-    return {
-      next: async () => {
-        if (!pushQueue.length) {
-          if (done) {
-            return { value: void 0, done: true };
-          }
-          return new Promise((resolve, reject) => readQueue.push({ resolve, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
-        }
-        const chunk = pushQueue.shift();
-        return { value: chunk, done: false };
-      },
-      return: async () => {
-        this.abort();
-        return { value: void 0, done: true };
-      }
-    };
-  }
-  toReadableStream() {
-    const stream = new Stream(this[Symbol.asyncIterator].bind(this), this.controller);
-    return stream.toReadableStream();
-  }
-};
-function checkNever(x) {
-}
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/lib/tools/CompactionControl.mjs
-var DEFAULT_TOKEN_THRESHOLD = 1e5;
-var DEFAULT_SUMMARY_PROMPT = `You have been working on the task described above but have not yet completed it. Write a continuation summary that will allow you (or another instance of yourself) to resume work efficiently in a future context window where the conversation history will be replaced with this summary. Your summary should be structured, concise, and actionable. Include:
-1. Task Overview
-The user's core request and success criteria
-Any clarifications or constraints they specified
-2. Current State
-What has been completed so far
-Files created, modified, or analyzed (with paths if relevant)
-Key outputs or artifacts produced
-3. Important Discoveries
-Technical constraints or requirements uncovered
-Decisions made and their rationale
-Errors encountered and how they were resolved
-What approaches were tried that didn't work (and why)
-4. Next Steps
-Specific actions needed to complete the task
-Any blockers or open questions to resolve
-Priority order if multiple steps remain
-5. Context to Preserve
-User preferences or style requirements
-Domain-specific details that aren't obvious
-Any promises made to the user
-Be concise but complete\u2014err on the side of including information that would prevent duplicate work or repeated mistakes. Write in a way that enables immediate resumption of the task.
-Wrap your summary in <summary></summary> tags.`;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/lib/tools/BetaToolRunner.mjs
-var _BetaToolRunner_instances;
-var _BetaToolRunner_consumed;
-var _BetaToolRunner_mutated;
-var _BetaToolRunner_state;
-var _BetaToolRunner_options;
-var _BetaToolRunner_message;
-var _BetaToolRunner_toolResponse;
-var _BetaToolRunner_completion;
-var _BetaToolRunner_iterationCount;
-var _BetaToolRunner_checkAndCompact;
-var _BetaToolRunner_generateToolResponse;
-function promiseWithResolvers() {
-  let resolve;
-  let reject;
-  const promise = new Promise((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-  return { promise, resolve, reject };
-}
-var BetaToolRunner = class {
-  constructor(client, params, options) {
-    _BetaToolRunner_instances.add(this);
-    this.client = client;
-    _BetaToolRunner_consumed.set(this, false);
-    _BetaToolRunner_mutated.set(this, false);
-    _BetaToolRunner_state.set(this, void 0);
-    _BetaToolRunner_options.set(this, void 0);
-    _BetaToolRunner_message.set(this, void 0);
-    _BetaToolRunner_toolResponse.set(this, void 0);
-    _BetaToolRunner_completion.set(this, void 0);
-    _BetaToolRunner_iterationCount.set(this, 0);
-    __classPrivateFieldSet(this, _BetaToolRunner_state, {
-      params: {
-        // You can't clone the entire params since there are functions as handlers.
-        // You also don't really need to clone params.messages, but it probably will prevent a foot gun
-        // somewhere.
-        ...params,
-        messages: structuredClone(params.messages)
-      }
-    }, "f");
-    __classPrivateFieldSet(this, _BetaToolRunner_options, {
-      ...options,
-      headers: buildHeaders([{ "x-stainless-helper": "BetaToolRunner" }, options?.headers])
-    }, "f");
-    __classPrivateFieldSet(this, _BetaToolRunner_completion, promiseWithResolvers(), "f");
-  }
-  async *[(_BetaToolRunner_consumed = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_mutated = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_state = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_options = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_message = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_toolResponse = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_completion = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_iterationCount = /* @__PURE__ */ new WeakMap(), _BetaToolRunner_instances = /* @__PURE__ */ new WeakSet(), _BetaToolRunner_checkAndCompact = async function _BetaToolRunner_checkAndCompact2() {
-    const compactionControl = __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.compactionControl;
-    if (!compactionControl || !compactionControl.enabled) {
-      return false;
-    }
-    let tokensUsed = 0;
-    if (__classPrivateFieldGet(this, _BetaToolRunner_message, "f") !== void 0) {
-      try {
-        const message = await __classPrivateFieldGet(this, _BetaToolRunner_message, "f");
-        const totalInputTokens = message.usage.input_tokens + (message.usage.cache_creation_input_tokens ?? 0) + (message.usage.cache_read_input_tokens ?? 0);
-        tokensUsed = totalInputTokens + message.usage.output_tokens;
-      } catch {
-        return false;
-      }
-    }
-    const threshold = compactionControl.contextTokenThreshold ?? DEFAULT_TOKEN_THRESHOLD;
-    if (tokensUsed < threshold) {
-      return false;
-    }
-    const model = compactionControl.model ?? __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.model;
-    const summaryPrompt = compactionControl.summaryPrompt ?? DEFAULT_SUMMARY_PROMPT;
-    const messages = __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.messages;
-    if (messages[messages.length - 1].role === "assistant") {
-      const lastMessage = messages[messages.length - 1];
-      if (Array.isArray(lastMessage.content)) {
-        const nonToolBlocks = lastMessage.content.filter((block) => block.type !== "tool_use");
-        if (nonToolBlocks.length === 0) {
-          messages.pop();
-        } else {
-          lastMessage.content = nonToolBlocks;
-        }
-      }
-    }
-    const response = await this.client.beta.messages.create({
-      model,
-      messages: [
-        ...messages,
-        {
-          role: "user",
-          content: [
-            {
-              type: "text",
-              text: summaryPrompt
-            }
-          ]
-        }
-      ],
-      max_tokens: __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.max_tokens
-    }, {
-      headers: { "x-stainless-helper": "compaction" }
-    });
-    if (response.content[0]?.type !== "text") {
-      throw new AnthropicError("Expected text response for compaction");
-    }
-    __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.messages = [
-      {
-        role: "user",
-        content: response.content
-      }
-    ];
-    return true;
-  }, Symbol.asyncIterator)]() {
-    var _a3;
-    if (__classPrivateFieldGet(this, _BetaToolRunner_consumed, "f")) {
-      throw new AnthropicError("Cannot iterate over a consumed stream");
-    }
-    __classPrivateFieldSet(this, _BetaToolRunner_consumed, true, "f");
-    __classPrivateFieldSet(this, _BetaToolRunner_mutated, true, "f");
-    __classPrivateFieldSet(this, _BetaToolRunner_toolResponse, void 0, "f");
-    try {
-      while (true) {
-        let stream;
-        try {
-          if (__classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.max_iterations && __classPrivateFieldGet(this, _BetaToolRunner_iterationCount, "f") >= __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.max_iterations) {
-            break;
-          }
-          __classPrivateFieldSet(this, _BetaToolRunner_mutated, false, "f");
-          __classPrivateFieldSet(this, _BetaToolRunner_toolResponse, void 0, "f");
-          __classPrivateFieldSet(this, _BetaToolRunner_iterationCount, (_a3 = __classPrivateFieldGet(this, _BetaToolRunner_iterationCount, "f"), _a3++, _a3), "f");
-          __classPrivateFieldSet(this, _BetaToolRunner_message, void 0, "f");
-          const { max_iterations, compactionControl, ...params } = __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params;
-          if (params.stream) {
-            stream = this.client.beta.messages.stream({ ...params }, __classPrivateFieldGet(this, _BetaToolRunner_options, "f"));
-            __classPrivateFieldSet(this, _BetaToolRunner_message, stream.finalMessage(), "f");
-            __classPrivateFieldGet(this, _BetaToolRunner_message, "f").catch(() => {
-            });
-            yield stream;
-          } else {
-            __classPrivateFieldSet(this, _BetaToolRunner_message, this.client.beta.messages.create({ ...params, stream: false }, __classPrivateFieldGet(this, _BetaToolRunner_options, "f")), "f");
-            yield __classPrivateFieldGet(this, _BetaToolRunner_message, "f");
-          }
-          const isCompacted = await __classPrivateFieldGet(this, _BetaToolRunner_instances, "m", _BetaToolRunner_checkAndCompact).call(this);
-          if (!isCompacted) {
-            if (!__classPrivateFieldGet(this, _BetaToolRunner_mutated, "f")) {
-              const { role, content } = await __classPrivateFieldGet(this, _BetaToolRunner_message, "f");
-              __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.messages.push({ role, content });
-            }
-            const toolMessage = await __classPrivateFieldGet(this, _BetaToolRunner_instances, "m", _BetaToolRunner_generateToolResponse).call(this, __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.messages.at(-1));
-            if (toolMessage) {
-              __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params.messages.push(toolMessage);
-            } else if (!__classPrivateFieldGet(this, _BetaToolRunner_mutated, "f")) {
-              break;
-            }
-          }
-        } finally {
-          if (stream) {
-            stream.abort();
-          }
-        }
-      }
-      if (!__classPrivateFieldGet(this, _BetaToolRunner_message, "f")) {
-        throw new AnthropicError("ToolRunner concluded without a message from the server");
-      }
-      __classPrivateFieldGet(this, _BetaToolRunner_completion, "f").resolve(await __classPrivateFieldGet(this, _BetaToolRunner_message, "f"));
-    } catch (error) {
-      __classPrivateFieldSet(this, _BetaToolRunner_consumed, false, "f");
-      __classPrivateFieldGet(this, _BetaToolRunner_completion, "f").promise.catch(() => {
-      });
-      __classPrivateFieldGet(this, _BetaToolRunner_completion, "f").reject(error);
-      __classPrivateFieldSet(this, _BetaToolRunner_completion, promiseWithResolvers(), "f");
-      throw error;
-    }
-  }
-  setMessagesParams(paramsOrMutator) {
-    if (typeof paramsOrMutator === "function") {
-      __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params = paramsOrMutator(__classPrivateFieldGet(this, _BetaToolRunner_state, "f").params);
-    } else {
-      __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params = paramsOrMutator;
-    }
-    __classPrivateFieldSet(this, _BetaToolRunner_mutated, true, "f");
-    __classPrivateFieldSet(this, _BetaToolRunner_toolResponse, void 0, "f");
-  }
-  /**
-   * Get the tool response for the last message from the assistant.
-   * Avoids redundant tool executions by caching results.
-   *
-   * @returns A promise that resolves to a BetaMessageParam containing tool results, or null if no tools need to be executed
-   *
-   * @example
-   * const toolResponse = await runner.generateToolResponse();
-   * if (toolResponse) {
-   *   console.log('Tool results:', toolResponse.content);
-   * }
-   */
-  async generateToolResponse() {
-    const message = await __classPrivateFieldGet(this, _BetaToolRunner_message, "f") ?? this.params.messages.at(-1);
-    if (!message) {
-      return null;
-    }
-    return __classPrivateFieldGet(this, _BetaToolRunner_instances, "m", _BetaToolRunner_generateToolResponse).call(this, message);
-  }
-  /**
-   * Wait for the async iterator to complete. This works even if the async iterator hasn't yet started, and
-   * will wait for an instance to start and go to completion.
-   *
-   * @returns A promise that resolves to the final BetaMessage when the iterator completes
-   *
-   * @example
-   * // Start consuming the iterator
-   * for await (const message of runner) {
-   *   console.log('Message:', message.content);
-   * }
-   *
-   * // Meanwhile, wait for completion from another part of the code
-   * const finalMessage = await runner.done();
-   * console.log('Final response:', finalMessage.content);
-   */
-  done() {
-    return __classPrivateFieldGet(this, _BetaToolRunner_completion, "f").promise;
-  }
-  /**
-   * Returns a promise indicating that the stream is done. Unlike .done(), this will eagerly read the stream:
-   * * If the iterator has not been consumed, consume the entire iterator and return the final message from the
-   * assistant.
-   * * If the iterator has been consumed, waits for it to complete and returns the final message.
-   *
-   * @returns A promise that resolves to the final BetaMessage from the conversation
-   * @throws {AnthropicError} If no messages were processed during the conversation
-   *
-   * @example
-   * const finalMessage = await runner.runUntilDone();
-   * console.log('Final response:', finalMessage.content);
-   */
-  async runUntilDone() {
-    if (!__classPrivateFieldGet(this, _BetaToolRunner_consumed, "f")) {
-      for await (const _ of this) {
-      }
-    }
-    return this.done();
-  }
-  /**
-   * Get the current parameters being used by the ToolRunner.
-   *
-   * @returns A readonly view of the current ToolRunnerParams
-   *
-   * @example
-   * const currentParams = runner.params;
-   * console.log('Current model:', currentParams.model);
-   * console.log('Message count:', currentParams.messages.length);
-   */
-  get params() {
-    return __classPrivateFieldGet(this, _BetaToolRunner_state, "f").params;
-  }
-  /**
-   * Add one or more messages to the conversation history.
-   *
-   * @param messages - One or more BetaMessageParam objects to add to the conversation
-   *
-   * @example
-   * runner.pushMessages(
-   *   { role: 'user', content: 'Also, what about the weather in NYC?' }
-   * );
-   *
-   * @example
-   * // Adding multiple messages
-   * runner.pushMessages(
-   *   { role: 'user', content: 'What about NYC?' },
-   *   { role: 'user', content: 'And Boston?' }
-   * );
-   */
-  pushMessages(...messages) {
-    this.setMessagesParams((params) => ({
-      ...params,
-      messages: [...params.messages, ...messages]
-    }));
-  }
-  /**
-   * Makes the ToolRunner directly awaitable, equivalent to calling .runUntilDone()
-   * This allows using `await runner` instead of `await runner.runUntilDone()`
-   */
-  then(onfulfilled, onrejected) {
-    return this.runUntilDone().then(onfulfilled, onrejected);
-  }
-};
-_BetaToolRunner_generateToolResponse = async function _BetaToolRunner_generateToolResponse2(lastMessage) {
-  if (__classPrivateFieldGet(this, _BetaToolRunner_toolResponse, "f") !== void 0) {
-    return __classPrivateFieldGet(this, _BetaToolRunner_toolResponse, "f");
-  }
-  __classPrivateFieldSet(this, _BetaToolRunner_toolResponse, generateToolResponse(__classPrivateFieldGet(this, _BetaToolRunner_state, "f").params, lastMessage), "f");
-  return __classPrivateFieldGet(this, _BetaToolRunner_toolResponse, "f");
-};
-async function generateToolResponse(params, lastMessage = params.messages.at(-1)) {
-  if (!lastMessage || lastMessage.role !== "assistant" || !lastMessage.content || typeof lastMessage.content === "string") {
-    return null;
-  }
-  const toolUseBlocks = lastMessage.content.filter((content) => content.type === "tool_use");
-  if (toolUseBlocks.length === 0) {
-    return null;
-  }
-  const toolResults = await Promise.all(toolUseBlocks.map(async (toolUse) => {
-    const tool2 = params.tools.find((t) => ("name" in t ? t.name : t.mcp_server_name) === toolUse.name);
-    if (!tool2 || !("run" in tool2)) {
-      return {
-        type: "tool_result",
-        tool_use_id: toolUse.id,
-        content: `Error: Tool '${toolUse.name}' not found`,
-        is_error: true
-      };
-    }
-    try {
-      let input = toolUse.input;
-      if ("parse" in tool2 && tool2.parse) {
-        input = tool2.parse(input);
-      }
-      const result = await tool2.run(input);
-      return {
-        type: "tool_result",
-        tool_use_id: toolUse.id,
-        content: result
-      };
-    } catch (error) {
-      return {
-        type: "tool_result",
-        tool_use_id: toolUse.id,
-        content: `Error: ${error instanceof Error ? error.message : String(error)}`,
-        is_error: true
-      };
-    }
-  }));
-  return {
-    role: "user",
-    content: toolResults
-  };
-}
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
-var JSONLDecoder = class _JSONLDecoder {
-  constructor(iterator, controller) {
-    this.iterator = iterator;
-    this.controller = controller;
-  }
-  async *decoder() {
-    const lineDecoder = new LineDecoder();
-    for await (const chunk of this.iterator) {
-      for (const line of lineDecoder.decode(chunk)) {
-        yield JSON.parse(line);
-      }
-    }
-    for (const line of lineDecoder.flush()) {
-      yield JSON.parse(line);
-    }
-  }
-  [Symbol.asyncIterator]() {
-    return this.decoder();
-  }
-  static fromResponse(response, controller) {
-    if (!response.body) {
-      controller.abort();
-      if (typeof globalThis.navigator !== "undefined" && globalThis.navigator.product === "ReactNative") {
-        throw new AnthropicError(`The default react-native fetch implementation does not support streaming. Please use expo/fetch: https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api`);
-      }
-      throw new AnthropicError(`Attempted to iterate over a response with no body`);
-    }
-    return new _JSONLDecoder(ReadableStreamToAsyncIterable(response.body), controller);
-  }
-};
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/beta/messages/batches.mjs
-var Batches = class extends APIResource {
-  /**
-   * Send a batch of Message creation requests.
-   *
-   * The Message Batches API can be used to process multiple Messages API requests at
-   * once. Once a Message Batch is created, it begins processing immediately. Batches
-   * can take up to 24 hours to complete.
-   *
-   * Learn more about the Message Batches API in our
-   * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
-   *
-   * @example
-   * ```ts
-   * const betaMessageBatch =
-   *   await client.beta.messages.batches.create({
-   *     requests: [
-   *       {
-   *         custom_id: 'my-custom-id-1',
-   *         params: {
-   *           max_tokens: 1024,
-   *           messages: [
-   *             { content: 'Hello, world', role: 'user' },
-   *           ],
-   *           model: 'claude-sonnet-4-5-20250929',
-   *         },
-   *       },
-   *     ],
-   *   });
-   * ```
-   */
-  create(params, options) {
-    const { betas, ...body } = params;
-    return this._client.post("/v1/messages/batches?beta=true", {
-      body,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * This endpoint is idempotent and can be used to poll for Message Batch
-   * completion. To access the results of a Message Batch, make a request to the
-   * `results_url` field in the response.
-   *
-   * Learn more about the Message Batches API in our
-   * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
-   *
-   * @example
-   * ```ts
-   * const betaMessageBatch =
-   *   await client.beta.messages.batches.retrieve(
-   *     'message_batch_id',
-   *   );
-   * ```
-   */
-  retrieve(messageBatchID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.get(path`/v1/messages/batches/${messageBatchID}?beta=true`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * List all Message Batches within a Workspace. Most recently created batches are
-   * returned first.
-   *
-   * Learn more about the Message Batches API in our
-   * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
-   *
-   * @example
-   * ```ts
-   * // Automatically fetches more pages as needed.
-   * for await (const betaMessageBatch of client.beta.messages.batches.list()) {
-   *   // ...
-   * }
-   * ```
-   */
-  list(params = {}, options) {
-    const { betas, ...query } = params ?? {};
-    return this._client.getAPIList("/v1/messages/batches?beta=true", Page, {
-      query,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * Delete a Message Batch.
-   *
-   * Message Batches can only be deleted once they've finished processing. If you'd
-   * like to delete an in-progress batch, you must first cancel it.
-   *
-   * Learn more about the Message Batches API in our
-   * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
-   *
-   * @example
-   * ```ts
-   * const betaDeletedMessageBatch =
-   *   await client.beta.messages.batches.delete(
-   *     'message_batch_id',
-   *   );
-   * ```
-   */
-  delete(messageBatchID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.delete(path`/v1/messages/batches/${messageBatchID}?beta=true`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * Batches may be canceled any time before processing ends. Once cancellation is
-   * initiated, the batch enters a `canceling` state, at which time the system may
-   * complete any in-progress, non-interruptible requests before finalizing
-   * cancellation.
-   *
-   * The number of canceled requests is specified in `request_counts`. To determine
-   * which requests were canceled, check the individual results within the batch.
-   * Note that cancellation may not result in any canceled requests if they were
-   * non-interruptible.
-   *
-   * Learn more about the Message Batches API in our
-   * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
-   *
-   * @example
-   * ```ts
-   * const betaMessageBatch =
-   *   await client.beta.messages.batches.cancel(
-   *     'message_batch_id',
-   *   );
-   * ```
-   */
-  cancel(messageBatchID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.post(path`/v1/messages/batches/${messageBatchID}/cancel?beta=true`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * Streams the results of a Message Batch as a `.jsonl` file.
-   *
-   * Each line in the file is a JSON object containing the result of a single request
-   * in the Message Batch. Results are not guaranteed to be in the same order as
-   * requests. Use the `custom_id` field to match results to requests.
-   *
-   * Learn more about the Message Batches API in our
-   * [user guide](https://docs.claude.com/en/docs/build-with-claude/batch-processing)
-   *
-   * @example
-   * ```ts
-   * const betaMessageBatchIndividualResponse =
-   *   await client.beta.messages.batches.results(
-   *     'message_batch_id',
-   *   );
-   * ```
-   */
-  async results(messageBatchID, params = {}, options) {
-    const batch = await this.retrieve(messageBatchID);
-    if (!batch.results_url) {
-      throw new AnthropicError(`No batch \`results_url\`; Has it finished processing? ${batch.processing_status} - ${batch.id}`);
-    }
-    const { betas } = params ?? {};
-    return this._client.get(batch.results_url, {
-      ...options,
-      headers: buildHeaders([
-        {
-          "anthropic-beta": [...betas ?? [], "message-batches-2024-09-24"].toString(),
-          Accept: "application/binary"
-        },
-        options?.headers
-      ]),
-      stream: true,
-      __binaryResponse: true
-    })._thenUnwrap((_, props) => JSONLDecoder.fromResponse(props.response, props.controller));
-  }
-};
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/beta/messages/messages.mjs
-var DEPRECATED_MODELS = {
-  "claude-1.3": "November 6th, 2024",
-  "claude-1.3-100k": "November 6th, 2024",
-  "claude-instant-1.1": "November 6th, 2024",
-  "claude-instant-1.1-100k": "November 6th, 2024",
-  "claude-instant-1.2": "November 6th, 2024",
-  "claude-3-sonnet-20240229": "July 21st, 2025",
-  "claude-3-opus-20240229": "January 5th, 2026",
-  "claude-2.1": "July 21st, 2025",
-  "claude-2.0": "July 21st, 2025",
-  "claude-3-7-sonnet-latest": "February 19th, 2026",
-  "claude-3-7-sonnet-20250219": "February 19th, 2026"
-};
-var Messages = class extends APIResource {
-  constructor() {
-    super(...arguments);
-    this.batches = new Batches(this._client);
-  }
-  create(params, options) {
-    const { betas, ...body } = params;
-    if (body.model in DEPRECATED_MODELS) {
-      console.warn(`The model '${body.model}' is deprecated and will reach end-of-life on ${DEPRECATED_MODELS[body.model]}
-Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resources/model-deprecations for more information.`);
-    }
-    let timeout = this._client._options.timeout;
-    if (!body.stream && timeout == null) {
-      const maxNonstreamingTokens = MODEL_NONSTREAMING_TOKENS[body.model] ?? void 0;
-      timeout = this._client.calculateNonstreamingTimeout(body.max_tokens, maxNonstreamingTokens);
-    }
-    return this._client.post("/v1/messages?beta=true", {
-      body,
-      timeout: timeout ?? 6e5,
-      ...options,
-      headers: buildHeaders([
-        { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
-        options?.headers
-      ]),
-      stream: params.stream ?? false
-    });
-  }
-  /**
-   * Send a structured list of input messages with text and/or image content, along with an expected `output_format` and
-   * the response will be automatically parsed and available in the `parsed_output` property of the message.
-   *
-   * @example
-   * ```ts
-   * const message = await client.beta.messages.parse({
-   *   model: 'claude-3-5-sonnet-20241022',
-   *   max_tokens: 1024,
-   *   messages: [{ role: 'user', content: 'What is 2+2?' }],
-   *   output_format: zodOutputFormat(z.object({ answer: z.number() }), 'math'),
-   * });
-   *
-   * console.log(message.parsed_output?.answer); // 4
-   * ```
-   */
-  parse(params, options) {
-    options = {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...params.betas ?? [], "structured-outputs-2025-11-13"].toString() },
-        options?.headers
-      ])
-    };
-    return this.create(params, options).then((message) => parseBetaMessage(message, params, { logger: this._client.logger ?? console }));
-  }
-  /**
-   * Create a Message stream
-   */
-  stream(body, options) {
-    return BetaMessageStream.createMessage(this, body, options);
-  }
-  /**
-   * Count the number of tokens in a Message.
-   *
-   * The Token Count API can be used to count the number of tokens in a Message,
-   * including tools, images, and documents, without creating it.
-   *
-   * Learn more about token counting in our
-   * [user guide](https://docs.claude.com/en/docs/build-with-claude/token-counting)
-   *
-   * @example
-   * ```ts
-   * const betaMessageTokensCount =
-   *   await client.beta.messages.countTokens({
-   *     messages: [{ content: 'string', role: 'user' }],
-   *     model: 'claude-opus-4-5-20251101',
-   *   });
-   * ```
-   */
-  countTokens(params, options) {
-    const { betas, ...body } = params;
-    return this._client.post("/v1/messages/count_tokens?beta=true", {
-      body,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "token-counting-2024-11-01"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  toolRunner(body, options) {
-    return new BetaToolRunner(this._client, body, options);
-  }
-};
-Messages.Batches = Batches;
-Messages.BetaToolRunner = BetaToolRunner;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/beta/skills/versions.mjs
-var Versions = class extends APIResource {
-  /**
-   * Create Skill Version
-   *
-   * @example
-   * ```ts
-   * const version = await client.beta.skills.versions.create(
-   *   'skill_id',
-   * );
-   * ```
-   */
-  create(skillID, params = {}, options) {
-    const { betas, ...body } = params ?? {};
-    return this._client.post(path`/v1/skills/${skillID}/versions?beta=true`, multipartFormRequestOptions({
-      body,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
-        options?.headers
-      ])
-    }, this._client));
-  }
-  /**
-   * Get Skill Version
-   *
-   * @example
-   * ```ts
-   * const version = await client.beta.skills.versions.retrieve(
-   *   'version',
-   *   { skill_id: 'skill_id' },
-   * );
-   * ```
-   */
-  retrieve(version, params, options) {
-    const { skill_id, betas } = params;
-    return this._client.get(path`/v1/skills/${skill_id}/versions/${version}?beta=true`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * List Skill Versions
-   *
-   * @example
-   * ```ts
-   * // Automatically fetches more pages as needed.
-   * for await (const versionListResponse of client.beta.skills.versions.list(
-   *   'skill_id',
-   * )) {
-   *   // ...
-   * }
-   * ```
-   */
-  list(skillID, params = {}, options) {
-    const { betas, ...query } = params ?? {};
-    return this._client.getAPIList(path`/v1/skills/${skillID}/versions?beta=true`, PageCursor, {
-      query,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * Delete Skill Version
-   *
-   * @example
-   * ```ts
-   * const version = await client.beta.skills.versions.delete(
-   *   'version',
-   *   { skill_id: 'skill_id' },
-   * );
-   * ```
-   */
-  delete(version, params, options) {
-    const { skill_id, betas } = params;
-    return this._client.delete(path`/v1/skills/${skill_id}/versions/${version}?beta=true`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
-        options?.headers
-      ])
-    });
-  }
-};
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/beta/skills/skills.mjs
-var Skills = class extends APIResource {
-  constructor() {
-    super(...arguments);
-    this.versions = new Versions(this._client);
-  }
-  /**
-   * Create Skill
-   *
-   * @example
-   * ```ts
-   * const skill = await client.beta.skills.create();
-   * ```
-   */
-  create(params = {}, options) {
-    const { betas, ...body } = params ?? {};
-    return this._client.post("/v1/skills?beta=true", multipartFormRequestOptions({
-      body,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
-        options?.headers
-      ])
-    }, this._client));
-  }
-  /**
-   * Get Skill
-   *
-   * @example
-   * ```ts
-   * const skill = await client.beta.skills.retrieve('skill_id');
-   * ```
-   */
-  retrieve(skillID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.get(path`/v1/skills/${skillID}?beta=true`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * List Skills
-   *
-   * @example
-   * ```ts
-   * // Automatically fetches more pages as needed.
-   * for await (const skillListResponse of client.beta.skills.list()) {
-   *   // ...
-   * }
-   * ```
-   */
-  list(params = {}, options) {
-    const { betas, ...query } = params ?? {};
-    return this._client.getAPIList("/v1/skills?beta=true", PageCursor, {
-      query,
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * Delete Skill
-   *
-   * @example
-   * ```ts
-   * const skill = await client.beta.skills.delete('skill_id');
-   * ```
-   */
-  delete(skillID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.delete(path`/v1/skills/${skillID}?beta=true`, {
-      ...options,
-      headers: buildHeaders([
-        { "anthropic-beta": [...betas ?? [], "skills-2025-10-02"].toString() },
-        options?.headers
-      ])
-    });
-  }
-};
-Skills.Versions = Versions;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
-var Beta = class extends APIResource {
-  constructor() {
-    super(...arguments);
-    this.models = new Models(this._client);
-    this.messages = new Messages(this._client);
-    this.files = new Files(this._client);
-    this.skills = new Skills(this._client);
-  }
-};
-Beta.Models = Models;
-Beta.Messages = Messages;
-Beta.Files = Files;
-Beta.Skills = Skills;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/completions.mjs
-var Completions = class extends APIResource {
-  create(params, options) {
-    const { betas, ...body } = params;
-    return this._client.post("/v1/complete", {
-      body,
-      timeout: this._client._options.timeout ?? 6e5,
-      ...options,
-      headers: buildHeaders([
-        { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
-        options?.headers
-      ]),
-      stream: params.stream ?? false
-    });
-  }
-};
-
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs
 var _MessageStream_instances;
 var _MessageStream_currentMessageSnapshot;
@@ -10670,8 +8733,8 @@ var _MessageStream_beginRequest;
 var _MessageStream_addStreamEvent;
 var _MessageStream_endRequest;
 var _MessageStream_accumulateMessage;
-var JSON_BUF_PROPERTY2 = "__json_buf";
-function tracksToolInput2(content) {
+var JSON_BUF_PROPERTY = "__json_buf";
+function tracksToolInput(content) {
   return content.type === "tool_use" || content.type === "server_tool_use";
 }
 var MessageStream = class _MessageStream {
@@ -11024,7 +9087,7 @@ var MessageStream = class _MessageStream {
             break;
           }
           case "input_json_delta": {
-            if (tracksToolInput2(content) && content.input) {
+            if (tracksToolInput(content) && content.input) {
               this._emit("inputJson", event.delta.partial_json, content.input);
             }
             break;
@@ -11042,7 +9105,7 @@ var MessageStream = class _MessageStream {
             break;
           }
           default:
-            checkNever2(event.delta);
+            checkNever(event.delta);
         }
         break;
       }
@@ -11129,11 +9192,11 @@ var MessageStream = class _MessageStream {
             break;
           }
           case "input_json_delta": {
-            if (snapshotContent && tracksToolInput2(snapshotContent)) {
-              let jsonBuf = snapshotContent[JSON_BUF_PROPERTY2] || "";
+            if (snapshotContent && tracksToolInput(snapshotContent)) {
+              let jsonBuf = snapshotContent[JSON_BUF_PROPERTY] || "";
               jsonBuf += event.delta.partial_json;
               const newContent = { ...snapshotContent };
-              Object.defineProperty(newContent, JSON_BUF_PROPERTY2, {
+              Object.defineProperty(newContent, JSON_BUF_PROPERTY, {
                 value: jsonBuf,
                 enumerable: false,
                 writable: true
@@ -11164,7 +9227,7 @@ var MessageStream = class _MessageStream {
             break;
           }
           default:
-            checkNever2(event.delta);
+            checkNever(event.delta);
         }
         return snapshot;
       }
@@ -11226,11 +9289,161 @@ var MessageStream = class _MessageStream {
     return stream.toReadableStream();
   }
 };
-function checkNever2(x) {
+function checkNever(x) {
 }
 
+// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/headers.mjs
+var brand_privateNullableHeaders = /* @__PURE__ */ Symbol.for("brand.privateNullableHeaders");
+function* iterateHeaders(headers) {
+  if (!headers)
+    return;
+  if (brand_privateNullableHeaders in headers) {
+    const { values, nulls } = headers;
+    yield* values.entries();
+    for (const name of nulls) {
+      yield [name, null];
+    }
+    return;
+  }
+  let shouldClear = false;
+  let iter;
+  if (headers instanceof Headers) {
+    iter = headers.entries();
+  } else if (isReadonlyArray(headers)) {
+    iter = headers;
+  } else {
+    shouldClear = true;
+    iter = Object.entries(headers ?? {});
+  }
+  for (let row of iter) {
+    const name = row[0];
+    if (typeof name !== "string")
+      throw new TypeError("expected header name to be a string");
+    const values = isReadonlyArray(row[1]) ? row[1] : [row[1]];
+    let didClear = false;
+    for (const value of values) {
+      if (value === void 0)
+        continue;
+      if (shouldClear && !didClear) {
+        didClear = true;
+        yield [name, null];
+      }
+      yield [name, value];
+    }
+  }
+}
+var buildHeaders = (newHeaders) => {
+  const targetHeaders = new Headers();
+  const nullHeaders = /* @__PURE__ */ new Set();
+  for (const headers of newHeaders) {
+    const seenHeaders = /* @__PURE__ */ new Set();
+    for (const [name, value] of iterateHeaders(headers)) {
+      const lowerName = name.toLowerCase();
+      if (!seenHeaders.has(lowerName)) {
+        targetHeaders.delete(name);
+        seenHeaders.add(lowerName);
+      }
+      if (value === null) {
+        targetHeaders.delete(name);
+        nullHeaders.add(lowerName);
+      } else {
+        targetHeaders.append(name, value);
+        nullHeaders.delete(lowerName);
+      }
+    }
+  }
+  return { [brand_privateNullableHeaders]: true, values: targetHeaders, nulls: nullHeaders };
+};
+
+// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
+var JSONLDecoder = class _JSONLDecoder {
+  constructor(iterator, controller) {
+    this.iterator = iterator;
+    this.controller = controller;
+  }
+  async *decoder() {
+    const lineDecoder = new LineDecoder();
+    for await (const chunk of this.iterator) {
+      for (const line of lineDecoder.decode(chunk)) {
+        yield JSON.parse(line);
+      }
+    }
+    for (const line of lineDecoder.flush()) {
+      yield JSON.parse(line);
+    }
+  }
+  [Symbol.asyncIterator]() {
+    return this.decoder();
+  }
+  static fromResponse(response, controller) {
+    if (!response.body) {
+      controller.abort();
+      if (typeof globalThis.navigator !== "undefined" && globalThis.navigator.product === "ReactNative") {
+        throw new AnthropicError(`The default react-native fetch implementation does not support streaming. Please use expo/fetch: https://docs.expo.dev/versions/latest/sdk/expo/#expofetch-api`);
+      }
+      throw new AnthropicError(`Attempted to iterate over a response with no body`);
+    }
+    return new _JSONLDecoder(ReadableStreamToAsyncIterable(response.body), controller);
+  }
+};
+
+// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
+function encodeURIPath(str2) {
+  return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
+}
+var EMPTY = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.create(null));
+var createPathTagFunction = (pathEncoder = encodeURIPath) => function path3(statics, ...params) {
+  if (statics.length === 1)
+    return statics[0];
+  let postPath = false;
+  const invalidSegments = [];
+  const path4 = statics.reduce((previousValue, currentValue, index) => {
+    if (/[?#]/.test(currentValue)) {
+      postPath = true;
+    }
+    const value = params[index];
+    let encoded = (postPath ? encodeURIComponent : pathEncoder)("" + value);
+    if (index !== params.length && (value == null || typeof value === "object" && // handle values from other realms
+    value.toString === Object.getPrototypeOf(Object.getPrototypeOf(value.hasOwnProperty ?? EMPTY) ?? EMPTY)?.toString)) {
+      encoded = value + "";
+      invalidSegments.push({
+        start: previousValue.length + currentValue.length,
+        length: encoded.length,
+        error: `Value of type ${Object.prototype.toString.call(value).slice(8, -1)} is not a valid path parameter`
+      });
+    }
+    return previousValue + currentValue + (index === params.length ? "" : encoded);
+  }, "");
+  const pathOnly = path4.split(/[?#]/, 1)[0];
+  const invalidSegmentPattern = /(?<=^|\/)(?:\.|%2e){1,2}(?=\/|$)/gi;
+  let match;
+  while ((match = invalidSegmentPattern.exec(pathOnly)) !== null) {
+    invalidSegments.push({
+      start: match.index,
+      length: match[0].length,
+      error: `Value "${match[0]}" can't be safely passed as a path parameter`
+    });
+  }
+  invalidSegments.sort((a, b) => a.start - b.start);
+  if (invalidSegments.length > 0) {
+    let lastEnd = 0;
+    const underline = invalidSegments.reduce((acc, segment) => {
+      const spaces = " ".repeat(segment.start - lastEnd);
+      const arrows = "^".repeat(segment.length);
+      lastEnd = segment.start + segment.length;
+      return acc + spaces + arrows;
+    }, "");
+    throw new AnthropicError(`Path parameters result in path with invalid segments:
+${invalidSegments.map((e) => e.error).join("\n")}
+${path4}
+${underline}`);
+  }
+  return path4;
+};
+var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
+
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs
-var Batches2 = class extends APIResource {
+var Batches = class extends APIResource {
   /**
    * Send a batch of Message creation requests.
    *
@@ -11370,15 +9583,27 @@ var Batches2 = class extends APIResource {
   }
 };
 
+// ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/constants.mjs
+var MODEL_NONSTREAMING_TOKENS = {
+  "claude-opus-4-20250514": 8192,
+  "claude-opus-4-0": 8192,
+  "claude-4-opus-20250514": 8192,
+  "anthropic.claude-opus-4-20250514-v1:0": 8192,
+  "claude-opus-4@20250514": 8192,
+  "claude-opus-4-1-20250805": 8192,
+  "anthropic.claude-opus-4-1-20250805-v1:0": 8192,
+  "claude-opus-4-1@20250805": 8192
+};
+
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs
-var Messages2 = class extends APIResource {
+var Messages = class extends APIResource {
   constructor() {
     super(...arguments);
-    this.batches = new Batches2(this._client);
+    this.batches = new Batches(this._client);
   }
   create(body, options) {
-    if (body.model in DEPRECATED_MODELS2) {
-      console.warn(`The model '${body.model}' is deprecated and will reach end-of-life on ${DEPRECATED_MODELS2[body.model]}
+    if (body.model in DEPRECATED_MODELS) {
+      console.warn(`The model '${body.model}' is deprecated and will reach end-of-life on ${DEPRECATED_MODELS[body.model]}
 Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resources/model-deprecations for more information.`);
     }
     let timeout = this._client._options.timeout;
@@ -11421,7 +9646,7 @@ Please migrate to a newer model. Visit https://docs.anthropic.com/en/docs/resour
     return this._client.post("/v1/messages/count_tokens", { body, ...options });
   }
 };
-var DEPRECATED_MODELS2 = {
+var DEPRECATED_MODELS = {
   "claude-1.3": "November 6th, 2024",
   "claude-1.3-100k": "November 6th, 2024",
   "claude-instant-1.1": "November 6th, 2024",
@@ -11434,44 +9659,14 @@ var DEPRECATED_MODELS2 = {
   "claude-3-7-sonnet-latest": "February 19th, 2026",
   "claude-3-7-sonnet-20250219": "February 19th, 2026"
 };
-Messages2.Batches = Batches2;
+Messages.Batches = Batches;
 
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/resources/models.mjs
-var Models2 = class extends APIResource {
-  /**
-   * Get a specific model.
-   *
-   * The Models API response can be used to determine information about a specific
-   * model or resolve a model alias to a model ID.
-   */
-  retrieve(modelID, params = {}, options) {
-    const { betas } = params ?? {};
-    return this._client.get(path`/v1/models/${modelID}`, {
-      ...options,
-      headers: buildHeaders([
-        { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
-        options?.headers
-      ])
-    });
-  }
-  /**
-   * List available models.
-   *
-   * The Models API response can be used to determine which models are available for
-   * use in the API. More recently released models are listed first.
-   */
-  list(params = {}, options) {
-    const { betas, ...query } = params ?? {};
-    return this._client.getAPIList("/v1/models", Page, {
-      query,
-      ...options,
-      headers: buildHeaders([
-        { ...betas?.toString() != null ? { "anthropic-beta": betas?.toString() } : void 0 },
-        options?.headers
-      ])
-    });
+var S3 = class {
+  constructor() {
   }
 };
+var Models = S3;
 
 // ../../StrandsAgentsSDKTypescript/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs
 var readEnv = (env) => {
@@ -11943,14 +10138,14 @@ var Anthropic = class extends BaseAnthropic {
   constructor() {
     super(...arguments);
     this.completions = new Completions(this);
-    this.messages = new Messages2(this);
-    this.models = new Models2(this);
+    this.messages = new Messages(this);
+    this.models = new Models(this);
     this.beta = new Beta(this);
   }
 };
 Anthropic.Completions = Completions;
-Anthropic.Messages = Messages2;
-Anthropic.Models = Models2;
+Anthropic.Messages = Messages;
+Anthropic.Models = Models;
 Anthropic.Beta = Beta;
 
 // ../../StrandsAgentsSDKTypescript/dist/src/models/anthropic.js
@@ -13906,7 +12101,7 @@ ${underline}`);
 var path2 = /* @__PURE__ */ createPathTagFunction2(encodeURIPath2);
 
 // ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/chat/completions/messages.mjs
-var Messages3 = class extends APIResource2 {
+var Messages2 = class extends APIResource2 {
   /**
    * Get the messages in a stored chat completion. Only Chat Completions that have
    * been created with the `store` parameter set to `true` will be returned.
@@ -15241,7 +13436,7 @@ var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends
 var Completions2 = class extends APIResource2 {
   constructor() {
     super(...arguments);
-    this.messages = new Messages3(this._client);
+    this.messages = new Messages2(this._client);
   }
   create(body, options) {
     return this._client.post("/chat/completions", { body, ...options, stream: body.stream ?? false });
@@ -15326,7 +13521,7 @@ var Completions2 = class extends APIResource2 {
     return ChatCompletionStream.createChatCompletion(this._client, body, options);
   }
 };
-Completions2.Messages = Messages3;
+Completions2.Messages = Messages2;
 
 // ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/chat/chat.mjs
 var Chat = class extends APIResource2 {
@@ -15338,109 +13533,109 @@ var Chat = class extends APIResource2 {
 Chat.Completions = Completions2;
 
 // ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/audio/audio.mjs
-var S = class {
-  constructor() {
-  }
-};
-var Audio = S;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/batches.mjs
-var S2 = class {
-  constructor() {
-  }
-};
-var Batches3 = S2;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/beta/beta.mjs
-var S3 = class {
-  constructor() {
-  }
-};
-var Beta2 = S3;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/completions.mjs
 var S4 = class {
   constructor() {
   }
 };
-var Completions3 = S4;
+var Audio = S4;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/containers/containers.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/batches.mjs
 var S5 = class {
   constructor() {
   }
 };
-var Containers = S5;
+var Batches2 = S5;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/conversations/conversations.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/beta/beta.mjs
 var S6 = class {
   constructor() {
   }
 };
-var Conversations = S6;
+var Beta2 = S6;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/embeddings.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/completions.mjs
 var S7 = class {
   constructor() {
   }
 };
-var Embeddings = S7;
+var Completions3 = S7;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/evals/evals.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/containers/containers.mjs
 var S8 = class {
   constructor() {
   }
 };
-var Evals = S8;
+var Containers = S8;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/files.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/conversations/conversations.mjs
 var S9 = class {
   constructor() {
   }
 };
-var Files2 = S9;
+var Conversations = S9;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/embeddings.mjs
 var S10 = class {
   constructor() {
   }
 };
-var FineTuning = S10;
+var Embeddings = S10;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/graders/graders.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/evals/evals.mjs
 var S11 = class {
   constructor() {
   }
 };
-var Graders = S11;
+var Evals = S11;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/images.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/files.mjs
 var S12 = class {
   constructor() {
   }
 };
-var Images = S12;
+var Files = S12;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/models.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
 var S13 = class {
   constructor() {
   }
 };
-var Models3 = S13;
+var FineTuning = S13;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/moderations.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/graders/graders.mjs
 var S14 = class {
   constructor() {
   }
 };
-var Moderations = S14;
+var Graders = S14;
 
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/realtime/realtime.mjs
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/images.mjs
 var S15 = class {
   constructor() {
   }
 };
-var Realtime = S15;
+var Images = S15;
+
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/models.mjs
+var S16 = class {
+  constructor() {
+  }
+};
+var Models2 = S16;
+
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/moderations.mjs
+var S17 = class {
+  constructor() {
+  }
+};
+var Moderations = S17;
+
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/realtime/realtime.mjs
+var S18 = class {
+  constructor() {
+  }
+};
+var Realtime = S18;
 
 // ../../StrandsAgentsSDKTypescript/node_modules/openai/lib/ResponsesParser.mjs
 function maybeParseResponse(response, params) {
@@ -16008,32 +14203,32 @@ Responses.InputItems = InputItems;
 Responses.InputTokens = InputTokens;
 
 // ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/uploads/uploads.mjs
-var S16 = class {
-  constructor() {
-  }
-};
-var Uploads = S16;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/vector-stores/vector-stores.mjs
-var S17 = class {
-  constructor() {
-  }
-};
-var VectorStores = S17;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/videos.mjs
-var S18 = class {
-  constructor() {
-  }
-};
-var Videos = S18;
-
-// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/webhooks.mjs
 var S19 = class {
   constructor() {
   }
 };
-var Webhooks = S19;
+var Uploads = S19;
+
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/vector-stores/vector-stores.mjs
+var S20 = class {
+  constructor() {
+  }
+};
+var VectorStores = S20;
+
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/videos.mjs
+var S21 = class {
+  constructor() {
+  }
+};
+var Videos = S21;
+
+// ../../StrandsAgentsSDKTypescript/node_modules/openai/resources/webhooks.mjs
+var S22 = class {
+  constructor() {
+  }
+};
+var Webhooks = S22;
 
 // ../../StrandsAgentsSDKTypescript/node_modules/openai/internal/utils/env.mjs
 var readEnv2 = (env) => {
@@ -16074,17 +14269,17 @@ var OpenAI = class {
     this.completions = new Completions3(this);
     this.chat = new Chat(this);
     this.embeddings = new Embeddings(this);
-    this.files = new Files2(this);
+    this.files = new Files(this);
     this.images = new Images(this);
     this.audio = new Audio(this);
     this.moderations = new Moderations(this);
-    this.models = new Models3(this);
+    this.models = new Models2(this);
     this.fineTuning = new FineTuning(this);
     this.graders = new Graders(this);
     this.vectorStores = new VectorStores(this);
     this.webhooks = new Webhooks(this);
     this.beta = new Beta2(this);
-    this.batches = new Batches3(this);
+    this.batches = new Batches2(this);
     this.uploads = new Uploads(this);
     this.responses = new Responses(this);
     this.realtime = new Realtime(this);
@@ -16505,17 +14700,17 @@ OpenAI.toFile = toFile2;
 OpenAI.Completions = Completions3;
 OpenAI.Chat = Chat;
 OpenAI.Embeddings = Embeddings;
-OpenAI.Files = Files2;
+OpenAI.Files = Files;
 OpenAI.Images = Images;
 OpenAI.Audio = Audio;
 OpenAI.Moderations = Moderations;
-OpenAI.Models = Models3;
+OpenAI.Models = Models2;
 OpenAI.FineTuning = FineTuning;
 OpenAI.Graders = Graders;
 OpenAI.VectorStores = VectorStores;
 OpenAI.Webhooks = Webhooks;
 OpenAI.Beta = Beta2;
-OpenAI.Batches = Batches3;
+OpenAI.Batches = Batches2;
 OpenAI.Uploads = Uploads;
 OpenAI.Responses = Responses;
 OpenAI.Realtime = Realtime;
