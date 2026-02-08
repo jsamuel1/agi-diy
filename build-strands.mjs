@@ -58,6 +58,7 @@ await build({
   outfile: OUT_FILE,
   target: ['es2022'],
   treeShaking: true,
+  nodePaths: [resolve(SDK_DIR, 'node_modules')],
   alias: {
     // Zod — MCP SDK uses for protocol validation, stub with pass-through (saves ~700KB)
     'zod': resolve(STUBS, 'zod'),
@@ -68,6 +69,8 @@ await build({
     'zod-to-json-schema': resolve(STUBS, 'zod-to-json-schema.js'),
     'ajv': resolve(STUBS, 'ajv.js'),
     'ajv-formats': resolve(STUBS, 'empty.js'),
+    // AWS SDK — minimal client with SigV4 + fetch + event stream (saves ~600KB)
+    '@aws-sdk/client-bedrock-runtime': resolve(STUBS, 'bedrock-runtime.js'),
     // Node-only transports
     '@modelcontextprotocol/sdk/client/stdio.js': resolve(STUBS, 'empty.js'),
     'node:child_process': resolve(STUBS, 'empty.js'),
