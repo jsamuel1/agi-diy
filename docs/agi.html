@@ -934,7 +934,6 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <a href="index.html" class="header-btn" title="Single Agent Mode">◈ single</a>
                     <button class="header-btn" onclick="broadcastMessage()">📢 Broadcast</button>
                     <button class="header-btn" onclick="clearChat()">🗑️ Clear</button>
                     <button class="header-btn" onclick="openSettingsModal()">⚙️ Settings</button>
@@ -2166,6 +2165,10 @@
                 agentData.messages.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
                 
                 state.ringBuffer.push({ agentId, role: 'assistant', content: fullText, timestamp: Date.now() });
+                // 🌐 Sync to AgentMesh shared ring
+                if (window.AgentMesh?.addToRingContext) {
+                    window.AgentMesh.addToRingContext(agentId, 'multi', fullText.slice(0, 500));
+                }
                 updateRingUI();
                 
             } catch (e) {
@@ -2863,6 +2866,93 @@ Example - create a tool that gets weather:
         }
     });
     
+    // ═══════════════════════════════════════════════════════════════════════════
+    // 🌐 AGENTMESH TOOLS - Cross-tab communication with other agi.diy pages
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    const invokeMeshAgentTool = tool({
+        name: 'invoke_mesh_agent',
+        description: 'Send a prompt to an agent running in ANOTHER browser tab (index.html single agent, mesh.html, etc). Use list_mesh_peers to see available targets.',
+        inputSchema: z.object({
+            target: z.string().describe('Target page ID: "single", "multi", "mesh", or "all"'),
+            prompt: z.string().describe('The prompt/message to send')
+        }),
+        callback: async (input) => {
+            if (!window.AgentMesh) return { error: 'AgentMesh not loaded' };
+            try {
+                const result = await window.AgentMesh.invoke(input.target, input.prompt);
+                return { success: true, target: input.target, result: result.result || result };
+            } catch (err) {
+                return { error: err.message };
+            }
+        }
+    });
+    
+    const listMeshPeersTool = tool({
+        name: 'list_mesh_peers',
+        description: 'List all connected agi.diy browser tabs',
+        inputSchema: z.object({}),
+        callback: async () => {
+            if (!window.AgentMesh) return { error: 'AgentMesh not loaded' };
+            const peers = window.AgentMesh.getPeers();
+            return {
+                myPage: window.AgentMesh.currentPage.id,
+                peerCount: peers.length,
+                peers: peers.map(p => ({ id: p.id, label: p.label, tabId: p.tabId })),
+                availableTargets: [...new Set(peers.map(p => p.id))]
+            };
+        }
+    });
+    
+    const broadcastMeshTool = tool({
+        name: 'broadcast_mesh',
+        description: 'Send message to ALL connected agi.diy tabs',
+        inputSchema: z.object({
+            message: z.string().describe('Message to broadcast')
+        }),
+        callback: async (input) => {
+            if (!window.AgentMesh) return { error: 'AgentMesh not loaded' };
+            try {
+                const result = await window.AgentMesh.invoke('all', input.message);
+                return { success: true, broadcast: true, responses: result };
+            } catch (err) {
+                return { error: err.message };
+            }
+        }
+    });
+    
+    const addToMeshRingTool = tool({
+        name: 'add_to_mesh_ring',
+        description: 'Share context visible to ALL agents in ALL tabs',
+        inputSchema: z.object({
+            text: z.string().describe('Context to share'),
+            agentType: z.string().optional().describe('Type (default: "multi")')
+        }),
+        callback: async (input) => {
+            if (!window.AgentMesh?.addToRingContext) return { error: 'AgentMesh not available' };
+            window.AgentMesh.addToRingContext('multi-agent', input.agentType || 'multi', input.text);
+            return { success: true, added: input.text.slice(0, 100) };
+        }
+    });
+    
+    const getMeshRingTool = tool({
+        name: 'get_mesh_ring',
+        description: 'See what agents in other tabs are working on',
+        inputSchema: z.object({ maxEntries: z.number().optional() }),
+        callback: async (input) => {
+            if (!window.AgentMesh?.getRingContext) return { error: 'AgentMesh not available' };
+            const entries = window.AgentMesh.getRingContext();
+            return {
+                totalEntries: entries.length,
+                recent: entries.slice(-(input.maxEntries || 10)).map(e => ({
+                    agentId: e.agentId, type: e.agentType, text: e.text.slice(0, 200)
+                }))
+            };
+        }
+    });
+    
+    const MESH_TOOLS = [invokeMeshAgentTool, listMeshPeersTool, broadcastMeshTool, addToMeshRingTool, getMeshRingTool];
+    
     const TOOLS = [
         // Core
         renderUiTool, javascriptEvalTool, storageGetTool, storageSetTool, fetchUrlTool, notifyTool,
@@ -2871,7 +2961,9 @@ Example - create a tool that gets weather:
         // Agent management
         useAgentTool, schedulerTool,
         // Mesh communication (local + remote)
-        invokeAgentTool, broadcastToAgentsTool, listAgentsTool, invokeRemoteAgentTool, subscribeTopicTool, publishTopicTool
+        invokeAgentTool, broadcastToAgentsTool, listAgentsTool, invokeRemoteAgentTool, subscribeTopicTool, publishTopicTool,
+        // Cross-tab mesh
+        ...MESH_TOOLS
     ];
     
     // ═══════════════════════════════════════════════════════════════════════════
@@ -2955,6 +3047,16 @@ Example - create a tool that gets weather:
     };
     
     function buildSystemPrompt(agentId, basePrompt) {
+        // 🌐 Inject AgentMesh peer context
+        let meshContext = '';
+        if (window.AgentMesh?.getPeerContext) {
+            meshContext = window.AgentMesh.getPeerContext();
+        }
+        if (window.AgentMesh?.getRingContextForAgent) {
+            const ringCtx = window.AgentMesh.getRingContextForAgent(agentId, 5);
+            if (ringCtx) meshContext += ringCtx;
+        }
+        
         return `${basePrompt}
 
 ## Multi-Agent Context
@@ -2963,6 +3065,9 @@ You are agent "${agentId}" in a multi-agent system. You have access to:
 - scheduler: Schedule tasks (once or recurring cron)
 - invoke_agent: Call another agent and wait for response
 - broadcast_to_agents: Send message to all agents
+- invoke_mesh_agent: Send prompts to agents in OTHER TABS (cross-tab mesh)
+- list_mesh_peers: See all connected agi.diy tabs
+- broadcast_mesh: Send message to ALL connected tabs
 
 ## Self-Modification
 - update_self: Modify your own system prompt
@@ -2972,13 +3077,47 @@ You are agent "${agentId}" in a multi-agent system. You have access to:
 
 Ring Attention: Other agents' recent messages are shared with you for context.
 
+${meshContext}
 ${getRingContext()}`;
     }
     
     function getRingContext() {
-        if (state.ringBuffer.length === 0) return '';
-        const recent = state.ringBuffer.slice(-10);
-        return '## Recent Messages from Other Agents:\n' + recent.map(e => `[${e.agentId}]: ${e.content.slice(0, 200)}...`).join('\n');
+        // Combine local ring buffer with AgentMesh shared ring
+        let allEntries = [...state.ringBuffer];
+        
+        // Add AgentMesh ring entries (from other tabs)
+        if (window.AgentMesh?.getRingContext) {
+            const meshEntries = window.AgentMesh.getRingContext();
+            for (const entry of meshEntries) {
+                // Skip entries that are already in local buffer (avoid duplicates)
+                const isDuplicate = allEntries.some(e => 
+                    e.agentId === entry.agentId && 
+                    Math.abs(e.timestamp - entry.timestamp) < 5000 &&
+                    e.content?.slice(0, 50) === entry.text?.slice(0, 50)
+                );
+                if (!isDuplicate) {
+                    allEntries.push({
+                        agentId: entry.agentId,
+                        role: 'assistant',
+                        content: entry.text,
+                        timestamp: entry.timestamp,
+                        isMesh: true,
+                        agentType: entry.agentType
+                    });
+                }
+            }
+        }
+        
+        // Sort by timestamp and take recent
+        allEntries.sort((a, b) => a.timestamp - b.timestamp);
+        const recent = allEntries.slice(-15);
+        
+        if (recent.length === 0) return '';
+        
+        return '## Recent Messages from Agents:\n' + recent.map(e => {
+            const source = e.isMesh ? ` (${e.agentType || 'mesh'})` : '';
+            return `[${e.agentId}${source}]: ${(e.content || '').slice(0, 200)}...`;
+        }).join('\n');
     }
     
     window.selectAgent = function(agentId) {
@@ -3160,6 +3299,10 @@ ${getRingContext()}`;
         // Add to ring buffer FIRST so it's included in system prompt
         state.ringBuffer.push({ agentId, role: 'user', content: message, timestamp: Date.now() });
         if (state.ringBuffer.length > 100) state.ringBuffer.shift();
+        // 🌐 Sync to AgentMesh shared ring
+        if (window.AgentMesh?.addToRingContext) {
+            window.AgentMesh.addToRingContext(agentId, 'multi', `[User→${agentId}] ${message.slice(0, 300)}`);
+        }
         updateRingUI();
         
         // Create a FRESH agent instance for each message (allows parallelism)
@@ -3244,6 +3387,10 @@ ${getRingContext()}`;
             // Add to ring buffer
             state.ringBuffer.push({ agentId, role: 'assistant', content: currentText, timestamp: Date.now() });
             if (state.ringBuffer.length > 100) state.ringBuffer.shift();
+            // 🌐 Sync to AgentMesh shared ring
+            if (window.AgentMesh?.addToRingContext) {
+                window.AgentMesh.addToRingContext(agentId, 'multi', currentText.slice(0, 500));
+            }
             updateRingUI();
             
             agentData.status = 'ready';
@@ -3459,29 +3606,60 @@ ${getRingContext()}`;
     
     function updateRingUI() {
         const container = document.getElementById('ringContent');
-        const recent = state.ringBuffer.slice(-20).reverse();
+        
+        // Combine local ring with AgentMesh shared ring
+        let allEntries = state.ringBuffer.map((e, idx) => ({ ...e, localIndex: idx }));
+        
+        // Add AgentMesh ring entries (from other tabs)
+        if (window.AgentMesh?.getRingContext) {
+            const meshEntries = window.AgentMesh.getRingContext();
+            for (const entry of meshEntries) {
+                // Skip entries that look like duplicates
+                const isDuplicate = allEntries.some(e => 
+                    e.agentId === entry.agentId && 
+                    Math.abs(e.timestamp - entry.timestamp) < 5000 &&
+                    e.content?.slice(0, 50) === entry.text?.slice(0, 50)
+                );
+                if (!isDuplicate) {
+                    allEntries.push({
+                        agentId: entry.agentId,
+                        role: 'assistant',
+                        content: entry.text,
+                        timestamp: entry.timestamp,
+                        isMesh: true,
+                        agentType: entry.agentType
+                    });
+                }
+            }
+        }
+        
+        // Sort by timestamp descending (most recent first)
+        allEntries.sort((a, b) => b.timestamp - a.timestamp);
+        const recent = allEntries.slice(0, 20);
         
         if (recent.length === 0) {
             container.innerHTML = '<div style="font-size:11px;color:var(--text-tertiary);text-align:center;padding:20px;">Shared context will appear here</div>';
             return;
         }
         
-        container.innerHTML = recent.map((e, displayIndex) => {
-            // Calculate actual index in ringBuffer (reversed display)
-            const actualIndex = state.ringBuffer.length - 1 - displayIndex;
+        container.innerHTML = recent.map((e) => {
             const agentData = state.agents.get(e.agentId);
-            const color = agentData?.color || '#888';
+            const color = agentData?.color || (e.isMesh ? '#007aff' : '#888');
             const time = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const meshBadge = e.isMesh ? `<span style="font-size:9px;color:#007aff;margin-left:4px;">🌐 ${e.agentType || 'mesh'}</span>` : '';
+            const deleteBtn = e.isMesh ? '' : `<span class="ring-entry-delete" onclick="deleteRingEntry(${e.localIndex})" title="Delete this entry">✕</span>`;
+            const borderStyle = e.isMesh ? 'border-left:2px solid #007aff;' : '';
+            
             return `
-                <div class="ring-entry">
+                <div class="ring-entry" style="${borderStyle}">
                     <div class="ring-entry-header">
-                        <span class="ring-entry-agent" style="color:${color}">${e.agentId}</span>
+                        <span class="ring-entry-agent" style="color:${color}">${e.agentId}${meshBadge}</span>
                         <div class="ring-entry-meta">
                             <span class="ring-entry-time">${time}</span>
-                            <span class="ring-entry-delete" onclick="deleteRingEntry(${actualIndex})" title="Delete this entry">✕</span>
+                            ${deleteBtn}
                         </div>
                     </div>
-                    <div class="ring-entry-content">${escapeHtml(e.content.slice(0, 150))}${e.content.length > 150 ? '...' : ''}</div>
+                    <div class="ring-entry-content">${escapeHtml((e.content || '').slice(0, 150))}${(e.content || '').length > 150 ? '...' : ''}</div>
                 </div>
             `;
         }).join('');
@@ -3916,6 +4094,16 @@ ${getRingContext()}`;
         state.credentials.openai.apiKey = document.getElementById('openaiKey').value.trim();
         state.credentials.bedrock.apiKey = document.getElementById('bedrockKey').value.trim();
         state.credentials.bedrock.region = document.getElementById('bedrockRegion').value;
+        
+        // 🔑 Sync to AgentMesh unified credentials (cross-tab)
+        if (window.AgentMesh?.setCredentials) {
+            window.AgentMesh.setCredentials({
+                anthropic: { apiKey: state.credentials.anthropic.apiKey, model: state.credentials.anthropic.model },
+                openai: { apiKey: state.credentials.openai.apiKey, model: state.credentials.openai.model },
+                bedrock: { apiKey: state.credentials.bedrock.apiKey, region: state.credentials.bedrock.region, model: state.credentials.bedrock.model }
+            });
+        }
+        
         saveState();
         showToast('Credentials saved');
         closeModal('settingsModal');
@@ -3971,6 +4159,20 @@ ${getRingContext()}`;
             const data = JSON.parse(stored);
             state.credentials = data.credentials || state.credentials;
             state.ringBuffer = data.ringBuffer || [];
+            
+            // 🔑 Merge with AgentMesh unified credentials
+            if (window.AgentMesh?.getCredentials) {
+                const meshCreds = window.AgentMesh.getCredentials();
+                if (meshCreds.anthropic?.apiKey && !state.credentials.anthropic.apiKey) {
+                    state.credentials.anthropic.apiKey = meshCreds.anthropic.apiKey;
+                }
+                if (meshCreds.openai?.apiKey && !state.credentials.openai.apiKey) {
+                    state.credentials.openai.apiKey = meshCreds.openai.apiKey;
+                }
+                if (meshCreds.bedrock?.apiKey && !state.credentials.bedrock.apiKey) {
+                    state.credentials.bedrock.apiKey = meshCreds.bedrock.apiKey;
+                }
+            }
             
             for (const agentData of data.agents || []) {
                 try {
@@ -4130,6 +4332,47 @@ ${getRingContext()}`;
     // ═══════════════════════════════════════════════════════════════════════════
     
     loadState();
+    
+    // 🔑 Listen for credential changes from other tabs
+    window.addEventListener('agimesh:credentials', (e) => {
+        const creds = e.detail;
+        if (creds.anthropic?.apiKey) state.credentials.anthropic.apiKey = creds.anthropic.apiKey;
+        if (creds.openai?.apiKey) state.credentials.openai.apiKey = creds.openai.apiKey;
+        if (creds.bedrock?.apiKey) state.credentials.bedrock.apiKey = creds.bedrock.apiKey;
+        // Update UI if settings modal is open
+        const anthropicInput = document.getElementById('anthropicKey');
+        if (anthropicInput) anthropicInput.value = state.credentials.anthropic.apiKey;
+        const openaiInput = document.getElementById('openaiKey');
+        if (openaiInput) openaiInput.value = state.credentials.openai.apiKey;
+        const bedrockInput = document.getElementById('bedrockKey');
+        if (bedrockInput) bedrockInput.value = state.credentials.bedrock.apiKey;
+        console.log('[agi.html] Credentials synced from another tab');
+        showToast('Credentials synced from another tab');
+    });
+    
+    // 🔗 Listen for ring context changes from other tabs (via localStorage)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'agi-mesh-ring-context') {
+            console.log('[agi.html] Ring context updated from another tab');
+            updateRingUI();
+        }
+    });
+    
+    // 🔗 Listen for ring context updates via AgentMesh BroadcastChannel
+    // Delayed to ensure agent-mesh.js has loaded
+    setTimeout(() => {
+        if (window.AgentMesh?.subscribe) {
+            window.AgentMesh.subscribe('ring-update', () => {
+                console.log('[agi.html] Ring context broadcast received');
+                updateRingUI();
+            });
+            window.AgentMesh.subscribe('ring-clear', () => {
+                console.log('[agi.html] Ring context cleared via broadcast');
+                updateRingUI();
+            });
+            console.log('[agi.html] Subscribed to AgentMesh ring events');
+        }
+    }, 600);
     updateAgentUI();
     updateRingUI();
     updateScheduleUI();
@@ -4180,13 +4423,48 @@ ${getRingContext()}`;
     // Run auto-create after a short delay to ensure UI is ready
     setTimeout(autoCreateDefaultAgent, 100);
     
+    // 🔑 Delayed credential sync after AgentMesh initializes
+    setTimeout(() => {
+        if (window.AgentMesh?.getCredentials) {
+            const meshCreds = window.AgentMesh.getCredentials();
+            let updated = false;
+            if (meshCreds.anthropic?.apiKey && !state.credentials.anthropic.apiKey) {
+                state.credentials.anthropic.apiKey = meshCreds.anthropic.apiKey;
+                updated = true;
+            }
+            if (meshCreds.openai?.apiKey && !state.credentials.openai.apiKey) {
+                state.credentials.openai.apiKey = meshCreds.openai.apiKey;
+                updated = true;
+            }
+            if (meshCreds.bedrock?.apiKey && !state.credentials.bedrock.apiKey) {
+                state.credentials.bedrock.apiKey = meshCreds.bedrock.apiKey;
+                updated = true;
+            }
+            if (updated) {
+                console.log('🔑 Loaded credentials from AgentMesh unified storage');
+                saveState();
+                // Try to create default agent if none exists
+                if (state.agents.size === 0) {
+                    autoCreateDefaultAgent();
+                }
+            }
+        }
+    }, 600);
+    
     // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
     
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EXPOSE FOR AGENT MESH (cross-page communication)
+    // ═══════════════════════════════════════════════════════════════════════════
+    window.state = state;
+    window.runAgentMessage = runAgentMessage;
+    
     console.log('%c🦆 agi.diy Multi-Agent v1.0', 'font-size:16px;font-weight:bold;');
     console.log('%cSpawn agents, schedule tasks, let them coordinate via ring attention.', 'color:#888');
     </script>
+<script src="agent-mesh.js"></script>
 </body>
 </html>

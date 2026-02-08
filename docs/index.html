@@ -788,7 +788,6 @@
                 <span id="sdkStatus">loading...</span>
             </div>
             <div class="header-right">
-                <a href="agi.html" class="header-btn" title="Multi-Agent Mode">multi</a>
                 <button class="header-btn" id="clearBtn">clear</button>
                 <button class="header-btn" id="settingsBtn">settings</button>
                 <button class="header-btn" id="notifyBtn" title="Enable notifications">🔔</button>
@@ -1285,6 +1284,10 @@
     // Expose Agent globally for ambient mode to create separate instances
     window.Agent = Agent;
     
+    // Expose tool and z for AgentMesh to create Strands-compatible tools
+    window.tool = tool;
+    window.z = z;
+    
     // Expose model classes for ambient mode to clone
     window.AnthropicBrowserModel = null; // Will be set after class definition
     window.OpenAIBrowserModel = null;
@@ -1491,6 +1494,15 @@ Custom tools persist in localStorage and load automatically.
 ## Communication
 - **scan_bluetooth**: Discover nearby devices and AGI agents
 - **send_to_agent**: Message other AGI agents nearby
+
+## 🌐 AgentMesh - Cross-Tab Multi-Agent
+You can communicate with other agi.diy pages running in different browser tabs:
+- **invoke_mesh_agent**: Send prompts to agents in other tabs (single/multi/agentcore/unified/all)
+- **list_mesh_peers**: List all connected agi.diy tabs
+- **broadcast_mesh**: Send message to ALL connected tabs at once
+- **get_mesh_status**: Get mesh network status
+
+**Ring Context**: Agents across tabs share what they're working on. Check the context automatically injected into your messages.
 
 ## Map Tools (when enabled)
 - **add_map_marker**: Place markers with emoji/label/color
@@ -3240,6 +3252,89 @@ Example - create a tool that gets weather:
         }
     });
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // AGENT MESH TOOLS - Cross-tab communication
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    const invokeMeshAgentTool = tool({
+        name: 'invoke_mesh_agent',
+        description: 'Invoke an agent running in another browser tab. Targets: "single" (index.html), "multi" (agi.html), "unified" (unified.html), or "all" for broadcast.',
+        inputSchema: z.object({
+            target: z.enum(['single', 'multi', 'agentcore', 'unified', 'all']).describe('Target page'),
+            prompt: z.string().describe('The message/prompt to send to the target agent')
+        }),
+        callback: async (input) => {
+            if (!window.AgentMesh) {
+                return { error: 'AgentMesh not loaded. Include agent-mesh.js in the page.' };
+            }
+            try {
+                const result = await window.AgentMesh.invoke(input.target, input.prompt);
+                return { success: true, result: result.result || result, handler: result.handler };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        }
+    });
+
+    const listMeshPeersTool = tool({
+        name: 'list_mesh_peers',
+        description: 'List all connected agi.diy tabs/peers in the mesh network',
+        inputSchema: z.object({}),
+        callback: async () => {
+            if (!window.AgentMesh) {
+                return { error: 'AgentMesh not loaded' };
+            }
+            const peers = window.AgentMesh.getPeers();
+            return {
+                currentPage: window.AgentMesh.currentPage.id,
+                peers: peers.map(p => ({
+                    id: p.id,
+                    label: p.label,
+                    tabId: p.tabId,
+                    lastSeen: Math.round((Date.now() - p.lastSeen) / 1000) + 's ago'
+                })),
+                totalPeers: peers.length
+            };
+        }
+    });
+
+    const broadcastMeshTool = tool({
+        name: 'broadcast_mesh',
+        description: 'Broadcast a message to all connected agi.diy tabs. All agents will receive and process it.',
+        inputSchema: z.object({
+            message: z.string().describe('Message to broadcast to all tabs')
+        }),
+        callback: async (input) => {
+            if (!window.AgentMesh) {
+                return { error: 'AgentMesh not loaded' };
+            }
+            window.AgentMesh.broadcast('chat', { message: input.message, from: 'single' });
+            try {
+                const result = await window.AgentMesh.invoke('all', input.message);
+                return { success: true, broadcast: true, responses: result };
+            } catch (err) {
+                return { success: true, broadcast: true, note: 'Message broadcast, but invoke failed: ' + err.message };
+            }
+        }
+    });
+
+    const getMeshStatusTool = tool({
+        name: 'get_mesh_status',
+        description: 'Get the current AgentMesh connection status and peer information',
+        inputSchema: z.object({}),
+        callback: async () => {
+            if (!window.AgentMesh) {
+                return { error: 'AgentMesh not loaded' };
+            }
+            return {
+                version: window.AgentMesh.version,
+                currentPage: window.AgentMesh.currentPage,
+                peerCount: window.AgentMesh.getPeers().length,
+                peers: window.AgentMesh.getPeers().map(p => p.id + '/' + p.tabId)
+            };
+        }
+    });
+
     const BROWSER_TOOLS = [
         renderUiTool,
         javascriptEvalTool,
@@ -3273,7 +3368,12 @@ Example - create a tool that gets weather:
         // Google API tools
         googleAuthTool,
         useGoogleTool,
-        gmailSendTool
+        gmailSendTool,
+        // Agent Mesh tools - cross-tab communication
+        invokeMeshAgentTool,
+        listMeshPeersTool,
+        broadcastMeshTool,
+        getMeshStatusTool
     ];
 
     // Expose model classes globally for ambient mode cloning
@@ -3340,10 +3440,16 @@ Example - create a tool that gets weather:
         const provider = localStorage.getItem('provider') || 'anthropic';
         const systemPrompt = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT;
         
+        // 🔑 Load credentials from AgentMesh unified storage if available
+        let meshCreds = null;
+        if (window.AgentMesh?.getCredentials) {
+            meshCreds = window.AgentMesh.getCredentials();
+        }
+        
         let model;
         
         if (provider === 'anthropic') {
-            const apiKey = localStorage.getItem('anthropic_api_key');
+            const apiKey = meshCreds?.anthropic?.apiKey || localStorage.getItem('anthropic_api_key');
             const modelId = localStorage.getItem('anthropic_model') || 'claude-haiku-4-5';
             const maxTokensStr = localStorage.getItem('anthropic_max_tokens');
             const headersStr = localStorage.getItem('anthropic_headers');
@@ -3383,8 +3489,8 @@ Example - create a tool that gets weather:
             
             model = new OpenAIBrowserModel({ apiKey, modelId, maxTokens, customHeaders });
         } else if (provider === 'bedrock') {
-            const apiKey = localStorage.getItem('bedrock_api_key');
-            const region = localStorage.getItem('bedrock_region') || 'us-east-1';
+            const apiKey = meshCreds?.bedrock?.apiKey || localStorage.getItem('bedrock_api_key');
+            const region = meshCreds?.bedrock?.region || localStorage.getItem('bedrock_region') || 'us-east-1';
             const modelId = localStorage.getItem('bedrock_model') || 'global.anthropic.claude-opus-4-6-v1';
             const maxTokensStr = localStorage.getItem('bedrock_max_tokens');
             const additionalFieldsStr = localStorage.getItem('bedrock_additional_fields');
@@ -3476,6 +3582,15 @@ Example - create a tool that gets weather:
                 systemPrompt,
                 printer: false
             });
+            
+            // 🤖 Register with AgentMesh for cross-tab visibility
+            if (window.AgentMesh?.registerAgent) {
+                window.AgentMesh.registerAgent('agi', 'browser', {
+                    systemPrompt: systemPrompt?.slice(0, 100),
+                    model: model?.getConfig?.()?.modelId || provider,
+                    status: 'idle'
+                });
+            }
             
             // Wrap with VisionAgent for image/screen/ambient support
             visionAgent = new VisionAgent(agent);
@@ -3585,7 +3700,29 @@ Example - create a tool that gets weather:
             finalMessage = `${contextStr}\n\n---\n\n${finalMessage}`;
         }
         
+        // 🔗 Inject AgentMesh ring context (what other agents are working on)
+        if (window.AgentMesh?.getRingContextForAgent) {
+            const ringContext = window.AgentMesh.getRingContextForAgent('agi', 5);
+            if (ringContext) {
+                finalMessage = `${ringContext}\n\n---\n\n${finalMessage}`;
+            }
+        }
+        
+        // 🌐 Inject AgentMesh peer context (connected tabs/agents)
+        if (window.AgentMesh?.getPeerContext) {
+            const peerContext = window.AgentMesh.getPeerContext();
+            if (peerContext) {
+                finalMessage = `${peerContext}\n\n---\n\n${finalMessage}`;
+            }
+        }
+        
         setStatus('thinking...');
+        
+        // 🤖 Update AgentMesh status
+        if (window.AgentMesh?.updateAgentStatus) {
+            window.AgentMesh.updateAgentStatus('agi', 'running');
+        }
+        
         addThinking();
 
         try {
@@ -3657,7 +3794,7 @@ Example - create a tool that gets weather:
                     
                     case 'modelContentBlockStartEvent':
                         if (event.start?.type === 'toolUseStart') {
-                            setStatus(event.start.name);
+                            setStatus(event.start?.name || 'tool');
                         }
                         break;
                     
@@ -3681,13 +3818,28 @@ Example - create a tool that gets weather:
                 visionAgent.ambientMode.recordInteraction(userMessage, currentText);
             }
             
+            // Add to AgentMesh shared ring context
+            if (window.AgentMesh?.addToRingContext && currentText) {
+                window.AgentMesh.addToRingContext('agi', 'browser', currentText);
+            }
+            
             setStatus('ready');
+            
+            // 🤖 Update AgentMesh status back to idle
+            if (window.AgentMesh?.updateAgentStatus) {
+                window.AgentMesh.updateAgentStatus('agi', 'idle');
+            }
             
         } catch (e) {
             console.error('Error:', e);
             removeThinking();
             addMessage('error', e.message);
             setStatus('ready');
+            
+            // 🤖 Update AgentMesh status back to idle on error
+            if (window.AgentMesh?.updateAgentStatus) {
+                window.AgentMesh.updateAgentStatus('agi', 'idle');
+            }
             
             // Mark main agent as not busy on error
             if (visionAgent?.ambientMode) {
@@ -4100,21 +4252,30 @@ Example - create a tool that gets weather:
         localStorage.setItem('provider', provider);
         
         if (provider === 'anthropic') {
-            localStorage.setItem('anthropic_api_key', document.getElementById('anthropicApiKey').value);
+            const apiKey = document.getElementById('anthropicApiKey').value;
+            localStorage.setItem('anthropic_api_key', apiKey);
             localStorage.setItem('anthropic_model', document.getElementById('anthropicModel').value || 'claude-haiku-4-5');
             localStorage.setItem('anthropic_max_tokens', document.getElementById('anthropicMaxTokens').value || '');
             localStorage.setItem('anthropic_headers', document.getElementById('anthropicHeaders').value || '');
+            // 🔑 Sync to unified credentials
+            if (window.AgentMesh?.setApiKey) window.AgentMesh.setApiKey('anthropic', apiKey);
         } else if (provider === 'openai') {
-            localStorage.setItem('openai_api_key', document.getElementById('openaiApiKey').value);
+            const apiKey = document.getElementById('openaiApiKey').value;
+            localStorage.setItem('openai_api_key', apiKey);
             localStorage.setItem('openai_model', document.getElementById('openaiModel').value || 'gpt-5-nano-2025-08-07');
             localStorage.setItem('openai_max_tokens', document.getElementById('openaiMaxTokens').value || '');
             localStorage.setItem('openai_headers', document.getElementById('openaiHeaders').value || '');
+            // 🔑 Sync to unified credentials
+            if (window.AgentMesh?.setApiKey) window.AgentMesh.setApiKey('openai', apiKey);
         } else if (provider === 'bedrock') {
-            localStorage.setItem('bedrock_api_key', document.getElementById('bedrockApiKey').value);
+            const apiKey = document.getElementById('bedrockApiKey').value;
+            localStorage.setItem('bedrock_api_key', apiKey);
             localStorage.setItem('bedrock_region', document.getElementById('bedrockRegion').value || 'us-east-1');
             localStorage.setItem('bedrock_model', document.getElementById('bedrockModel').value || 'global.anthropic.claude-opus-4-6-v1');
             localStorage.setItem('bedrock_max_tokens', document.getElementById('bedrockMaxTokens').value || '');
             localStorage.setItem('bedrock_additional_fields', document.getElementById('bedrockAdditionalFields').value || '');
+            // 🔑 Sync to unified credentials
+            if (window.AgentMesh?.setApiKey) window.AgentMesh.setApiKey('bedrock', apiKey);
         } else if (provider === 'webllm') {
             localStorage.setItem('webllm_model', document.getElementById('webllmModel').value);
         }
@@ -4623,6 +4784,14 @@ Example - create a tool that gets weather:
         // Register service worker first
         await registerServiceWorker();
         
+        // 🔑 Use AgentMesh unified credentials (auto-migrates old keys)
+        if (window.AgentMesh?.getCredentials) {
+            const creds = window.AgentMesh.getCredentials();
+            if (creds.anthropic?.apiKey) localStorage.setItem('anthropic_api_key', creds.anthropic.apiKey);
+            if (creds.openai?.apiKey) localStorage.setItem('openai_api_key', creds.openai.apiKey);
+            if (creds.bedrock?.apiKey) localStorage.setItem('bedrock_api_key', creds.bedrock.apiKey);
+        }
+        
         document.getElementById('provider').value = localStorage.getItem('provider') || 'anthropic';
         document.getElementById('anthropicApiKey').value = localStorage.getItem('anthropic_api_key') || '';
         document.getElementById('anthropicModel').value = localStorage.getItem('anthropic_model') || 'claude-haiku-4-5';
@@ -4654,9 +4823,46 @@ Example - create a tool that gets weather:
         // Update notification button state
         updateNotificationButton();
         
+        // 🔑 Listen for credential changes from other tabs
+        window.addEventListener('agimesh:credentials', (e) => {
+            const creds = e.detail;
+            if (creds.anthropic?.apiKey) document.getElementById('anthropicApiKey').value = creds.anthropic.apiKey;
+            if (creds.openai?.apiKey) document.getElementById('openaiApiKey').value = creds.openai.apiKey;
+            if (creds.bedrock?.apiKey) document.getElementById('bedrockApiKey').value = creds.bedrock.apiKey;
+            console.log('[agi.diy] Credentials synced from another tab');
+            // Trigger agent reinit with new credentials if we don't have a key yet
+            const provider = localStorage.getItem('provider') || 'anthropic';
+            const currentKey = provider === 'anthropic' ? localStorage.getItem('anthropic_api_key') :
+                               provider === 'openai' ? localStorage.getItem('openai_api_key') :
+                               provider === 'bedrock' ? localStorage.getItem('bedrock_api_key') : null;
+            if (!currentKey && creds[provider]?.apiKey) {
+                window._agentNeedsReinit = true;
+                initializeAgent().then(success => {
+                    if (success) showToast('connected (from shared credentials)');
+                });
+            }
+        });
+        
         if (!success) {
             addMessage('system', 'Add your API key in settings to get started, or try WebLLM for local inference!');
         }
+        
+        // 🔑 Delayed credential sync after AgentMesh initializes (agent-mesh.js loads async)
+        setTimeout(async () => {
+            if (window.AgentMesh?.getCredentials && !agent) {
+                const meshCreds = window.AgentMesh.getCredentials();
+                const provider = localStorage.getItem('provider') || 'anthropic';
+                const hasKey = meshCreds[provider]?.apiKey;
+                if (hasKey) {
+                    console.log('🔑 Found credentials in AgentMesh unified storage, attempting to connect...');
+                    window._agentNeedsReinit = true;
+                    const connected = await initializeAgent();
+                    if (connected) {
+                        showToast('connected (shared credentials)');
+                    }
+                }
+            }
+        }, 700);
         
         // Check if running as PWA
         if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -5605,7 +5811,12 @@ Example - create a tool that gets weather:
         // Google API tools
         { name: 'google_auth', desc: 'Authenticate with Google OAuth 2.0', category: 'google' },
         { name: 'use_google', desc: 'Access 200+ Google APIs', category: 'google' },
-        { name: 'gmail_send', desc: 'Send emails via Gmail', category: 'google' }
+        { name: 'gmail_send', desc: 'Send emails via Gmail', category: 'google' },
+        // Mesh tools - cross-tab communication
+        { name: 'invoke_mesh_agent', desc: 'Invoke agent in another tab', category: 'mesh' },
+        { name: 'list_mesh_peers', desc: 'List connected tabs/peers', category: 'mesh' },
+        { name: 'broadcast_mesh', desc: 'Broadcast to all tabs', category: 'mesh' },
+        { name: 'get_mesh_status', desc: 'Get mesh connection status', category: 'mesh' }
     ];
 
     const DISABLED_TOOLS_KEY = 'agi_disabled_tools';
@@ -5648,7 +5859,8 @@ Example - create a tool that gets weather:
             'self-mod': { label: '🧠 Self-Modification', tools: [] },
             'context': { label: '📡 Context & Communication', tools: [] },
             'map': { label: '🗺️ Map Tools', tools: [] },
-            'google': { label: '🔐 Google API', tools: [] }
+            'google': { label: '🔐 Google API', tools: [] },
+            'mesh': { label: '🌐 Agent Mesh', tools: [] }
         };
         
         BUILTIN_TOOLS_INFO.forEach(tool => {
@@ -5688,6 +5900,13 @@ Example - create a tool that gets weather:
         });
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EXPOSE FOR AGENT MESH (cross-page communication)
+    // ═══════════════════════════════════════════════════════════════════════════
+    window.runAgent = runAgent;
+    window.BROWSER_TOOLS = BROWSER_TOOLS;
+    window.initializeAgent = initializeAgent;
+    
     // Render tools on page load and when tools tab is shown
     renderBuiltinTools();
 
@@ -5708,5 +5927,6 @@ Example - create a tool that gets weather:
         checkForQueryParam();
     });
     </script>
+<script src="agent-mesh.js"></script>
 </body>
 </html>

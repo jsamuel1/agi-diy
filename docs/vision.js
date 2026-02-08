@@ -747,7 +747,7 @@ If truly complete, say '[AMBIENT_DONE]'. Otherwise, keep making progress.`;
                 if (event?.type === 'modelContentBlockStartEvent' && 
                     event.start?.type === 'toolUseStart') {
                     if (this.onToolCall) {
-                        this.onToolCall('start', event.start.name, null);
+                        this.onToolCall('start', event.start?.name || 'tool', null);
                     }
                 }
                 
