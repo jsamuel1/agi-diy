@@ -258,26 +258,12 @@
         .schedule-delete:hover { color: rgba(255,100,100,1); }
         
         /* Main Area */
-        .content-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .content-panels { flex: 1; display: flex; min-height: 0; }
-        .chat-panel { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .panel-resizer { width: 4px; cursor: col-resize; background: var(--divider); flex-shrink: 0; }
-        .panel-resizer:hover, .panel-resizer.dragging { background: var(--accent, #00ff88); }
-        .activity-panel { flex: 1; border-left: none; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
-        .activity-panel-header { padding: 8px 12px; border-bottom: 1px solid var(--divider); display: flex; align-items: center; gap: 6px; }
-        .activity-panel-header select { flex: 1; background: transparent; border: none; color: var(--text-secondary); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; cursor: pointer; outline: none; }
-        .activity-panel-header select option { background: var(--bg); color: var(--text); }
-        .verbosity-select { background: transparent; border: 1px solid var(--divider); color: var(--text-tertiary); font-size: 10px; border-radius: 4px; padding: 2px 4px; cursor: pointer; outline: none; }
-        .verbosity-select option { background: var(--bg); color: var(--text); }
-        /* Verbosity: 1=chat, 2=+widgets, 3=+tool summary, 4=+tool details */
-        [data-verbosity="1"] .tool-block, [data-verbosity="1"] .sandbox-wrap { display: none !important; }
-        [data-verbosity="2"] .tool-block { display: none !important; }
-        [data-verbosity="3"] .tool-block details { display: none !important; }
-        .activity-feed { flex: 1; overflow-y: auto; padding: 8px 12px; font-size: 12px; }
-        .activity-feed .af-agent { font-weight: 600; margin-top: 8px; padding: 2px 0; }
-        .activity-feed .af-agent:first-child { margin-top: 0; }
-        .activity-feed .af-msg { color: #ccc; padding: 1px 0 1px 8px; border-left: 2px solid var(--agent-color, #555); line-height: 1.5; }
-        .activity-feed .af-tool { color: #888; padding: 1px 0 1px 8px; border-left: 2px solid var(--agent-color, #555); font-style: italic; }
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
         
         /* Header */
         .header {
@@ -908,62 +894,9 @@
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
         }
-        /* Pipeline Panel */
-        .pipeline-panel { display: none; }
-        .pipeline-header { padding: 16px; border-bottom: 1px solid var(--divider); display: flex; justify-content: space-between; align-items: center; }
-        .pipeline-header-title { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
-        .pipeline-pills { display: flex; align-items: center; gap: 4px; padding: 12px 16px; overflow-x: auto; flex-wrap: wrap; border-bottom: 1px solid var(--divider); min-height: 48px; }
-        .phase-pill { padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 12px; white-space: nowrap; transition: all 0.3s; }
-        .phase-pending { border: 1px dashed #555; color: #888; }
-        .phase-working { border: 1px solid var(--task-color, #ffaa00); color: var(--task-color, #ffaa00); animation: pillPulse 2s infinite; }
-        .phase-done { border: 1px solid #00ff88; color: #00ff88; background: rgba(0,255,136,0.08); }
-        .phase-error { border: 1px solid #ff6666; color: #ff6666; }
-        .phase-connector { width: 16px; border-top: 1px dashed #444; display: inline-block; vertical-align: middle; }
-        @keyframes pillPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.65; } }
-        .activity-log { flex: 1; overflow-y: auto; padding: 12px 16px; }
-        .activity-heading { font-size: 13px; font-weight: 600; margin-top: 12px; margin-bottom: 4px; }
-        .activity-heading:first-child { margin-top: 0; }
-        .activity-line { font-size: 12px; color: #ccc; padding: 2px 0; line-height: 1.5; }
-        .activity-done { color: #00ff88; }
-        .completion-cards { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--divider); }
-        .completion-card { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--glass-border); background: var(--glass); text-decoration: none; display: flex; flex-direction: column; gap: 4px; transition: background 0.2s; }
-        .completion-card:hover { background: var(--glass-hover); }
-        .completion-card strong { font-size: 12px; color: var(--text); }
-        .completion-card span { font-size: 11px; color: var(--text-tertiary); }
-        .pipeline-empty { padding: 40px 16px; text-align: center; color: var(--text-tertiary); font-size: 12px; }
-        /* Pipeline Flow (above chat) */
-        .pipeline-flow { display: none; padding: 12px 24px; border-bottom: 1px solid var(--divider); overflow-x: auto; }
-        .pipeline-flow.active { display: block; }
-        .pipeline-flow-inner { display: flex; align-items: center; gap: 0; min-height: 40px; position: relative; }
-        .pf-node { width: 20ch; height: 40px; padding: 4px 8px; border-radius: 6px; font-size: 11px; line-height: 1.4; overflow: hidden; display: flex; align-items: center; justify-content: center; text-align: center; border: 1px dashed #555; color: #888; background: transparent; transition: all .3s; flex-shrink: 0; box-sizing: border-box; }
-.pf-node span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .pf-node.pending { border: 1px dashed #555; color: #888; }
-        .pf-node.working { border: 1px solid var(--task-color, #ffaa00); color: var(--task-color, #ffaa00); animation: pillPulse 2s infinite; background: rgba(255,170,0,.06); }
-        .pf-node.done, .pf-node.success { border: 1px solid #00ff88; color: #00ff88; background: rgba(0,255,136,.08); }
-        .pf-node.error, .pf-node.failed { border: 1px solid #ff6666; color: #ff6666; background: rgba(255,102,102,.08); }
-        .pf-node.partial { border: 1px solid #ff9933; color: #ff9933; background: rgba(255,153,51,.08); animation: pillPulse 3s infinite; }
-        .pf-edge { width: 24px; height: 0; border-top: 1px solid #444; flex-shrink: 0; }
-        .pf-edge.done { border-color: #00ff88; }
-        .pf-edge.working { border-color: var(--task-color, #ffaa00); border-style: solid; }
-        .pf-back { position: absolute; border: 1px dashed #ff6666; border-radius: 0 0 8px 8px; pointer-events: none; }
-        /* Preview mode — sandbox as background, chat overlays */
-        #previewBackground { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; pointer-events: none; }
-        #previewBackground iframe { width: 100%; height: 100%; border: none; }
-        body.preview-mode, body.preview-mode .app, body.preview-mode .messages-container, body.preview-mode .messages-inner { background: transparent !important; }
-        body.preview-mode .header, body.preview-mode .input-field, body.preview-mode .send-btn, body.preview-mode .message.system, body.preview-mode .tool-block, body.preview-mode .dynamic-ui { background: rgba(0,0,0,0.75) !important; backdrop-filter: none !important; }
-        body.preview-mode .message.assistant .message-content { background: rgba(0,0,0,0.6); padding: 12px 16px; border-radius: 12px; }
-        body.preview-mode .sidebar, body.preview-mode .activity-panel { background: rgba(10,10,15,0.9) !important; }
-        body.preview-mode .pipeline-flow { background: rgba(0,0,0,0.75) !important; }
-        body.preview-mode .input-container { background: transparent !important; }
-        /* Sandbox */
-        .sandbox-wrap { margin: 8px 0; border: 1px solid var(--glass-border); border-radius: 8px; overflow: hidden; }
-        .sandbox-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: var(--glass); font-size: 12px; color: var(--text-secondary); }
-        .sandbox-header button { background: none; border: none; color: var(--text-tertiary); cursor: pointer; font-size: 14px; }
-        @media (max-width: 1100px) { .activity-panel { display: none; } }
     </style>
 </head>
 <body>
-    <div id="previewBackground"></div>
     <div class="app">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -990,8 +923,8 @@
             </div>
         </aside>
         
-        <!-- Content Area -->
-        <div class="content-area">
+        <!-- Main -->
+        <main class="main">
             <header class="header">
                 <div class="header-left">
                     <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">☰</button>
@@ -1001,70 +934,59 @@
                     </div>
                 </div>
                 <div class="header-right">
-                    <a href="index.html" class="header-btn" title="Single Agent Mode">◈ single</a>
                     <button class="header-btn" onclick="broadcastMessage()">📢 Broadcast</button>
                     <button class="header-btn" onclick="clearChat()">🗑️ Clear</button>
-                    <button class="header-btn" onclick="clearAllChats()">🗑️ Clear All</button>
-                    <button class="header-btn" id="previewToggle" onclick="togglePreviewMode()" title="Toggle app preview background">🖼️ Preview</button>
                     <button class="header-btn" onclick="openSettingsModal()">⚙️ Settings</button>
                 </div>
             </header>
             
-            <div class="pipeline-flow" id="pipelineFlow"></div>
-            <div class="content-panels">
-                <main class="chat-panel" data-verbosity="2">
-                    <div style="padding:4px 12px;border-bottom:1px solid var(--divider);display:flex;justify-content:flex-end;">
-                        <select class="verbosity-select" onchange="this.closest('[data-verbosity]').dataset.verbosity=this.value">
-                            <option value="1">Chat</option><option value="2" selected>Chat + Widgets</option><option value="3">+ Tool Summary</option><option value="4">+ Tool Details</option>
-                        </select>
-                    </div>
-                    <div class="messages-container" id="messagesContainer">
-                        <div class="messages-inner" id="messagesInner">
-                            <div class="message system">
-                                <div class="message-content">
-                                    <strong>Multi-Agent AGI</strong><br><br>
-                                    Start chatting immediately — a default agent is created with your saved credentials.<br><br>
-                                    • <strong>use_agent</strong>: Create sub-agents for parallel tasks<br>
-                                    • <strong>scheduler</strong>: Schedule recurring tasks with cron<br>
-                                    • <strong>create_tool</strong>: Build new tools at runtime<br>
-                                    • <strong>update_self</strong>: Modify agent system prompts<br>
-                                    • <strong>Ring Attention</strong>: Agents share context automatically<br><br>
-                                    Click "+ New Agent" to spawn additional agents, or ⚙️ Settings to configure API keys.
-                                </div>
-                            </div>
+            <div class="messages-container" id="messagesContainer">
+                <div class="messages-inner" id="messagesInner">
+                    <div class="message system">
+                        <div class="message-content">
+                            <strong>Multi-Agent AGI</strong><br><br>
+                            Start chatting immediately — a default agent is created with your saved credentials.<br><br>
+                            • <strong>use_agent</strong>: Create sub-agents for parallel tasks<br>
+                            • <strong>scheduler</strong>: Schedule recurring tasks with cron<br>
+                            • <strong>create_tool</strong>: Build new tools at runtime<br>
+                            • <strong>update_self</strong>: Modify agent system prompts<br>
+                            • <strong>Ring Attention</strong>: Agents share context automatically<br><br>
+                            Click "+ New Agent" to spawn additional agents, or ⚙️ Settings to configure API keys.
                         </div>
                     </div>
-                    
-                    <div class="input-container">
-                        <div class="input-wrapper">
-                            <select class="target-select" id="targetAgent" onchange="if(this.value!=='all')selectAgent(this.value)">
-                                <option value="all">All Agents</option>
-                            </select>
-                            <textarea class="input-field" id="inputField" placeholder="Send a message..." rows="1" onkeydown="handleKeyDown(event)"></textarea>
-                            <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                    <polyline points="12 5 19 12 12 19"></polyline>
-                                </svg>
-                            </button>
-                            <button class="send-btn" id="interruptBtn" title="Send as interrupt (inject into running agent)" onclick="sendInterrupt()" style="background:var(--warning);display:none;">⚡</button>
-                        </div>
-                    </div>
-                </main>
-                
-                <div class="panel-resizer" id="panelResizer"></div>
-                <aside class="activity-panel" id="activityPanel" data-verbosity="4">
-                    <div class="activity-panel-header"><select id="activityFilter" onchange="filterActivityFeed()"><option value="all">All Agents</option></select><select class="verbosity-select" id="activityVerbosity" onchange="document.querySelector('.activity-panel').dataset.verbosity=this.value"><option value="1">Chat</option><option value="2">Chat + Widgets</option><option value="3">+ Tool Summary</option><option value="4" selected>+ Tool Details</option></select></div>
-                    <div class="activity-feed" id="activityFeed"></div>
-                </aside>
+                </div>
             </div>
-        </div>
+            
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <select class="target-select" id="targetAgent">
+                        <option value="all">All Agents</option>
+                    </select>
+                    <textarea class="input-field" id="inputField" placeholder="Send a message..." rows="1" onkeydown="handleKeyDown(event)"></textarea>
+                    <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </main>
         
-        <!-- Hidden: old pipeline panel kept for data functions -->
-        <aside class="pipeline-panel" id="pipelinePanel" style="display:none;">
-            <div class="pipeline-pills" id="pipelinePills"></div>
-            <div class="activity-log" id="activityLog"></div>
-            <div class="completion-cards" id="completionCards" style="display:none;"></div>
+        <!-- Ring Context Panel -->
+        <aside class="ring-panel">
+            <div class="ring-header">
+                <div class="ring-title">
+                    <span class="ring-dot"></span>
+                    Ring Context
+                </div>
+                <button class="ring-clear-btn" onclick="clearRingContext()" title="Clear all ring context">Clear</button>
+            </div>
+            <div class="ring-content" id="ringContent">
+                <div style="font-size:11px;color:var(--text-tertiary);text-align:center;padding:20px;">
+                    Shared context will appear here
+                </div>
+            </div>
         </aside>
     </div>
     
@@ -1102,7 +1024,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Model ID (optional)</label>
-                    <input type="text" class="form-input" id="spawnModelId" list="spawnModelList" placeholder="Leave empty for default" value="global.anthropic.claude-opus-4-6-v1" oninput="onModelSelected('spawn')">
+                    <input type="text" class="form-input" id="spawnModelId" placeholder="Leave empty for default" value="global.anthropic.claude-opus-4-6-v1">
                     <div class="form-hint" id="spawnModelHint">Default: global.anthropic.claude-opus-4-6-v1</div>
                 </div>
                 <div class="form-group">
@@ -1115,20 +1037,11 @@
                 </div>
                 <div class="form-group" id="spawnAdditionalFieldsGroup">
                     <label class="form-label">Additional Request Fields (JSON)</label>
-                    <textarea class="form-input" id="spawnAdditionalFields" rows="3" placeholder='{"thinking": {"type": "adaptive"}}'></textarea>
+                    <textarea class="form-input" id="spawnAdditionalFields" rows="3" placeholder='{"thinking": {"type": "enabled", "budget_tokens": 10000}}'></textarea>
                     <div class="form-hint">Extended thinking, betas, etc. For Anthropic/Bedrock.</div>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Tools</label>
-                    <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
-                        <button class="btn" onclick="selectToolGroup('all')" style="font-size:11px;padding:2px 8px;">All</button>
-                        <button class="btn" onclick="selectToolGroup('core')" style="font-size:11px;padding:2px 8px;">Core</button>
-                        <button class="btn" onclick="selectToolGroup('sandbox')" style="font-size:11px;padding:2px 8px;">Sandbox</button>
-                        <button class="btn" onclick="selectToolGroup('pipeline')" style="font-size:11px;padding:2px 8px;">Pipeline</button>
-                        <button class="btn" onclick="selectToolGroup('agents')" style="font-size:11px;padding:2px 8px;">Agents</button>
-                        <button class="btn" onclick="selectToolGroup('github')" style="font-size:11px;padding:2px 8px;">GitHub</button>
-                        <button class="btn" onclick="selectToolGroup('none')" style="font-size:11px;padding:2px 8px;">None</button>
-                    </div>
                     <div id="spawnToolsList" class="tools-grid"></div>
                 </div>
                 <div class="btn-group">
@@ -1175,13 +1088,7 @@
                             <option value="us-east-1">us-east-1</option>
                             <option value="us-west-2">us-west-2</option>
                             <option value="eu-west-1">eu-west-1</option>
-                            <option value="ap-southeast-2">ap-southeast-2</option>
                         </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">GitHub Token (PAT or Device Flow)</label>
-                        <input type="password" class="form-input" id="githubToken" placeholder="ghp_... or click Authenticate">
-                        <button class="btn" onclick="githubDeviceFlow()" style="margin-top:4px;font-size:11px;">🔑 Authenticate via Device Flow</button>
                     </div>
                     <button class="btn btn-primary" onclick="saveCredentials()">Save Credentials</button>
                 </div>
@@ -1317,7 +1224,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label">Model ID</label>
-                    <input type="text" class="form-input" id="editModelId" list="editModelList" placeholder="Leave empty for default" oninput="onModelSelected('edit')">
+                    <input type="text" class="form-input" id="editModelId" placeholder="Leave empty for default">
                     <div class="form-hint" id="editModelHint">Default: global.anthropic.claude-opus-4-6-v1</div>
                 </div>
                 <div class="form-group">
@@ -1330,7 +1237,7 @@
                 </div>
                 <div class="form-group" id="editAdditionalFieldsGroup">
                     <label class="form-label">Additional Request Fields (JSON)</label>
-                    <textarea class="form-input" id="editAdditionalFields" rows="3" placeholder='{"thinking": {"type": "adaptive"}}'></textarea>
+                    <textarea class="form-input" id="editAdditionalFields" rows="3" placeholder='{"thinking": {"type": "enabled", "budget_tokens": 10000}}'></textarea>
                     <div class="form-hint">Extended thinking, betas, etc. For Anthropic/Bedrock.</div>
                 </div>
                 <div class="form-group">
@@ -1398,34 +1305,8 @@
     </script>
 
     <script type="module">
-    import { Agent, tool, Model, z, BeforeModelCallEvent, AfterInvocationEvent, SlidingWindowConversationManager } from './strands.js';
+    import { Agent, tool, Model, z } from './strands.js';
     
-    // ╔═══════════════════════════════════════════════════════════════════════════╗
-    // ║  agi.html — Multi-Agent System                                          ║
-    // ║                                                                         ║
-    // ║  SECTION INDEX (search for ═══ SECTION_NAME to jump)                    ║
-    // ║                                                                         ║
-    // ║  STATE ................ App state, constants, config                     ║
-    // ║  PIPELINE MODEL ....... getPipelines, topoSort, renderPipelineFlow      ║
-    // ║  MODEL PROVIDERS ...... AnthropicModel, OpenAIModel, BedrockModel       ║
-    // ║  TOOLS ................ render_ui, javascript_eval, storage, fetch       ║
-    // ║  AGENT MESH ........... P2P messaging, processIncomingCommand            ║
-    // ║  MESH TOOLS ........... invoke_agent, broadcast, list_agents             ║
-    // ║  SELF-MODIFICATION .... create_tool, update_self, custom tools           ║
-    // ║  PIPELINE TOOLS ....... create_pipeline, add_task, update_task_status    ║
-    // ║  SANDBOX TOOLS ........ sandbox_create, sandbox_update, preview mode     ║
-    // ║  HOOKS ................ InterruptHook, SummarizingManager                ║
-    // ║  GITHUB ............... github auth, search, read, create PR             ║
-    // ║  AGENT MANAGEMENT ..... createAgent, updateAgentUI, selectAgent          ║
-    // ║  MESSAGING ............ runAgentMessage, sendMessage, clearChat          ║
-    // ║  ACTIVITY FEED ........ appendActivityFeed, filterActivityFeed           ║
-    // ║  UI RENDERING ......... addMessageToUI, streaming, tool calls, ring      ║
-    // ║  MODALS ............... spawn, edit, settings                            ║
-    // ║  SYNC ................. encrypted export/import via URL                  ║
-    // ║  PERSISTENCE .......... saveState, loadState, credentials               ║
-    // ║  CUSTOM TOOLS UI ...... tool management panel                           ║
-    // ║  INIT ................. DOMContentLoaded, query params, startup          ║
-    // ╚═══════════════════════════════════════════════════════════════════════════╝
     // ═══════════════════════════════════════════════════════════════════════════
     // STATE
     // ═══════════════════════════════════════════════════════════════════════════
@@ -1438,160 +1319,14 @@
         credentials: {
             anthropic: { apiKey: '', model: 'claude-opus-4-6' },
             openai: { apiKey: '', model: 'gpt-5.2-2025-12-11' },
-            bedrock: { apiKey: '', region: 'us-east-1', model: 'global.anthropic.claude-opus-4-6-v1' },
-            github: { token: '' }
+            bedrock: { apiKey: '', region: 'us-east-1', model: 'global.anthropic.claude-opus-4-6-v1' }
         },
         agentColors: ['#00ff88', '#00aaff', '#ff88ff', '#ffaa00', '#ff6666', '#88ffff'],
         colorIndex: 0
     };
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // PIPELINE MODEL — getPipelines, topoSort, renderPipelineFlow, updatePipelineUI
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    const TASK_COLORS = { requirements:'#00ff88', planning:'#9966ff', coding:'#ff8800', testing:'#00cccc', review:'#00ff88', pr:'#00ff88', docs:'#00ff88', custom:'#ffaa00' };
-
-    function getPipelines() { try { return JSON.parse(localStorage.getItem('agi_pipelines') || '{}'); } catch { return {}; } }
-    function savePipelines(p) { localStorage.setItem('agi_pipelines', JSON.stringify(p)); }
-    function getActivePipeline(pipelines) { const p = pipelines || getPipelines(); const keys = Object.keys(p); return keys.length ? p[keys[keys.length - 1]] : null; }
-
-    function getReadyTasks(pipeline) {
-        return pipeline.tasks.filter(t => t.status === 'pending' && t.dependsOn.every(d => pipeline.tasks.find(x => x.id === d)?.status === 'done'));
-    }
-
-    function topoSort(tasks) {
-        const visited = new Set(), result = [], taskMap = Object.fromEntries(tasks.map(t => [t.id, t]));
-        function visit(id) { if (visited.has(id)) return; visited.add(id); const t = taskMap[id]; if (t) { t.dependsOn.forEach(visit); result.push(t); } }
-        tasks.forEach(t => visit(t.id));
-        return result;
-    }
-
-    function renderPipelinePills(pipeline) {
-        const el = document.getElementById('pipelinePills');
-        if (!pipeline) { el.innerHTML = ''; return; }
-        el.innerHTML = '';
-        topoSort(pipeline.tasks).forEach((task, i) => {
-            if (i > 0) { const c = document.createElement('span'); c.className = 'phase-connector'; el.appendChild(c); }
-            const pill = document.createElement('span');
-            pill.className = `phase-pill phase-${task.status}`;
-            if (task.status === 'working') pill.style.setProperty('--task-color', task.color || TASK_COLORS.custom);
-            pill.textContent = task.name;
-            pill.onclick = () => { const h = document.querySelector(`[data-task-id="${task.id}"]`); if (h) h.scrollIntoView({ behavior: 'smooth' }); };
-            el.appendChild(pill);
-        });
-    }
-
-    function renderPipelineActivity() {
-        const pipeline = getActivePipeline();
-        const log = document.getElementById('activityLog');
-        if (!pipeline) { log.innerHTML = '<div class="pipeline-empty">No active pipeline. Agents will create one for complex tasks.</div>'; return; }
-        log.innerHTML = '';
-        const active = pipeline.tasks.filter(t => t.activities && t.activities.length > 0).sort((a, b) => a.activities[0].ts - b.activities[0].ts);
-        active.forEach(task => {
-            const h = document.createElement('div');
-            h.className = 'activity-heading'; h.dataset.taskId = task.id;
-            h.style.color = task.status === 'done' ? '#00ff88' : (task.color || '#ccc');
-            h.textContent = task.name;
-            log.appendChild(h);
-            task.activities.forEach(a => {
-                const line = document.createElement('div');
-                line.className = 'activity-line';
-                if (a.done) { line.style.color = '#00ff88'; line.textContent = a.text + ' ✓'; }
-                else { line.textContent = a.text; }
-                log.appendChild(line);
-            });
-        });
-        log.scrollTop = log.scrollHeight;
-        renderCompletionCards(pipeline);
-    }
-
-    function renderCompletionCards(pipeline) {
-        const el = document.getElementById('completionCards');
-        if (!pipeline.completionActions || !pipeline.completionActions.length) { el.style.display = 'none'; return; }
-        el.style.display = 'flex'; el.innerHTML = '';
-        pipeline.completionActions.forEach(a => {
-            const card = document.createElement('a');
-            card.className = 'completion-card'; card.href = a.url || '#'; card.target = '_blank';
-            card.innerHTML = `<strong>${a.label}</strong><span>${a.description || ''}</span>`;
-            el.appendChild(card);
-        });
-    }
-
-    function updatePipelineUI() { const p = getActivePipeline(); renderPipelinePills(p); renderPipelineActivity(); renderPipelineFlow(p); }
-
-    function renderPipelineFlow(pipeline) {
-        const el = document.getElementById('pipelineFlow');
-        if (!pipeline || !pipeline.tasks.length) { el.classList.remove('active'); el.innerHTML = ''; return; }
-        el.classList.add('active');
-        const sorted = topoSort(pipeline.tasks);
-        const idxMap = {}; sorted.forEach((t, i) => idxMap[t.id] = i);
-        const inner = document.createElement('div');
-        inner.className = 'pipeline-flow-inner';
-        // Clear button
-        const clearBtn = document.createElement('span');
-        clearBtn.textContent = '×';
-        clearBtn.style.cssText = 'cursor:pointer;color:#666;font-size:16px;margin-right:8px;flex-shrink:0;';
-        clearBtn.onclick = () => { localStorage.removeItem('agi_pipelines'); updatePipelineUI(); updateActivityFilterOptions(); const sel = document.getElementById('activityFilter'); if (sel) sel.value = 'all'; filterActivityFeed(); };
-        inner.appendChild(clearBtn);
-        const nodeEls = [];
-        sorted.forEach((task, i) => {
-            if (i > 0) {
-                const edge = document.createElement('span');
-                edge.className = 'pf-edge' + (task.status === 'done' || task.status === 'success' ? ' done' : task.status === 'working' ? ' working' : task.status === 'error' || task.status === 'failed' ? ' error' : '');
-                inner.appendChild(edge);
-            }
-            const node = document.createElement('span');
-            node.className = 'pf-node ' + task.status;
-            node.dataset.taskId = task.id;
-            node.style.cursor = 'pointer';
-            if (task.status === 'working') node.style.setProperty('--task-color', task.color || '#ffaa00');
-            const label = document.createElement('span');
-            label.textContent = task.name.split(' — ')[0].split(' - ')[0];
-            node.appendChild(label);
-            node.onclick = () => {
-                const sel = document.getElementById('activityFilter');
-                // Add task option if not present
-                if (!sel.querySelector(`option[value="task:${task.id}"]`)) {
-                    sel.add(new Option(task.name.split(' — ')[0], 'task:' + task.id));
-                }
-                sel.value = 'task:' + task.id;
-                filterActivityFeed();
-            };
-            inner.appendChild(node);
-            nodeEls.push(node);
-        });
-        el.innerHTML = '';
-        el.appendChild(inner);
-        // Scroll active (working/pending) box into view, prefer working
-        requestAnimationFrame(() => {
-            const target = inner.querySelector('.pf-node.working') || inner.querySelector('.pf-node.partial') || inner.querySelector('.pf-node.pending');
-            if (target) target.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-        });
-        // Draw back-lines for deps that go backward (iteration)
-        requestAnimationFrame(() => {
-            sorted.forEach((task, i) => {
-                task.dependsOn.forEach(depId => {
-                    const di = idxMap[depId];
-                    if (di !== undefined && di > i) {
-                        const from = nodeEls[i], to = nodeEls[di];
-                        if (!from || !to) return;
-                        const pr = inner.getBoundingClientRect(), fr = from.getBoundingClientRect(), tr = to.getBoundingClientRect();
-                        const line = document.createElement('div');
-                        line.className = 'pf-back';
-                        line.style.left = (fr.left - pr.left + fr.width / 2) + 'px';
-                        line.style.width = (tr.left - fr.left) + 'px';
-                        line.style.top = (fr.bottom - pr.top + 2) + 'px';
-                        line.style.height = '10px';
-                        line.style.borderTop = 'none';
-                        inner.appendChild(line);
-                    }
-                });
-            });
-        });
-    }
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // MODEL PROVIDERS — AnthropicModel, OpenAIModel, BedrockModel, createModel
+    // MODEL PROVIDERS
     // ═══════════════════════════════════════════════════════════════════════════
     
     class AnthropicModel extends Model {
@@ -1832,20 +1567,11 @@
                 inferenceConfig: { maxTokens }
             };
             if (options?.systemPrompt) body.system = [{ text: typeof options.systemPrompt === 'string' ? options.systemPrompt : options.systemPrompt.map(b => b.text).join('\n') }];
-            if (options?.toolSpecs?.length) {
-                body.toolConfig = { tools: options.toolSpecs.map(s => ({ toolSpec: { name: s.name, description: s.description, inputSchema: { json: s.inputSchema } } })) };
-                if (options.toolChoice) body.toolConfig.toolChoice = options.toolChoice;
-            }
+            if (options?.toolSpecs?.length) body.toolConfig = { tools: options.toolSpecs.map(s => ({ toolSpec: { name: s.name, description: s.description, inputSchema: { json: s.inputSchema } } })) };
             
             // Add additional request fields (thinking, etc.)
             if (additionalRequestFields) {
-                // Thinking conflicts with forced toolChoice - strip it
-                if (options?.toolChoice) {
-                    const { thinking, ...rest } = additionalRequestFields;
-                    if (Object.keys(rest).length > 0) body.additionalModelRequestFields = rest;
-                } else {
-                    body.additionalModelRequestFields = additionalRequestFields;
-                }
+                body.additionalModelRequestFields = additionalRequestFields;
             }
             
             const response = await fetch(`https://bedrock-runtime.${region}.amazonaws.com/model/${encodeURIComponent(modelId)}/converse-stream`, {
@@ -1898,29 +1624,26 @@
     
     function createModel(provider, customConfig = {}) {
         const creds = state.credentials[provider];
-        const modelId = customConfig.modelId || creds?.model || DEFAULT_MODELS[provider];
-        const catalogFlags = getModelFlags(provider, modelId);
-        const additionalFields = customConfig.additionalRequestFields ?? catalogFlags ?? (provider === 'bedrock' ? DEFAULT_BEDROCK_ADDITIONAL_FIELDS : null);
         if (provider === 'anthropic') {
             return new AnthropicModel({
                 apiKey: creds.apiKey,
-                modelId,
+                modelId: customConfig.modelId || creds.model || 'claude-opus-4-6',
                 maxTokens: customConfig.maxTokens || DEFAULT_MAX_TOKENS,
-                additionalRequestFields: additionalFields
+                additionalRequestFields: customConfig.additionalRequestFields || null
             });
         } else if (provider === 'openai') {
             return new OpenAIModel({
                 apiKey: creds.apiKey,
-                modelId,
+                modelId: customConfig.modelId || creds.model || 'gpt-5.2-2025-12-11',
                 maxTokens: customConfig.maxTokens || DEFAULT_MAX_TOKENS
             });
         } else if (provider === 'bedrock') {
             return new BedrockModel({
                 apiKey: creds.apiKey,
                 region: creds.region || 'us-east-1',
-                modelId,
+                modelId: customConfig.modelId || creds.model || 'global.anthropic.claude-opus-4-6-v1',
                 maxTokens: customConfig.maxTokens || DEFAULT_MAX_TOKENS,
-                additionalRequestFields: additionalFields
+                additionalRequestFields: customConfig.additionalRequestFields || DEFAULT_BEDROCK_ADDITIONAL_FIELDS
             });
         }
         throw new Error(`Unknown provider: ${provider}`);
@@ -1933,64 +1656,16 @@
         openai: 'gpt-5.2-2025-12-11'
     };
     
-    // Model catalog: autocomplete + per-model feature flags
-    const MODEL_CATALOG = {
-        bedrock: [
-            { id: 'global.anthropic.claude-opus-4-6-v1', name: 'Opus 4.6 (Global)', flags: { thinking: { type: 'adaptive' } } },
-            { id: 'us.anthropic.claude-opus-4-6-v1', name: 'Opus 4.6 (US)', flags: { thinking: { type: 'adaptive' } } },
-            { id: 'eu.anthropic.claude-opus-4-6-v1', name: 'Opus 4.6 (EU)', flags: { thinking: { type: 'adaptive' } } },
-            { id: 'apac.anthropic.claude-opus-4-6-v1', name: 'Opus 4.6 (APAC)', flags: { thinking: { type: 'adaptive' } } },
-            { id: 'global.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Sonnet 4.5 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Sonnet 4.5 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Sonnet 4.5 (EU)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'apac.anthropic.claude-sonnet-4-5-20250929-v1:0', name: 'Sonnet 4.5 (APAC)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'global.anthropic.claude-sonnet-4-20250514-v1:0', name: 'Sonnet 4 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'us.anthropic.claude-sonnet-4-20250514-v1:0', name: 'Sonnet 4 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'eu.anthropic.claude-sonnet-4-20250514-v1:0', name: 'Sonnet 4 (EU)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'apac.anthropic.claude-sonnet-4-20250514-v1:0', name: 'Sonnet 4 (APAC)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'global.anthropic.claude-opus-4-5-20251101-v1:0', name: 'Opus 4.5 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'us.anthropic.claude-opus-4-5-20251101-v1:0', name: 'Opus 4.5 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'global.anthropic.claude-opus-4-20250514-v1:0', name: 'Opus 4 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'us.anthropic.claude-opus-4-20250514-v1:0', name: 'Opus 4 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'global.anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Haiku 4.5 (Global)', flags: { thinking: { type: 'enabled', budget_tokens: 5000 } } },
-            { id: 'us.anthropic.claude-haiku-4-5-20251001-v1:0', name: 'Haiku 4.5 (US)', flags: { thinking: { type: 'enabled', budget_tokens: 5000 } } },
-        ],
-        anthropic: [
-            { id: 'claude-opus-4-6', name: 'Opus 4.6', flags: { thinking: { type: 'adaptive' } } },
-            { id: 'claude-sonnet-4-5-20250929', name: 'Sonnet 4.5', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'claude-sonnet-4-20250514', name: 'Sonnet 4', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'claude-opus-4-5-20251101', name: 'Opus 4.5', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'claude-opus-4-20250514', name: 'Opus 4', flags: { thinking: { type: 'enabled', budget_tokens: 10000 } } },
-            { id: 'claude-haiku-4-5-20251001', name: 'Haiku 4.5', flags: { thinking: { type: 'enabled', budget_tokens: 5000 } } },
-        ],
-        openai: [
-            { id: 'gpt-5.2-2025-12-11', name: 'GPT-5.2' },
-            { id: 'gpt-5-2025-04-14', name: 'GPT-5' },
-            { id: 'o3-2025-04-16', name: 'o3 (Reasoning)' },
-            { id: 'o4-mini-2025-04-16', name: 'o4-mini (Reasoning)' },
-            { id: 'gpt-4.1-2025-04-14', name: 'GPT-4.1' },
-        ]
-    };
-
-    function getModelFlags(provider, modelId) {
-        return (MODEL_CATALOG[provider] || []).find(m => m.id === modelId)?.flags || null;
-    }
-
-    function updateModelDatalist(provider, datalistId) {
-        let dl = document.getElementById(datalistId);
-        if (!dl) { dl = document.createElement('datalist'); dl.id = datalistId; document.body.appendChild(dl); }
-        dl.innerHTML = (MODEL_CATALOG[provider] || []).map(m => `<option value="${m.id}" label="${m.name}">`).join('');
-    }
-
     // Default additional request fields for bedrock (extended thinking)
     const DEFAULT_BEDROCK_ADDITIONAL_FIELDS = {
-        "thinking": {"type": "adaptive"}
+        "anthropic_beta": ["interleaved-thinking-2025-05-14", "context-1m-2025-08-07"],
+        "thinking": {"type": "enabled", "budget_tokens": 2048}
     };
     
     const DEFAULT_MAX_TOKENS = 60000;
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // TOOLS — render_ui, javascript_eval, storage, fetch, notify, use_agent, scheduler
+    // TOOLS
     // ═══════════════════════════════════════════════════════════════════════════
     
     const renderUiTool = tool({
@@ -2212,7 +1887,7 @@
     });
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // AGENT MESH — P2P messaging, processIncomingCommand, sendTo
+    // AGENT MESH - Hybrid P2P: BroadcastChannel (local) + WebSocket (remote)
     // ═══════════════════════════════════════════════════════════════════════════
     
     const agentMesh = {
@@ -2433,7 +2108,7 @@
                     addMeshEvent(from, 'Processing...', 'ack');
                 }
                 else if (type === 'turn_end') {
-                    pending.responses.push({ from, result: data.result, lastResponse: data.lastResponse, chunks: data.chunks });
+                    pending.responses.push({ from, result: data.result, chunks: data.chunks });
                     pending.completed++;
                     if (pending.completed >= pending.expected || pending.timeout) {
                         pending.resolve(pending);
@@ -2458,7 +2133,6 @@
             
             try {
                 let fullText = '';
-                let lastTextStart = 0;
                 let chunkCount = 0;
                 
                 const sourceLabel = source === 'remote' ? `[Remote: ${fromId}]` : `[From agent ${fromId}]`;
@@ -2476,16 +2150,6 @@
                             timestamp: Date.now()
                         });
                     }
-                    else if (event?.type === 'beforeToolCallEvent') {
-                        lastTextStart = fullText.length;
-                        const tn = event.toolUse?.name, ti = event.toolUse?.input;
-                        const fl = tn === 'invoke_agent' && ti?.targetAgentId ? `🔧 invoke_agent → ${ti.targetAgentId}` : `🔧 ${tn}`;
-                        appendActivityFeed(agentId, fl, 'tool', { input: ti });
-                    }
-                    else if (event?.type === 'afterToolCallEvent') {
-                        const last = activityLog.findLast(e => e.type === 'tool' && e.agentId === agentId);
-                        if (last && event.result) { last.extra = { ...last.extra, output: event.result }; appendToolOutput(last); }
-                    }
                 }
                 
                 this.publish({
@@ -2493,15 +2157,18 @@
                     from: agentId,
                     to: fromId,
                     turnId,
-                    data: { result: fullText, lastResponse: fullText.slice(lastTextStart), chunks: chunkCount },
+                    data: { result: fullText, chunks: chunkCount },
                     timestamp: Date.now()
                 });
                 
                 agentData.messages.push({ role: 'user', content: `${sourceLabel}: ${command}`, timestamp: Date.now() });
                 agentData.messages.push({ role: 'assistant', content: fullText, timestamp: Date.now() });
-                if (fullText) appendActivityFeed(agentId, fullText.replace(/[#*`]/g, '').substring(0, 1000));
                 
                 state.ringBuffer.push({ agentId, role: 'assistant', content: fullText, timestamp: Date.now() });
+                // 🌐 Sync to AgentMesh shared ring
+                if (window.AgentMesh?.addToRingContext) {
+                    window.AgentMesh.addToRingContext(agentId, 'multi', fullText.slice(0, 500));
+                }
                 updateRingUI();
                 
             } catch (e) {
@@ -2513,14 +2180,10 @@
                     data: { error: e.message },
                     timestamp: Date.now()
                 });
-                console.error(`Agent ${agentId} processIncomingCommand error:`, e);
-                agentData.status = 'error';
-                appendActivityFeed(agentId, `❌ Error: ${e.message}`, 'msg');
             }
             
-            if (agentData.status !== 'error') agentData.status = 'ready';
+            agentData.status = 'ready';
             updateAgentUI();
-            updatePipelineUI(); // Refresh pipeline in case tools modified it
         },
         
         // ─────────────────────────────────────────────────────────────────────────
@@ -2732,7 +2395,7 @@
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // MESH TOOLS — invoke_agent, broadcast, list_agents
+    // MESH TOOLS - Agent-to-Agent Communication
     // ═══════════════════════════════════════════════════════════════════════════
     
     // invoke_agent - Call another agent and get response
@@ -2769,12 +2432,10 @@
             const response = result.responses[0];
             if (response?.error) return { error: response.error };
             
-            const fullResponse = result.streamed[input.targetAgentId] || response?.result || 'No response';
-            // Return the sub-agent's last text response (after final tool call), not full narration
             return {
                 success: true,
                 from: input.targetAgentId,
-                response: response?.lastResponse || fullResponse.slice(-2000),
+                response: result.streamed[input.targetAgentId] || response?.result || 'No response',
                 chunks: response?.chunks || 0
             };
         }
@@ -2822,23 +2483,13 @@
     // list_agents - See available agents (local + remote)
     const listAgentsTool = tool({
         name: 'list_agents',
-        description: 'List all available agents with their roles and status. ALWAYS call this first before delegating tasks to know which agents exist and what they do.',
+        description: 'List all available agents (local and remote). Shows agent ID, location (local/remote), instance, and status.',
         inputSchema: z.object({
             includeRemote: z.boolean().optional().describe('Include remote agents from relay (default: true)')
         }),
         callback: async (input) => {
             const includeRemote = input?.includeRemote !== false;
             const agents = agentMesh.listAgents(includeRemote);
-            // Enrich local agents with role info from system prompt
-            for (const a of agents) {
-                if (a.location === 'local') {
-                    const data = state.agents.get(a.id);
-                    if (data?.config?.systemPrompt) {
-                        a.role = data.config.systemPrompt.substring(0, 150);
-                    }
-                    a.enabledTools = data?.config?.enabledTools || 'all';
-                }
-            }
             const localCount = agents.filter(a => a.location === 'local').length;
             const remoteCount = agents.filter(a => a.location === 'remote').length;
             return { 
@@ -2848,8 +2499,7 @@
                     remote: remoteCount,
                     total: agents.length,
                     relayConnected: agentMesh.wsConnected
-                },
-                hint: 'Use invoke_agent with targetAgentId to send tasks to these agents'
+                }
             };
         }
     });
@@ -2951,7 +2601,7 @@
     });
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // SELF-MODIFICATION — create_tool, update_self, custom tools
+    // SELF-MODIFICATION TOOLS - Agent can create its own tools!
     // ═══════════════════════════════════════════════════════════════════════════
     
     // Storage key for custom tools
@@ -3215,391 +2865,94 @@ Example - create a tool that gets weather:
             };
         }
     });
-
+    
     // ═══════════════════════════════════════════════════════════════════════════
-    // PIPELINE TOOLS — create_pipeline, add_task, update_task_status, read_pipeline
+    // 🌐 AGENTMESH TOOLS - Cross-tab communication with other agi.diy pages
     // ═══════════════════════════════════════════════════════════════════════════
-
-    const createPipelineTool = tool({
-        name: 'create_pipeline', description: 'Create a pipeline with tasks and dependencies. Tasks with all deps done can run in parallel.',
+    
+    const invokeMeshAgentTool = tool({
+        name: 'invoke_mesh_agent',
+        description: 'Send a prompt to an agent running in ANOTHER browser tab (index.html single agent, mesh.html, etc). Use list_mesh_peers to see available targets.',
         inputSchema: z.object({
-            name: z.string().describe('Pipeline name'),
-            tasks: z.array(z.object({
-                id: z.string(), name: z.string(),
-                dependsOn: z.array(z.string()).default([]),
-                color: z.string().optional().describe('Hex color for active state')
-            })).describe('Tasks with dependency IDs')
+            target: z.string().describe('Target page ID: "single", "multi", "mesh", or "all"'),
+            prompt: z.string().describe('The prompt/message to send')
         }),
         callback: async (input) => {
-            const id = 'pipe-' + Date.now().toString(36);
-            const pipelines = getPipelines();
-            pipelines[id] = {
-                id, name: input.name,
-                tasks: input.tasks.map(t => ({ ...t, status: 'pending', assignedTo: null, color: t.color || TASK_COLORS[t.id] || TASK_COLORS.custom, activities: [] })),
-                completionActions: []
-            };
-            savePipelines(pipelines); updatePipelineUI();
-            return { created: id, readyTasks: getReadyTasks(pipelines[id]).map(t => t.id) };
-        }
-    });
-
-    const readPipelineTool = tool({
-        name: 'read_pipeline', description: 'Read the current active pipeline state.',
-        inputSchema: z.object({}),
-        callback: async () => { const p = getActivePipeline(); return p || { error: 'No active pipeline' }; }
-    });
-
-    const addTaskTool = tool({
-        name: 'add_task', description: 'Add a task to the active pipeline (for new requirements or review fixes).',
-        inputSchema: z.object({ id: z.string(), name: z.string(), dependsOn: z.array(z.string()).default([]), color: z.string().optional() }),
-        callback: async (input) => {
-            const pipelines = getPipelines(); const p = getActivePipeline(pipelines);
-            if (!p) return { error: 'No active pipeline' };
-            p.tasks.push({ id: input.id, name: input.name, dependsOn: input.dependsOn, status: 'pending', assignedTo: null, color: input.color || TASK_COLORS[input.id] || TASK_COLORS.custom, activities: [] });
-            savePipelines(pipelines); updatePipelineUI();
-            return { added: input.id, readyTasks: getReadyTasks(p).map(t => t.id) };
-        }
-    });
-
-    const updateTaskStatusTool = tool({
-        name: 'update_task_status', description: 'Update a pipeline task status and optionally add an activity message.',
-        inputSchema: z.object({ taskId: z.string(), status: z.enum(['pending', 'working', 'done', 'success', 'error', 'failed', 'partial']), agentId: z.string().optional(), activity: z.string().optional() }),
-        callback: async (input) => {
-            const pipelines = getPipelines(); const p = getActivePipeline(pipelines);
-            if (!p) return { error: 'No active pipeline' };
-            const task = p.tasks.find(t => t.id === input.taskId);
-            if (!task) return { error: 'Task not found' };
-            if (input.status === 'working' && task.assignedTo && task.assignedTo !== input.agentId) return { error: `Locked by ${task.assignedTo}` };
-            task.status = input.status;
-            task.assignedTo = input.status === 'working' ? (input.agentId || null) : null;
-            if (input.activity) task.activities.push({ text: input.activity, ts: Date.now(), done: input.status === 'done' });
-            savePipelines(pipelines); updatePipelineUI();
-            return { updated: input.taskId, status: input.status, readyTasks: getReadyTasks(p).map(t => t.id) };
-        }
-    });
-
-    const updateTaskDepsTool = tool({
-        name: 'update_task_deps', description: 'Change a task\'s dependencies (e.g. for review cycles).',
-        inputSchema: z.object({ taskId: z.string(), dependsOn: z.array(z.string()) }),
-        callback: async (input) => {
-            const pipelines = getPipelines(); const p = getActivePipeline(pipelines);
-            if (!p) return { error: 'No active pipeline' };
-            const task = p.tasks.find(t => t.id === input.taskId);
-            if (!task) return { error: 'Task not found' };
-            task.dependsOn = input.dependsOn;
-            savePipelines(pipelines); updatePipelineUI();
-            return { updated: input.taskId, dependsOn: input.dependsOn };
-        }
-    });
-
-    const completePipelineTool = tool({
-        name: 'complete_pipeline', description: 'Mark pipeline complete and set action cards.',
-        inputSchema: z.object({ actions: z.array(z.object({ label: z.string(), description: z.string().optional(), url: z.string().optional() })).optional() }),
-        callback: async (input) => {
-            const pipelines = getPipelines(); const p = getActivePipeline(pipelines);
-            if (!p) return { error: 'No active pipeline' };
-            p.completionActions = input.actions || [];
-            savePipelines(pipelines); updatePipelineUI();
-            return { completed: p.id };
-        }
-    });
-
-    const emitStatusTool = tool({
-        name: 'emit_status', description: 'Emit a short status update for the pipeline activity log. Keep under 100 chars.',
-        inputSchema: z.object({ taskId: z.string(), text: z.string(), done: z.boolean().optional() }),
-        callback: async (input) => {
-            const pipelines = getPipelines(); const p = getActivePipeline(pipelines);
-            if (!p) return { error: 'No active pipeline' };
-            const task = p.tasks.find(t => t.id === input.taskId);
-            if (!task) return { error: 'Task not found' };
-            task.activities.push({ text: input.text, ts: Date.now(), done: input.done || false });
-            savePipelines(pipelines); renderPipelineActivity();
-            return { emitted: true };
-        }
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // SANDBOX TOOLS — sandbox_create, sandbox_update, togglePreviewMode
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    let latestSandboxId = null;
-    window.togglePreviewMode = function() {
-        const bg = document.getElementById('previewBackground');
-        const isActive = document.body.classList.toggle('preview-mode');
-        document.getElementById('previewToggle').style.color = isActive ? '#00ff88' : '';
-        if (isActive && latestSandboxId) {
-            const sb = getSandboxes()[latestSandboxId];
-            if (sb) { bg.innerHTML = ''; const f = document.createElement('iframe'); f.sandbox = 'allow-scripts'; f.style.cssText = 'width:100%;height:100%;border:none;'; f.srcdoc = `<!DOCTYPE html><html><head><style>${sb.css||''}</style></head><body>${sb.html||''}<script>${sb.js||''}<\/script></body></html>`; bg.appendChild(f); }
-        } else { bg.innerHTML = ''; }
-    };
-
-    function getSandboxes() { try { return JSON.parse(localStorage.getItem('agi_sandboxes') || '{}'); } catch { return {}; } }
-    function saveSandboxes(s) { localStorage.setItem('agi_sandboxes', JSON.stringify(s)); }
-
-    function renderSandboxIframe(sandbox) {
-        const wrap = document.createElement('div');
-        wrap.className = 'sandbox-wrap';
-        wrap.innerHTML = `<div class="sandbox-header"><span>🔒 ${sandbox.name || sandbox.id}</span><button onclick="this.closest('.sandbox-wrap').querySelector('iframe').style.height=this.closest('.sandbox-wrap').querySelector('iframe').style.height==='80vh'?'500px':'80vh'">↕</button></div>`;
-        const iframe = document.createElement('iframe');
-        iframe.sandbox = 'allow-scripts';
-        iframe.style.cssText = 'width:100%;height:500px;border:none;border-radius:0 0 8px 8px;background:#fff;';
-        iframe.srcdoc = `<!DOCTYPE html><html><head><style>${sandbox.css||''}</style></head><body>${sandbox.html||''}<script>${sandbox.js||''}<\/script></body></html>`;
-        wrap.appendChild(iframe);
-        return wrap;
-    }
-
-    const sandboxCreateTool = tool({
-        name: 'sandbox_create',
-        description: 'Create a sandboxed HTML/CSS/JS app. Renders in an isolated iframe (allow-scripts only). Returns the sandbox ID. The sandbox is also rendered inline in chat.',
-        inputSchema: z.object({ name: z.string(), html: z.string().optional(), css: z.string().optional(), js: z.string().optional() }),
-        callback: async (input) => {
-            const id = 'sb-' + Date.now().toString(36);
-            const sandbox = { id, name: input.name, html: input.html || '', css: input.css || '', js: input.js || '', createdBy: state.activeAgentId, lastModified: Date.now() };
-            const all = getSandboxes(); all[id] = sandbox; saveSandboxes(all);
-            // Render inline
-            const container = document.getElementById('messagesInner');
-            if (container) container.appendChild(renderSandboxIframe(sandbox));
-            scrollToBottom();
-            latestSandboxId = id;
-            return { created: id, name: input.name };
-        }
-    });
-
-    const sandboxUpdateTool = tool({
-        name: 'sandbox_update',
-        description: 'Update an existing sandbox. Only provided fields are changed. Re-renders inline.',
-        inputSchema: z.object({ id: z.string(), html: z.string().optional(), css: z.string().optional(), js: z.string().optional(), name: z.string().optional() }),
-        callback: async (input) => {
-            const all = getSandboxes(); const sb = all[input.id];
-            if (!sb) return { error: 'Sandbox not found' };
-            if (input.html !== undefined) sb.html = input.html;
-            if (input.css !== undefined) sb.css = input.css;
-            if (input.js !== undefined) sb.js = input.js;
-            if (input.name !== undefined) sb.name = input.name;
-            sb.lastModified = Date.now();
-            saveSandboxes(all);
-            const container = document.getElementById('messagesInner');
-            if (container) container.appendChild(renderSandboxIframe(sb));
-            scrollToBottom();
-            latestSandboxId = input.id;
-            return { updated: input.id };
-        }
-    });
-
-    const sandboxReadTool = tool({
-        name: 'sandbox_read',
-        description: 'Read a sandbox\'s current HTML, CSS, and JS code.',
-        inputSchema: z.object({ id: z.string() }),
-        callback: async (input) => { const sb = getSandboxes()[input.id]; return sb || { error: 'Sandbox not found' }; }
-    });
-
-    const sandboxListTool = tool({
-        name: 'sandbox_list',
-        description: 'List all saved sandboxes with their IDs and names.',
-        inputSchema: z.object({}),
-        callback: async () => { const all = getSandboxes(); return Object.values(all).map(s => ({ id: s.id, name: s.name, lastModified: s.lastModified })); }
-    });
-
-    const sandboxDeleteTool = tool({
-        name: 'sandbox_delete',
-        description: 'Delete a sandbox by ID.',
-        inputSchema: z.object({ id: z.string() }),
-        callback: async (input) => { const all = getSandboxes(); if (!all[input.id]) return { error: 'Not found' }; delete all[input.id]; saveSandboxes(all); return { deleted: input.id }; }
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // HOOKS — InterruptHook, SummarizingManager
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    const interruptQueues = new Map(); // agentId -> [message strings]
-
-    function queueInterrupt(agentId, message) {
-        if (!interruptQueues.has(agentId)) interruptQueues.set(agentId, []);
-        interruptQueues.get(agentId).push(message);
-    }
-
-    class InterruptHook {
-        registerCallbacks(registry) {
-            registry.addCallback(BeforeModelCallEvent, (event) => {
-                const agentId = state.activeAgentId || 'main';
-                const queue = interruptQueues.get(agentId);
-                if (queue?.length) {
-                    const msgs = queue.splice(0);
-                    const injected = msgs.map(m => `[USER INTERRUPT]: ${m}`).join('\n');
-                    event.agent.messages.push({ role: 'user', content: [{ type: 'textBlock', text: injected }] });
-                    addMessageToUI('system', `💬 Interrupt injected: ${msgs.length} message(s)`, agentId);
-                }
-            });
-        }
-    }
-
-    class SummarizingManager {
-        constructor({ windowSize = 40, summarizeAfter = 30 } = {}) {
-            this.inner = new SlidingWindowConversationManager({ windowSize });
-            this.summarizeAfter = summarizeAfter;
-            this.summaries = new Map(); // agentId -> summary string
-        }
-        registerCallbacks(registry) {
-            this.inner.registerCallbacks(registry);
-            registry.addCallback(AfterInvocationEvent, async (event) => {
-                const msgs = event.agent.messages;
-                if (msgs.length < this.summarizeAfter) return;
-                const agentId = state.activeAgentId || 'main';
-                // Build summary from first half of messages
-                const half = Math.floor(msgs.length / 2);
-                const toSummarize = msgs.slice(0, half);
-                const texts = toSummarize.map(m => {
-                    const c = m.content || m;
-                    if (typeof c === 'string') return c;
-                    if (Array.isArray(c)) return c.map(b => b.text || '').join(' ');
-                    return '';
-                }).filter(Boolean).join('\n');
-                if (texts.length < 200) return;
-                const summary = `[CONVERSATION SUMMARY]: ${texts.slice(0, 2000)}...`;
-                this.summaries.set(agentId, summary);
-                // Replace first half with summary message
-                const kept = msgs.slice(half);
-                event.agent.messages.length = 0;
-                event.agent.messages.push({ role: 'user', content: [{ type: 'textBlock', text: summary }] });
-                kept.forEach(m => event.agent.messages.push(m));
-                console.log(`Summarized ${half} messages for ${agentId}, kept ${kept.length}`);
-            });
-        }
-    }
-
-    // Make interrupt queue accessible for UI
-    window.queueInterrupt = queueInterrupt;
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // GITHUB — auth, search, read, create PR
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    function ghToken() { return state.credentials.github?.token || ''; }
-    async function ghApi(path, opts = {}) {
-        const token = ghToken();
-        if (!token) throw new Error('GitHub not authenticated. Add a token in Settings or use Device Flow.');
-        const url = path.startsWith('http') ? path : `https://api.github.com${path}`;
-        const res = await fetch(url, { ...opts, headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json', ...opts.headers } });
-        if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
-        return res.status === 204 ? {} : res.json();
-    }
-
-    // Device flow OAuth (requires a GitHub OAuth App client_id)
-    window.githubDeviceFlow = async function() {
-        const clientId = prompt('Enter your GitHub OAuth App Client ID (create at github.com/settings/developers):');
-        if (!clientId) return;
-        try {
-            const codeRes = await fetch('https://github.com/login/device/code', {
-                method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ client_id: clientId, scope: 'repo' })
-            }).then(r => r.json());
-            showToast(`Go to ${codeRes.verification_uri} and enter: ${codeRes.user_code}`, 30000);
-            addMessageToUI('system', `🔑 GitHub Device Flow: Go to **${codeRes.verification_uri}** and enter code: **${codeRes.user_code}**`);
-            // Poll for token
-            const interval = (codeRes.interval || 5) * 1000;
-            const poll = setInterval(async () => {
-                try {
-                    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
-                        method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ client_id: clientId, device_code: codeRes.device_code, grant_type: 'urn:ietf:params:oauth:grant-type:device_code' })
-                    }).then(r => r.json());
-                    if (tokenRes.access_token) {
-                        clearInterval(poll);
-                        state.credentials.github = { token: tokenRes.access_token };
-                        document.getElementById('githubToken').value = tokenRes.access_token;
-                        saveState();
-                        showToast('GitHub authenticated!');
-                        addMessageToUI('system', '✅ GitHub authenticated successfully');
-                    }
-                } catch {}
-            }, interval);
-            setTimeout(() => clearInterval(poll), (codeRes.expires_in || 900) * 1000);
-        } catch (e) { showToast('Device flow failed: ' + e.message); }
-    };
-
-    const githubSearchTool = tool({
-        name: 'github_search',
-        description: 'Search GitHub code, repos, issues, or PRs. Returns top results.',
-        inputSchema: z.object({ query: z.string(), type: z.enum(['code', 'repositories', 'issues']).optional() }),
-        callback: async (input) => {
-            const type = input.type || 'repositories';
-            const data = await ghApi(`/search/${type}?q=${encodeURIComponent(input.query)}&per_page=10`);
-            return { total: data.total_count, items: data.items?.map(i => ({ name: i.full_name || i.name, url: i.html_url, description: i.description })) };
-        }
-    });
-
-    const githubReadFileTool = tool({
-        name: 'github_read_file',
-        description: 'Read a file from a GitHub repo. Returns content decoded from base64.',
-        inputSchema: z.object({ owner: z.string(), repo: z.string(), path: z.string(), ref: z.string().optional() }),
-        callback: async (input) => {
-            const ref = input.ref ? `?ref=${input.ref}` : '';
-            const data = await ghApi(`/repos/${input.owner}/${input.repo}/contents/${input.path}${ref}`);
-            return { path: data.path, content: atob(data.content), size: data.size };
-        }
-    });
-
-    const githubListReposTool = tool({
-        name: 'github_list_repos',
-        description: 'List repos for authenticated user or a specified user/org.',
-        inputSchema: z.object({ owner: z.string().optional(), type: z.enum(['all', 'owner', 'member']).optional() }),
-        callback: async (input) => {
-            const path = input.owner ? `/users/${input.owner}/repos` : '/user/repos';
-            const data = await ghApi(`${path}?per_page=30&sort=updated&type=${input.type || 'all'}`);
-            return data.map(r => ({ name: r.full_name, description: r.description, url: r.html_url, stars: r.stargazers_count }));
-        }
-    });
-
-    const githubCreateIssueTool = tool({
-        name: 'github_create_issue',
-        description: 'Create a GitHub issue.',
-        inputSchema: z.object({ owner: z.string(), repo: z.string(), title: z.string(), body: z.string().optional(), labels: z.array(z.string()).optional() }),
-        callback: async (input) => {
-            const data = await ghApi(`/repos/${input.owner}/${input.repo}/issues`, { method: 'POST', body: JSON.stringify({ title: input.title, body: input.body, labels: input.labels }) });
-            return { number: data.number, url: data.html_url };
-        }
-    });
-
-    const githubListIssuesTool = tool({
-        name: 'github_list_issues',
-        description: 'List issues for a repo.',
-        inputSchema: z.object({ owner: z.string(), repo: z.string(), state: z.enum(['open', 'closed', 'all']).optional() }),
-        callback: async (input) => {
-            const data = await ghApi(`/repos/${input.owner}/${input.repo}/issues?state=${input.state || 'open'}&per_page=20`);
-            return data.map(i => ({ number: i.number, title: i.title, state: i.state, url: i.html_url, labels: i.labels?.map(l => l.name) }));
-        }
-    });
-
-    const githubCreatePrTool = tool({
-        name: 'github_create_pr',
-        description: 'Create a pull request. Also adds it as a pipeline completion card if a pipeline is active.',
-        inputSchema: z.object({ owner: z.string(), repo: z.string(), title: z.string(), body: z.string().optional(), head: z.string(), base: z.string().optional() }),
-        callback: async (input) => {
-            const data = await ghApi(`/repos/${input.owner}/${input.repo}/pulls`, { method: 'POST', body: JSON.stringify({ title: input.title, body: input.body, head: input.head, base: input.base || 'main' }) });
-            // Wire into pipeline completion cards
-            const pipelines = getPipelines(); const active = getActivePipeline(pipelines);
-            if (active) {
-                if (!active.completionActions) active.completionActions = [];
-                active.completionActions.push({ label: `PR #${data.number}`, description: input.title, url: data.html_url });
-                savePipelines(pipelines); renderCompletionCards();
+            if (!window.AgentMesh) return { error: 'AgentMesh not loaded' };
+            try {
+                const result = await window.AgentMesh.invoke(input.target, input.prompt);
+                return { success: true, target: input.target, result: result.result || result };
+            } catch (err) {
+                return { error: err.message };
             }
-            return { number: data.number, url: data.html_url };
         }
     });
-
-    const githubReadPrTool = tool({
-        name: 'github_read_pr',
-        description: 'Read PR details including diff stats and review status.',
-        inputSchema: z.object({ owner: z.string(), repo: z.string(), number: z.number() }),
+    
+    const listMeshPeersTool = tool({
+        name: 'list_mesh_peers',
+        description: 'List all connected agi.diy browser tabs',
+        inputSchema: z.object({}),
+        callback: async () => {
+            if (!window.AgentMesh) return { error: 'AgentMesh not loaded' };
+            const peers = window.AgentMesh.getPeers();
+            return {
+                myPage: window.AgentMesh.currentPage.id,
+                peerCount: peers.length,
+                peers: peers.map(p => ({ id: p.id, label: p.label, tabId: p.tabId })),
+                availableTargets: [...new Set(peers.map(p => p.id))]
+            };
+        }
+    });
+    
+    const broadcastMeshTool = tool({
+        name: 'broadcast_mesh',
+        description: 'Send message to ALL connected agi.diy tabs',
+        inputSchema: z.object({
+            message: z.string().describe('Message to broadcast')
+        }),
         callback: async (input) => {
-            const [pr, reviews] = await Promise.all([
-                ghApi(`/repos/${input.owner}/${input.repo}/pulls/${input.number}`),
-                ghApi(`/repos/${input.owner}/${input.repo}/pulls/${input.number}/reviews`)
-            ]);
-            return { title: pr.title, state: pr.state, mergeable: pr.mergeable, additions: pr.additions, deletions: pr.deletions, url: pr.html_url, reviews: reviews.map(r => ({ user: r.user?.login, state: r.state })) };
+            if (!window.AgentMesh) return { error: 'AgentMesh not loaded' };
+            try {
+                const result = await window.AgentMesh.invoke('all', input.message);
+                return { success: true, broadcast: true, responses: result };
+            } catch (err) {
+                return { error: err.message };
+            }
         }
     });
-
+    
+    const addToMeshRingTool = tool({
+        name: 'add_to_mesh_ring',
+        description: 'Share context visible to ALL agents in ALL tabs',
+        inputSchema: z.object({
+            text: z.string().describe('Context to share'),
+            agentType: z.string().optional().describe('Type (default: "multi")')
+        }),
+        callback: async (input) => {
+            if (!window.AgentMesh?.addToRingContext) return { error: 'AgentMesh not available' };
+            window.AgentMesh.addToRingContext('multi-agent', input.agentType || 'multi', input.text);
+            return { success: true, added: input.text.slice(0, 100) };
+        }
+    });
+    
+    const getMeshRingTool = tool({
+        name: 'get_mesh_ring',
+        description: 'See what agents in other tabs are working on',
+        inputSchema: z.object({ maxEntries: z.number().optional() }),
+        callback: async (input) => {
+            if (!window.AgentMesh?.getRingContext) return { error: 'AgentMesh not available' };
+            const entries = window.AgentMesh.getRingContext();
+            return {
+                totalEntries: entries.length,
+                recent: entries.slice(-(input.maxEntries || 10)).map(e => ({
+                    agentId: e.agentId, type: e.agentType, text: e.text.slice(0, 200)
+                }))
+            };
+        }
+    });
+    
+    const MESH_TOOLS = [invokeMeshAgentTool, listMeshPeersTool, broadcastMeshTool, addToMeshRingTool, getMeshRingTool];
+    
     const TOOLS = [
         // Core
         renderUiTool, javascriptEvalTool, storageGetTool, storageSetTool, fetchUrlTool, notifyTool,
@@ -3609,46 +2962,15 @@ Example - create a tool that gets weather:
         useAgentTool, schedulerTool,
         // Mesh communication (local + remote)
         invokeAgentTool, broadcastToAgentsTool, listAgentsTool, invokeRemoteAgentTool, subscribeTopicTool, publishTopicTool,
-        // Pipeline
-        createPipelineTool, readPipelineTool, addTaskTool, updateTaskStatusTool, updateTaskDepsTool, completePipelineTool, emitStatusTool,
-        // Sandbox
-        sandboxCreateTool, sandboxUpdateTool, sandboxReadTool, sandboxListTool, sandboxDeleteTool,
-        // GitHub
-        githubSearchTool, githubReadFileTool, githubListReposTool, githubCreateIssueTool, githubListIssuesTool, githubCreatePrTool, githubReadPrTool
+        // Cross-tab mesh
+        ...MESH_TOOLS
     ];
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // AGENT MANAGEMENT — createAgent, updateAgentUI, selectAgent, killAgent, buildSystemPrompt
+    // AGENT MANAGEMENT
     // ═══════════════════════════════════════════════════════════════════════════
     
-    window.spawnAgent = async function(idOrEvent, config) {
-        // Programmatic call: spawnAgent('name', { systemPrompt, provider, ... })
-        if (typeof idOrEvent === 'string' && config) {
-            const id = idOrEvent;
-            if (state.agents.has(id)) { console.warn('Agent ID exists:', id); return; }
-            const provider = config.provider || 'bedrock';
-            const modelId = config.modelId || undefined;
-            const systemPrompt = config.systemPrompt || 'You are a helpful AI assistant.';
-            const maxTokens = config.maxTokens || DEFAULT_MAX_TOKENS;
-            const additionalRequestFields = config.additionalRequestFields || null;
-            const enabledTools = config.enabledTools || null;
-            const toolChoice = config.toolChoice || null;
-            
-            const model = createModel(provider, { modelId, maxTokens, additionalRequestFields });
-            const selectedTools = (!enabledTools) ? TOOLS : TOOLS.filter(t => enabledTools.includes(t.name));
-            const customTools = buildCustomTools();
-            const agent = new Agent({ model, tools: [...selectedTools, ...customTools], systemPrompt: buildSystemPrompt(id, systemPrompt), printer: false });
-            const color = state.agentColors[state.colorIndex % state.agentColors.length];
-            state.colorIndex++;
-            state.agents.set(id, { agent, model, config: { provider, modelId, systemPrompt, maxTokens, additionalRequestFields, enabledTools, toolChoice }, messages: [], status: 'ready', color });
-            updateAgentUI();
-            selectAgent(id);
-            showToast(`Agent ${id} spawned`);
-            saveState();
-            return;
-        }
-        
-        // UI call: reads from DOM
+    window.spawnAgent = async function() {
         const id = document.getElementById('spawnId').value.trim();
         const provider = document.getElementById('spawnProvider').value;
         const modelId = document.getElementById('spawnModelId').value.trim();
@@ -3725,6 +3047,16 @@ Example - create a tool that gets weather:
     };
     
     function buildSystemPrompt(agentId, basePrompt) {
+        // 🌐 Inject AgentMesh peer context
+        let meshContext = '';
+        if (window.AgentMesh?.getPeerContext) {
+            meshContext = window.AgentMesh.getPeerContext();
+        }
+        if (window.AgentMesh?.getRingContextForAgent) {
+            const ringCtx = window.AgentMesh.getRingContextForAgent(agentId, 5);
+            if (ringCtx) meshContext += ringCtx;
+        }
+        
         return `${basePrompt}
 
 ## Multi-Agent Context
@@ -3733,7 +3065,9 @@ You are agent "${agentId}" in a multi-agent system. You have access to:
 - scheduler: Schedule tasks (once or recurring cron)
 - invoke_agent: Call another agent and wait for response
 - broadcast_to_agents: Send message to all agents
-- list_agents: Discover all available agents and their capabilities
+- invoke_mesh_agent: Send prompts to agents in OTHER TABS (cross-tab mesh)
+- list_mesh_peers: See all connected agi.diy tabs
+- broadcast_mesh: Send message to ALL connected tabs
 
 ## Self-Modification
 - update_self: Modify your own system prompt
@@ -3743,13 +3077,47 @@ You are agent "${agentId}" in a multi-agent system. You have access to:
 
 Ring Attention: Other agents' recent messages are shared with you for context.
 
+${meshContext}
 ${getRingContext()}`;
     }
     
     function getRingContext() {
-        if (state.ringBuffer.length === 0) return '';
-        const recent = state.ringBuffer.slice(-10);
-        return '## Recent Messages from Other Agents:\n' + recent.map(e => `[${e.agentId}]: ${e.content.slice(0, 200)}...`).join('\n');
+        // Combine local ring buffer with AgentMesh shared ring
+        let allEntries = [...state.ringBuffer];
+        
+        // Add AgentMesh ring entries (from other tabs)
+        if (window.AgentMesh?.getRingContext) {
+            const meshEntries = window.AgentMesh.getRingContext();
+            for (const entry of meshEntries) {
+                // Skip entries that are already in local buffer (avoid duplicates)
+                const isDuplicate = allEntries.some(e => 
+                    e.agentId === entry.agentId && 
+                    Math.abs(e.timestamp - entry.timestamp) < 5000 &&
+                    e.content?.slice(0, 50) === entry.text?.slice(0, 50)
+                );
+                if (!isDuplicate) {
+                    allEntries.push({
+                        agentId: entry.agentId,
+                        role: 'assistant',
+                        content: entry.text,
+                        timestamp: entry.timestamp,
+                        isMesh: true,
+                        agentType: entry.agentType
+                    });
+                }
+            }
+        }
+        
+        // Sort by timestamp and take recent
+        allEntries.sort((a, b) => a.timestamp - b.timestamp);
+        const recent = allEntries.slice(-15);
+        
+        if (recent.length === 0) return '';
+        
+        return '## Recent Messages from Agents:\n' + recent.map(e => {
+            const source = e.isMesh ? ` (${e.agentType || 'mesh'})` : '';
+            return `[${e.agentId}${source}]: ${(e.content || '').slice(0, 200)}...`;
+        }).join('\n');
     }
     
     window.selectAgent = function(agentId) {
@@ -3762,8 +3130,6 @@ ${getRingContext()}`;
             document.getElementById('currentAgentName').textContent = agentId;
             document.getElementById('currentAgentModel').textContent = `${agentData.config.provider} • ${agentData.config.modelId || 'default'}`;
         }
-        const sel = document.getElementById('targetAgent');
-        if (sel && sel.querySelector(`option[value="${agentId}"]`)) sel.value = agentId;
     };
     
     window.killAgent = function(agentId, event) {
@@ -3783,21 +3149,15 @@ ${getRingContext()}`;
     function updateAgentUI() {
         const agentListHtml = [];
         const targetOptions = ['<option value="all">All Agents</option>'];
-        const pipeline = getActivePipeline();
         
         for (const [id, data] of state.agents) {
             const isActive = id === state.activeAgentId;
-            let statusText = data.status;
-            if (data.status === 'processing' && pipeline) {
-                const task = pipeline.tasks.find(t => t.assignedTo === id && t.status === 'working');
-                if (task) statusText = '▶ ' + (task.id.length > 16 ? task.id.substring(0, 16) + '…' : task.id);
-            }
             agentListHtml.push(`
                 <div class="agent-card ${isActive ? 'active' : ''}" onclick="selectAgent('${id}')">
                     <div class="agent-card-header">
                         <span class="agent-dot" style="background:${data.color}"></span>
                         <span class="agent-name">${id}</span>
-                        <span class="agent-status ${data.status}">${statusText}</span>
+                        <span class="agent-status ${data.status}">${data.status}</span>
                     </div>
                     <div class="agent-meta">
                         <span>${data.config.provider}</span>
@@ -3814,7 +3174,6 @@ ${getRingContext()}`;
         document.getElementById('agentList').innerHTML = agentListHtml.join('') || '<div style="font-size:11px;color:var(--text-tertiary);">No agents yet</div>';
         document.getElementById('mobileAgentList').innerHTML = agentListHtml.join('') || '<div style="font-size:11px;color:var(--text-tertiary);">No agents yet</div>';
         document.getElementById('targetAgent').innerHTML = targetOptions.join('');
-        updateActivityFilterOptions();
         
         // Update schedule agent dropdown
         const scheduleAgentSelect = document.getElementById('scheduleAgent');
@@ -3927,25 +3286,23 @@ ${getRingContext()}`;
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // MESSAGING — runAgentMessage, sendMessage, clearChat, broadcastMessage
+    // MESSAGING
     // ═══════════════════════════════════════════════════════════════════════════
     
     let streamingEls = new Map(); // agentId -> streaming element
     let broadcastMode = false; // true when sending to all agents
-    let abortControllers = new Map(); // agentId -> AbortController
     
     async function runAgentMessage(agentId, message) {
         const agentData = state.agents.get(agentId);
         if (!agentData) return;
         
-        // Cancel any existing run for this agent
-        if (abortControllers.has(agentId)) abortControllers.get(agentId).abort();
-        const ac = new AbortController();
-        abortControllers.set(agentId, ac);
-        
         // Add to ring buffer FIRST so it's included in system prompt
         state.ringBuffer.push({ agentId, role: 'user', content: message, timestamp: Date.now() });
         if (state.ringBuffer.length > 100) state.ringBuffer.shift();
+        // 🌐 Sync to AgentMesh shared ring
+        if (window.AgentMesh?.addToRingContext) {
+            window.AgentMesh.addToRingContext(agentId, 'multi', `[User→${agentId}] ${message.slice(0, 300)}`);
+        }
         updateRingUI();
         
         // Create a FRESH agent instance for each message (allows parallelism)
@@ -3968,18 +3325,8 @@ ${getRingContext()}`;
                 model,
                 tools: allTools,
                 systemPrompt: buildSystemPrompt(agentId, agentData.config.systemPrompt),
-                printer: false,
-                conversationManager: new SummarizingManager(),
-                hooks: [new InterruptHook()]
+                printer: false
             });
-            
-            // Inject toolChoice if configured (forces tool use)
-            if (agentData.config.toolChoice) {
-                const origStream = model.stream.bind(model);
-                model.stream = function(msgs, opts) {
-                    return origStream(msgs, { ...opts, toolChoice: agentData.config.toolChoice });
-                };
-            }
             
             // Inject conversation history from this agent's messages
             if (agentData.messages.length > 0) {
@@ -4013,50 +3360,19 @@ ${getRingContext()}`;
         
         try {
             let currentText = '';
-            const watchdog = setTimeout(() => {
-                console.error(`⏰ Agent ${agentId} timeout`);
-                ac.abort();
-                agentData.status = 'error';
-                abortControllers.delete(agentId);
-                document.getElementById('interruptBtn').style.display = 'none';
-                if (shouldShow) { removeThinking(); addMessageToUI('error', 'Agent timed out (5 min)', agentId, agentData.color); }
-                appendActivityFeed(agentId, '❌ Timed out after 5 minutes', 'msg');
-                updateAgentUI(); saveState();
-            }, 300000);
             
             for await (const event of activeAgent.stream(message)) {
-                if (ac.signal.aborted) break;
                 if (!event?.type) continue;
                 
                 if (event.type === 'modelContentBlockDeltaEvent' && event.delta?.type === 'textDelta') {
                     currentText += event.delta.text;
                     if (shouldShow) updateStreaming(currentText, agentId, agentData.color);
                 }
-                else if (event.type === 'beforeToolCallEvent') {
-                    const toolId = event.toolUse?.toolUseId || `tool-${event.toolUse?.name}-${Date.now()}`;
-                    if (shouldShow) {
-                        addToolCall(event.toolUse?.name, event.toolUse?.input, 'running', toolId);
-                        // Move streaming element after tool block so text stays in one place
-                        const se = streamingEls.get(agentId);
-                        if (se) document.getElementById('messagesInner').appendChild(se);
-                    }
-                    const toolName = event.toolUse?.name;
-                    const toolInput = event.toolUse?.input;
-                    const feedLabel = toolName === 'invoke_agent' && toolInput?.targetAgentId
-                        ? `🔧 invoke_agent → ${toolInput.targetAgentId}`
-                        : `🔧 ${toolName}`;
-                    appendActivityFeed(agentId, feedLabel, 'tool', { input: toolInput });
-                    // Store toolId for afterToolCallEvent
-                    event._toolId = toolId;
+                else if (event.type === 'beforeToolCallEvent' && shouldShow) {
+                    addToolCall(event.toolUse?.name, event.toolUse?.input, 'running');
                 }
-                else if (event.type === 'afterToolCallEvent') {
-                    if (shouldShow) updateToolStatus(event.toolUse?.toolUseId, event.toolUse?.name, event.result?.status || 'success', event.result);
-                    // Update last tool entry in activity log + DOM with output
-                    const last = activityLog.findLast(e => e.type === 'tool' && e.agentId === agentId);
-                    if (last && event.result) {
-                        last.extra = { ...last.extra, output: event.result };
-                        appendToolOutput(last);
-                    }
+                else if (event.type === 'afterToolCallEvent' && shouldShow) {
+                    updateToolStatus(event.toolUse?.name, event.result?.status || 'success');
                 }
             }
             
@@ -4065,32 +3381,27 @@ ${getRingContext()}`;
                 removeThinking();
                 if (currentText) finalizeStreaming(currentText, agentId, agentData.color);
             }
-            if (currentText) appendActivityFeed(agentId, currentText.replace(/[#*`]/g, '').substring(0, 1000));
             
             agentData.messages.push({ role: 'assistant', content: currentText, timestamp: Date.now() });
             
             // Add to ring buffer
             state.ringBuffer.push({ agentId, role: 'assistant', content: currentText, timestamp: Date.now() });
             if (state.ringBuffer.length > 100) state.ringBuffer.shift();
+            // 🌐 Sync to AgentMesh shared ring
+            if (window.AgentMesh?.addToRingContext) {
+                window.AgentMesh.addToRingContext(agentId, 'multi', currentText.slice(0, 500));
+            }
             updateRingUI();
             
             agentData.status = 'ready';
-            abortControllers.delete(agentId);
-            clearTimeout(watchdog);
-            document.getElementById('interruptBtn').style.display = 'none';
-            return currentText;
         } catch (e) {
             console.error(`Agent ${agentId} error:`, e);
             agentData.status = 'error';
-            abortControllers.delete(agentId);
-            clearTimeout(watchdog);
-            document.getElementById('interruptBtn').style.display = 'none';
             
             if (shouldShow) {
                 removeThinking();
                 addMessageToUI('error', e.message, agentId, agentData.color);
             }
-            appendActivityFeed(agentId, `❌ Error: ${e.message}`, 'msg');
         }
         
         updateAgentUI();
@@ -4101,7 +3412,6 @@ ${getRingContext()}`;
         const input = document.getElementById('inputField');
         const text = input.value.trim();
         if (!text) return;
-        document.getElementById('interruptBtn').style.display = 'inline-flex';
         
         const target = document.getElementById('targetAgent').value;
         
@@ -4150,18 +3460,8 @@ ${getRingContext()}`;
     };
     
     window.clearChat = function() {
-        // Abort all running agents
-        for (const [id, ac] of abortControllers) ac.abort();
-        abortControllers.clear();
-        for (const [id, data] of state.agents) { data.status = 'ready'; }
-        updateAgentUI();
-        
-        // Clear pipeline
-        localStorage.removeItem('agi_pipelines');
-        updatePipelineUI();
-        
         if (!state.activeAgentId) {
-            showToast('Cleared');
+            showToast('No active agent to clear');
             return;
         }
         
@@ -4169,44 +3469,11 @@ ${getRingContext()}`;
         if (agentData) {
             agentData.messages = [];
             renderMessages();
-            showToast('Cleared');
+            showToast('Chat cleared');
             saveState();
-            // Reset activity feed
-            activityLog.length = 0;
-            const feed = document.getElementById('activityFeed');
-            if (feed) { feed.innerHTML = ''; feed._lastAgent = null; }
-            const sel = document.getElementById('activityFilter');
-            if (sel) { sel.value = 'all'; updateActivityFilterOptions(); }
         }
     };
     
-    window.clearAllChats = function() {
-        for (const [id, ac] of abortControllers) ac.abort();
-        abortControllers.clear();
-        for (const [id, data] of state.agents) { data.status = 'ready'; data.messages = []; }
-        localStorage.removeItem('agi_pipelines');
-        updatePipelineUI();
-        updateAgentUI();
-        renderMessages();
-        activityLog.length = 0;
-        const feed = document.getElementById('activityFeed');
-        if (feed) { feed.innerHTML = ''; feed._lastAgent = null; }
-        const sel = document.getElementById('activityFilter');
-        if (sel) { sel.value = 'all'; updateActivityFilterOptions(); }
-        saveState();
-        showToast('All cleared');
-    };
-
-    window.sendInterrupt = function() {
-        const input = document.getElementById('inputField');
-        const text = input.value.trim();
-        if (!text) return;
-        const agentId = state.activeAgentId || 'main';
-        queueInterrupt(agentId, text);
-        addMessageToUI('user', `⚡ [Interrupt]: ${text}`, agentId);
-        input.value = '';
-    };
-
     window.handleKeyDown = function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -4215,7 +3482,7 @@ ${getRingContext()}`;
     };
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // UI RENDERING — addMessageToUI, streaming, tool calls, ring buffer
+    // UI HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
     
     function renderMessages() {
@@ -4243,133 +3510,17 @@ ${getRingContext()}`;
         scrollToBottom();
     }
     
-    // ═══════════════════════════════════════════════════════════════════════════
-    // ACTIVITY FEED — appendActivityFeed, filterActivityFeed, activityLog[]
-    // ═══════════════════════════════════════════════════════════════════════════
-    const activityLog = []; // { agentId, text, type, ts }
-
-    function appendActivityFeed(agentId, text, type = 'msg', extra = null) {
-        const agentData = state.agents.get(agentId);
-        activityLog.push({ agentId, text, type, ts: Date.now(), color: agentData?.color || '#888', extra });
-        const feed = document.getElementById('activityFeed');
-        if (!feed) return;
-        const filter = document.getElementById('activityFilter')?.value;
-        if (filter && filter !== 'all' && filter !== agentId && !filter.startsWith('task:')) return;
-        renderActivityEntry(feed, activityLog[activityLog.length - 1]);
-        feed.scrollTop = feed.scrollHeight;
-    }
-
-    function renderActivityEntry(feed, entry) {
-        if (!feed._lastAgent || feed._lastAgent !== entry.agentId) {
-            const h = document.createElement('div');
-            h.className = 'af-agent';
-            h.style.color = entry.color;
-            h.textContent = entry.agentId;
-            feed.appendChild(h);
-            feed._lastAgent = entry.agentId;
-        }
-        const idx = activityLog.indexOf(entry);
-        const line = document.createElement('div');
-        line.className = entry.type === 'tool' ? 'af-tool tool-block' : 'af-msg';
-        if (idx >= 0) line.id = 'af-' + idx;
-        line.style.setProperty('--agent-color', entry.color);
-        if (entry.type === 'tool' && entry.extra) {
-            const hdr = document.createElement('div');
-            hdr.className = 'tool-header';
-            hdr.innerHTML = `<div class="tool-status"></div><span class="tool-name">${escapeHtml(entry.text)}</span>`;
-            line.appendChild(hdr);
-            if (entry.extra.input) {
-                const d = document.createElement('details');
-                d.innerHTML = `<summary style="cursor:pointer;color:var(--text-tertiary);font-size:10px;margin-top:4px">input</summary><div class="tool-input">${escapeHtml(JSON.stringify(entry.extra.input, null, 2).substring(0, 2000))}</div>`;
-                line.appendChild(d);
-            }
-            if (entry.extra.output) {
-                const d = document.createElement('details');
-                const out = typeof entry.extra.output === 'string' ? entry.extra.output : JSON.stringify(entry.extra.output, null, 2);
-                d.innerHTML = `<summary style="cursor:pointer;color:var(--text-tertiary);font-size:10px;margin-top:4px">output</summary><div class="tool-input">${escapeHtml(out.substring(0, 2000))}</div>`;
-                line.appendChild(d);
-            }
-        } else {
-            line.textContent = entry.text.length > 500 ? entry.text.substring(0, 500) + '…' : entry.text;
-        }
-        feed.appendChild(line);
-    }
-
-    function appendToolOutput(entry) {
-        const idx = activityLog.indexOf(entry);
-        const el = idx >= 0 ? document.getElementById('af-' + idx) : null;
-        if (!el) { if (entry.extra?.output) console.warn('appendToolOutput: DOM element not found for af-' + idx); return; }
-        if (!entry.extra?.output) return;
-        const d = document.createElement('details');
-        const out = typeof entry.extra.output === 'string' ? entry.extra.output : JSON.stringify(entry.extra.output, null, 2);
-        d.innerHTML = `<summary style="cursor:pointer;color:var(--text-tertiary);font-size:10px;margin-top:4px">output</summary><div class="tool-input">${escapeHtml(out.substring(0, 2000))}</div>`;
-        el.appendChild(d);
-    }
-
-    function filterActivityFeed() {
-        const filter = document.getElementById('activityFilter').value;
-        const feed = document.getElementById('activityFeed');
-        feed.innerHTML = '';
-        feed._lastAgent = null;
-        if (filter.startsWith('task:')) {
-            const p = getActivePipeline();
-            const task = p?.tasks.find(t => t.id === filter.substring(5));
-            if (!task) return;
-            const h = document.createElement('div');
-            h.className = 'af-agent';
-            h.style.color = task.color || '#ccc';
-            h.textContent = `${task.name} [${task.status}]${task.assignedTo ? ' → ' + task.assignedTo : ''}`;
-            feed.appendChild(h);
-            // Show task activities from pipeline
-            (task.activities || []).forEach(a => {
-                const line = document.createElement('div');
-                line.className = a.done ? 'af-msg' : 'af-tool';
-                line.style.setProperty('--agent-color', task.color || '#555');
-                line.textContent = (a.done ? '✓ ' : '') + a.text;
-                feed.appendChild(line);
-            });
-            // Also show matching entries from activity log
-            activityLog.filter(e => e.text.includes(task.name.split(' — ')[0])).forEach(e => renderActivityEntry(feed, e));
-            return;
-        }
-        // Re-render from backing store
-        const entries = filter === 'all' ? activityLog : activityLog.filter(e => e.agentId === filter);
-        entries.forEach(e => renderActivityEntry(feed, e));
-        feed.scrollTop = feed.scrollHeight;
-    }
-
-    function updateActivityFilterOptions() {
-        const sel = document.getElementById('activityFilter');
-        if (!sel) return;
-        const val = sel.value;
-        const opts = ['<option value="all">All Agents</option>'];
-        for (const [id, data] of state.agents) {
-            opts.push(`<option value="${id}" style="color:${data.color}">${id}</option>`);
-        }
-        // Keep task option if selected
-        if (val.startsWith('task:')) {
-            const p = getActivePipeline();
-            const task = p?.tasks.find(t => t.id === val.substring(5));
-            if (task) opts.push(`<option value="${val}">${task.name.split(' — ')[0]}</option>`);
-        }
-        sel.innerHTML = opts.join('');
-        sel.value = val;
-    }
-
     function addMessageToUI(role, content, agentId, color, scroll = true) {
         const inner = document.getElementById('messagesInner');
         const msg = document.createElement('div');
         msg.className = `message ${role}`;
         
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const userColor = '#3b82f6';
-        const arrow = role === 'user' 
-            ? `<span style="color:${userColor}">you</span> → <span style="color:${color}">${agentId}</span>`
-            : `<span style="color:${color}">${agentId}</span> → <span style="color:${userColor}">you</span>`;
         
         msg.innerHTML = `
             <div class="message-header">
-                ${arrow}
+                <span class="message-role">${role === 'user' ? 'you' : role === 'assistant' ? 'agi' : role}</span>
+                <span class="message-agent" style="background:${color}20;color:${color}">${agentId}</span>
                 <span class="message-time">${time}</span>
             </div>
             <div class="message-content">${role === 'user' ? escapeHtml(content) : `<div class="markdown-content">${marked.parse(content)}</div>`}</div>
@@ -4412,11 +3563,11 @@ ${getRingContext()}`;
         }
     }
     
-    function addToolCall(name, input, status, toolId) {
+    function addToolCall(name, input, status) {
         const inner = document.getElementById('messagesInner');
         const tool = document.createElement('div');
         tool.className = 'tool-block';
-        tool.id = toolId || `tool-${name}-${Date.now()}`;
+        tool.id = `tool-${name}-${Date.now()}`;
         tool.innerHTML = `
             <div class="tool-header">
                 <div class="tool-status ${status}"></div>
@@ -4429,17 +3580,12 @@ ${getRingContext()}`;
         scrollToBottom();
     }
     
-    function updateToolStatus(toolId, name, status, result) {
-        const block = toolId ? document.getElementById(toolId) : null
-            || [...document.querySelectorAll('.tool-block')].reverse().find(b => b.querySelector('.tool-name')?.textContent === name);
-        if (!block) return;
-        block.querySelector('.tool-status').className = `tool-status ${status === 'error' ? 'error' : ''}`;
-        if (result) {
-            const out = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
-            if (out && out.length > 2) {
-                const d = document.createElement('details');
-                d.innerHTML = `<summary style="cursor:pointer;color:var(--text-tertiary);font-size:10px;margin-top:4px;">output</summary><div class="tool-input">${escapeHtml(out.substring(0, 2000))}</div>`;
-                block.appendChild(d);
+    function updateToolStatus(name, status) {
+        const blocks = document.querySelectorAll('.tool-block');
+        for (let i = blocks.length - 1; i >= 0; i--) {
+            if (blocks[i].querySelector('.tool-name')?.textContent === name) {
+                blocks[i].querySelector('.tool-status').className = `tool-status ${status === 'error' ? 'error' : ''}`;
+                break;
             }
         }
     }
@@ -4460,30 +3606,60 @@ ${getRingContext()}`;
     
     function updateRingUI() {
         const container = document.getElementById('ringContent');
-        if (!container) return;
-        const recent = state.ringBuffer.slice(-20).reverse();
+        
+        // Combine local ring with AgentMesh shared ring
+        let allEntries = state.ringBuffer.map((e, idx) => ({ ...e, localIndex: idx }));
+        
+        // Add AgentMesh ring entries (from other tabs)
+        if (window.AgentMesh?.getRingContext) {
+            const meshEntries = window.AgentMesh.getRingContext();
+            for (const entry of meshEntries) {
+                // Skip entries that look like duplicates
+                const isDuplicate = allEntries.some(e => 
+                    e.agentId === entry.agentId && 
+                    Math.abs(e.timestamp - entry.timestamp) < 5000 &&
+                    e.content?.slice(0, 50) === entry.text?.slice(0, 50)
+                );
+                if (!isDuplicate) {
+                    allEntries.push({
+                        agentId: entry.agentId,
+                        role: 'assistant',
+                        content: entry.text,
+                        timestamp: entry.timestamp,
+                        isMesh: true,
+                        agentType: entry.agentType
+                    });
+                }
+            }
+        }
+        
+        // Sort by timestamp descending (most recent first)
+        allEntries.sort((a, b) => b.timestamp - a.timestamp);
+        const recent = allEntries.slice(0, 20);
         
         if (recent.length === 0) {
             container.innerHTML = '<div style="font-size:11px;color:var(--text-tertiary);text-align:center;padding:20px;">Shared context will appear here</div>';
             return;
         }
         
-        container.innerHTML = recent.map((e, displayIndex) => {
-            // Calculate actual index in ringBuffer (reversed display)
-            const actualIndex = state.ringBuffer.length - 1 - displayIndex;
+        container.innerHTML = recent.map((e) => {
             const agentData = state.agents.get(e.agentId);
-            const color = agentData?.color || '#888';
+            const color = agentData?.color || (e.isMesh ? '#007aff' : '#888');
             const time = new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const meshBadge = e.isMesh ? `<span style="font-size:9px;color:#007aff;margin-left:4px;">🌐 ${e.agentType || 'mesh'}</span>` : '';
+            const deleteBtn = e.isMesh ? '' : `<span class="ring-entry-delete" onclick="deleteRingEntry(${e.localIndex})" title="Delete this entry">✕</span>`;
+            const borderStyle = e.isMesh ? 'border-left:2px solid #007aff;' : '';
+            
             return `
-                <div class="ring-entry">
+                <div class="ring-entry" style="${borderStyle}">
                     <div class="ring-entry-header">
-                        <span class="ring-entry-agent" style="color:${color}">${e.agentId}</span>
+                        <span class="ring-entry-agent" style="color:${color}">${e.agentId}${meshBadge}</span>
                         <div class="ring-entry-meta">
                             <span class="ring-entry-time">${time}</span>
-                            <span class="ring-entry-delete" onclick="deleteRingEntry(${actualIndex})" title="Delete this entry">✕</span>
+                            ${deleteBtn}
                         </div>
                     </div>
-                    <div class="ring-entry-content">${escapeHtml(e.content.slice(0, 150))}${e.content.length > 150 ? '...' : ''}</div>
+                    <div class="ring-entry-content">${escapeHtml((e.content || '').slice(0, 150))}${(e.content || '').length > 150 ? '...' : ''}</div>
                 </div>
             `;
         }).join('');
@@ -4529,7 +3705,7 @@ ${getRingContext()}`;
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // MODALS — spawn, edit, settings, tool groups
+    // MODALS
     // ═══════════════════════════════════════════════════════════════════════════
     
     window.openSpawnModal = () => {
@@ -4554,7 +3730,6 @@ ${getRingContext()}`;
         const provider = document.getElementById('spawnProvider').value;
         const hintEl = document.getElementById('spawnModelHint');
         hintEl.textContent = `Default: ${DEFAULT_MODELS[provider] || 'unknown'}`;
-        updateModelDatalist(provider, 'spawnModelList');
         
         // Show/hide additional fields based on provider
         const additionalFieldsGroup = document.getElementById('spawnAdditionalFieldsGroup');
@@ -4562,6 +3737,7 @@ ${getRingContext()}`;
         
         if (provider === 'bedrock') {
             additionalFieldsGroup.style.display = 'block';
+            // Pre-populate with default bedrock fields if empty
             if (!additionalFieldsInput.value.trim()) {
                 additionalFieldsInput.value = JSON.stringify(DEFAULT_BEDROCK_ADDITIONAL_FIELDS, null, 2);
             }
@@ -4569,15 +3745,6 @@ ${getRingContext()}`;
             additionalFieldsGroup.style.display = 'block';
         } else {
             additionalFieldsGroup.style.display = 'none';
-        }
-    };
-
-    window.onModelSelected = function(prefix) {
-        const provider = document.getElementById(prefix + 'Provider').value;
-        const modelId = document.getElementById(prefix + 'ModelId').value;
-        const flags = getModelFlags(provider, modelId);
-        if (flags) {
-            document.getElementById(prefix + 'AdditionalFields').value = JSON.stringify(flags, null, 2);
         }
     };
     
@@ -4601,26 +3768,7 @@ ${getRingContext()}`;
             { name: 'list_agents', desc: 'List all agents' },
             { name: 'invoke_remote_agent', desc: 'Call remote agent' },
             { name: 'subscribe_topic', desc: 'Subscribe to topic' },
-            { name: 'publish_topic', desc: 'Publish to topic' },
-            { name: 'create_pipeline', desc: 'Create pipeline' },
-            { name: 'read_pipeline', desc: 'Read pipeline' },
-            { name: 'add_task', desc: 'Add pipeline task' },
-            { name: 'update_task_status', desc: 'Update task status' },
-            { name: 'update_task_deps', desc: 'Update task deps' },
-            { name: 'complete_pipeline', desc: 'Complete pipeline' },
-            { name: 'emit_status', desc: 'Emit status update' },
-            { name: 'sandbox_create', desc: 'Create sandbox' },
-            { name: 'sandbox_update', desc: 'Update sandbox' },
-            { name: 'sandbox_read', desc: 'Read sandbox' },
-            { name: 'sandbox_list', desc: 'List sandboxes' },
-            { name: 'sandbox_delete', desc: 'Delete sandbox' },
-            { name: 'github_search', desc: 'Search GitHub' },
-            { name: 'github_read_file', desc: 'Read repo file' },
-            { name: 'github_list_repos', desc: 'List repos' },
-            { name: 'github_create_issue', desc: 'Create issue' },
-            { name: 'github_list_issues', desc: 'List issues' },
-            { name: 'github_create_pr', desc: 'Create PR' },
-            { name: 'github_read_pr', desc: 'Read PR details' }
+            { name: 'publish_topic', desc: 'Publish to topic' }
         ];
         
         container.innerHTML = allTools.map(t => `
@@ -4633,23 +3781,6 @@ ${getRingContext()}`;
             </label>
         `).join('');
     }
-
-    const TOOL_GROUPS = {
-        core: ['render_ui','javascript_eval','storage_get','storage_set','fetch_url','notify','update_self','create_tool','list_tools','delete_tool'],
-        sandbox: ['sandbox_create','sandbox_update','sandbox_read','sandbox_list','sandbox_delete'],
-        pipeline: ['create_pipeline','read_pipeline','add_task','update_task_status','update_task_deps','complete_pipeline','emit_status'],
-        agents: ['use_agent','scheduler','invoke_agent','broadcast_to_agents','list_agents','invoke_remote_agent','subscribe_topic','publish_topic'],
-        github: ['github_search','github_read_file','github_list_repos','github_create_issue','github_list_issues','github_create_pr','github_read_pr']
-    };
-
-    window.selectToolGroup = function(group) {
-        const boxes = document.querySelectorAll('#spawnToolsList input[name="spawn-tool"]');
-        if (group === 'all') { boxes.forEach(b => { b.checked = true; b.closest('.tool-item').classList.add('enabled'); }); return; }
-        if (group === 'none') { boxes.forEach(b => { b.checked = false; b.closest('.tool-item').classList.remove('enabled'); }); return; }
-        const names = TOOL_GROUPS[group] || [];
-        boxes.forEach(b => { b.checked = false; b.closest('.tool-item').classList.remove('enabled'); });
-        boxes.forEach(b => { if (names.includes(b.value)) { b.checked = true; b.closest('.tool-item').classList.add('enabled'); } });
-    };
     
     window.openEditAgentModal = function(agentId, event) {
         event.stopPropagation();
@@ -4684,7 +3815,6 @@ ${getRingContext()}`;
         const provider = document.getElementById('editProvider').value;
         const hintEl = document.getElementById('editModelHint');
         hintEl.textContent = `Default: ${DEFAULT_MODELS[provider] || 'unknown'}`;
-        updateModelDatalist(provider, 'editModelList');
         
         // Show/hide additional fields based on provider
         document.getElementById('editAdditionalFieldsGroup').style.display = 
@@ -4819,7 +3949,6 @@ ${getRingContext()}`;
         document.getElementById('openaiKey').value = state.credentials.openai.apiKey;
         document.getElementById('bedrockKey').value = state.credentials.bedrock.apiKey;
         document.getElementById('bedrockRegion').value = state.credentials.bedrock.region;
-        document.getElementById('githubToken').value = state.credentials.github?.token || '';
         // Load network settings
         document.getElementById('relayUrl').value = localStorage.getItem('mesh_relay_url') || '';
         document.getElementById('instanceId').value = agentMesh.instanceId || '';
@@ -4845,7 +3974,7 @@ ${getRingContext()}`;
     window.toggleMobileSidebar = () => document.getElementById('mobileSidebar').classList.toggle('active');
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // SYNC — encrypted export/import via URL
+    // ENCRYPTED SYNC - Export/Import API keys via encrypted URL
     // ═══════════════════════════════════════════════════════════════════════════
     
     async function deriveKey(password, salt) {
@@ -4929,7 +4058,6 @@ ${getRingContext()}`;
             document.getElementById('openaiKey').value = state.credentials.openai.apiKey || '';
             document.getElementById('bedrockKey').value = state.credentials.bedrock.apiKey || '';
             document.getElementById('bedrockRegion').value = state.credentials.bedrock.region || 'us-east-1';
-            document.getElementById('githubToken').value = state.credentials.github?.token || '';
             
             saveState();
             showToast('Settings imported!');
@@ -4958,7 +4086,7 @@ ${getRingContext()}`;
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // PERSISTENCE — saveState, loadState, saveCredentials, export/import agents
+    // CREDENTIALS & PERSISTENCE
     // ═══════════════════════════════════════════════════════════════════════════
     
     window.saveCredentials = function() {
@@ -4966,8 +4094,16 @@ ${getRingContext()}`;
         state.credentials.openai.apiKey = document.getElementById('openaiKey').value.trim();
         state.credentials.bedrock.apiKey = document.getElementById('bedrockKey').value.trim();
         state.credentials.bedrock.region = document.getElementById('bedrockRegion').value;
-        state.credentials.github = state.credentials.github || {};
-        state.credentials.github.token = document.getElementById('githubToken').value.trim();
+        
+        // 🔑 Sync to AgentMesh unified credentials (cross-tab)
+        if (window.AgentMesh?.setCredentials) {
+            window.AgentMesh.setCredentials({
+                anthropic: { apiKey: state.credentials.anthropic.apiKey, model: state.credentials.anthropic.model },
+                openai: { apiKey: state.credentials.openai.apiKey, model: state.credentials.openai.model },
+                bedrock: { apiKey: state.credentials.bedrock.apiKey, region: state.credentials.bedrock.region, model: state.credentials.bedrock.model }
+            });
+        }
+        
         saveState();
         showToast('Credentials saved');
         closeModal('settingsModal');
@@ -5023,6 +4159,20 @@ ${getRingContext()}`;
             const data = JSON.parse(stored);
             state.credentials = data.credentials || state.credentials;
             state.ringBuffer = data.ringBuffer || [];
+            
+            // 🔑 Merge with AgentMesh unified credentials
+            if (window.AgentMesh?.getCredentials) {
+                const meshCreds = window.AgentMesh.getCredentials();
+                if (meshCreds.anthropic?.apiKey && !state.credentials.anthropic.apiKey) {
+                    state.credentials.anthropic.apiKey = meshCreds.anthropic.apiKey;
+                }
+                if (meshCreds.openai?.apiKey && !state.credentials.openai.apiKey) {
+                    state.credentials.openai.apiKey = meshCreds.openai.apiKey;
+                }
+                if (meshCreds.bedrock?.apiKey && !state.credentials.bedrock.apiKey) {
+                    state.credentials.bedrock.apiKey = meshCreds.bedrock.apiKey;
+                }
+            }
             
             for (const agentData of data.agents || []) {
                 try {
@@ -5128,7 +4278,7 @@ ${getRingContext()}`;
     };
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // CUSTOM TOOLS UI — updateCustomToolsUI, deleteCustomTool
+    // CUSTOM TOOLS UI
     // ═══════════════════════════════════════════════════════════════════════════
     
     function updateCustomToolsUI() {
@@ -5178,31 +4328,55 @@ ${getRingContext()}`;
     };
     
     // ═══════════════════════════════════════════════════════════════════════════
-    // INIT — DOMContentLoaded, autoCreateDefaultAgent, checkForQueryParam
+    // INIT
     // ═══════════════════════════════════════════════════════════════════════════
     
-    // Panel resizer
-    (() => {
-        const r = document.getElementById('panelResizer'), panels = document.querySelector('.content-panels');
-        if (!r || !panels) return;
-        let dragging = false;
-        r.addEventListener('mousedown', () => { dragging = true; r.classList.add('dragging'); document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none'; });
-        document.addEventListener('mousemove', e => { if (!dragging) return; const rect = panels.getBoundingClientRect(); const pct = ((e.clientX - rect.left) / rect.width * 100); const chat = panels.querySelector('.chat-panel'), act = panels.querySelector('.activity-panel'); chat.style.flex = 'none'; chat.style.width = Math.max(20, Math.min(80, pct)) + '%'; act.style.flex = '1'; });
-        document.addEventListener('mouseup', () => { if (dragging) { dragging = false; r.classList.remove('dragging'); document.body.style.cursor = ''; document.body.style.userSelect = ''; } });
-    })();
-
     loadState();
+    
+    // 🔑 Listen for credential changes from other tabs
+    window.addEventListener('agimesh:credentials', (e) => {
+        const creds = e.detail;
+        if (creds.anthropic?.apiKey) state.credentials.anthropic.apiKey = creds.anthropic.apiKey;
+        if (creds.openai?.apiKey) state.credentials.openai.apiKey = creds.openai.apiKey;
+        if (creds.bedrock?.apiKey) state.credentials.bedrock.apiKey = creds.bedrock.apiKey;
+        // Update UI if settings modal is open
+        const anthropicInput = document.getElementById('anthropicKey');
+        if (anthropicInput) anthropicInput.value = state.credentials.anthropic.apiKey;
+        const openaiInput = document.getElementById('openaiKey');
+        if (openaiInput) openaiInput.value = state.credentials.openai.apiKey;
+        const bedrockInput = document.getElementById('bedrockKey');
+        if (bedrockInput) bedrockInput.value = state.credentials.bedrock.apiKey;
+        console.log('[agi.html] Credentials synced from another tab');
+        showToast('Credentials synced from another tab');
+    });
+    
+    // 🔗 Listen for ring context changes from other tabs (via localStorage)
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'agi-mesh-ring-context') {
+            console.log('[agi.html] Ring context updated from another tab');
+            updateRingUI();
+        }
+    });
+    
+    // 🔗 Listen for ring context updates via AgentMesh BroadcastChannel
+    // Delayed to ensure agent-mesh.js has loaded
+    setTimeout(() => {
+        if (window.AgentMesh?.subscribe) {
+            window.AgentMesh.subscribe('ring-update', () => {
+                console.log('[agi.html] Ring context broadcast received');
+                updateRingUI();
+            });
+            window.AgentMesh.subscribe('ring-clear', () => {
+                console.log('[agi.html] Ring context cleared via broadcast');
+                updateRingUI();
+            });
+            console.log('[agi.html] Subscribed to AgentMesh ring events');
+        }
+    }, 600);
     updateAgentUI();
     updateRingUI();
-    
-    // Periodic pipeline refresh while agents are processing
-    setInterval(() => {
-        const anyProcessing = [...state.agents.values()].some(a => a.status === 'processing');
-        if (anyProcessing) updatePipelineUI();
-    }, 2000);
     updateScheduleUI();
     renderMessages();
-    updatePipelineUI();
     
     // Check for ?q= query parameter (iPhone shortcut support)
     function checkForQueryParam() {
@@ -5249,13 +4423,48 @@ ${getRingContext()}`;
     // Run auto-create after a short delay to ensure UI is ready
     setTimeout(autoCreateDefaultAgent, 100);
     
+    // 🔑 Delayed credential sync after AgentMesh initializes
+    setTimeout(() => {
+        if (window.AgentMesh?.getCredentials) {
+            const meshCreds = window.AgentMesh.getCredentials();
+            let updated = false;
+            if (meshCreds.anthropic?.apiKey && !state.credentials.anthropic.apiKey) {
+                state.credentials.anthropic.apiKey = meshCreds.anthropic.apiKey;
+                updated = true;
+            }
+            if (meshCreds.openai?.apiKey && !state.credentials.openai.apiKey) {
+                state.credentials.openai.apiKey = meshCreds.openai.apiKey;
+                updated = true;
+            }
+            if (meshCreds.bedrock?.apiKey && !state.credentials.bedrock.apiKey) {
+                state.credentials.bedrock.apiKey = meshCreds.bedrock.apiKey;
+                updated = true;
+            }
+            if (updated) {
+                console.log('🔑 Loaded credentials from AgentMesh unified storage');
+                saveState();
+                // Try to create default agent if none exists
+                if (state.agents.size === 0) {
+                    autoCreateDefaultAgent();
+                }
+            }
+        }
+    }, 600);
+    
     // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
         Notification.requestPermission();
     }
     
+    // ═══════════════════════════════════════════════════════════════════════════
+    // EXPOSE FOR AGENT MESH (cross-page communication)
+    // ═══════════════════════════════════════════════════════════════════════════
+    window.state = state;
+    window.runAgentMessage = runAgentMessage;
+    
     console.log('%c🦆 agi.diy Multi-Agent v1.0', 'font-size:16px;font-weight:bold;');
     console.log('%cSpawn agents, schedule tasks, let them coordinate via ring attention.', 'color:#888');
     </script>
+<script src="agent-mesh.js"></script>
 </body>
 </html>

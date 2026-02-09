@@ -3,12 +3,15 @@
  * Enables PWA functionality, offline support, and background notifications
  */
 
-const CACHE_NAME = 'agi-diy-v1';
+const CACHE_NAME = 'agi-diy-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
+  '/agi.html',
+  '/mesh.html',
   '/strands.js',
   '/webllm.js',
+  '/agent-mesh.js',
   '/manifest.json',
   'https://cdn.jsdelivr.net/npm/marked/marked.min.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap'

@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>mesh</title>
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕸️</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --bg:#0a0a0a;--bg1:#111;--bg2:#161616;
+            --glass:rgba(255,255,255,0.04);--glass-b:rgba(255,255,255,0.08);
+            --t1:rgba(255,255,255,0.92);--t2:rgba(255,255,255,0.55);--t3:rgba(255,255,255,0.3);
+            --accent:#ff9500;--green:#30d158;--red:#ff453a;--blue:#007aff;
+            --purple:#bf5af2;--cyan:#00d4ff;--yellow:#ffd60a;--pink:#ff375f;
+            --c-github:#f0883e;--c-agentcore:#bf5af2;--c-zenoh:#30d158;
+            --c-local:#00ff88;--c-browser:#007aff;--c-virtual:#ff375f;
+        }
+        body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro',system-ui,sans-serif;background:var(--bg);color:var(--t1);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}
+        ::selection{background:rgba(255,255,255,0.15)}
+        ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+
+        .app{display:flex;height:100vh}
+
+        /* ── SIDEBAR ── */
+        .sb{width:290px;background:var(--bg1);border-right:1px solid var(--glass-b);display:flex;flex-direction:column;flex-shrink:0}
+        .sb-hdr{padding:14px 16px;border-bottom:1px solid var(--glass-b);display:flex;align-items:center;gap:10px}
+        .sb-icon{font-size:26px}.sb-title{font-size:15px;font-weight:600;flex:1}.sb-sub{font-size:10px;color:var(--t3);display:flex;align-items:center;gap:5px;margin-top:1px}
+        .dot{width:7px;height:7px;border-radius:50%;background:var(--red)}.dot.on{background:var(--green);animation:gl 2s infinite}.dot.wait{background:var(--yellow);animation:pl 1s infinite}
+        @keyframes gl{0%,100%{box-shadow:0 0 4px var(--green)}50%{box-shadow:0 0 12px var(--green)}}
+        @keyframes pl{0%,100%{opacity:1}50%{opacity:.4}}
+        .sb-btn{width:30px;height:30px;border-radius:7px;background:var(--glass);border:1px solid var(--glass-b);color:var(--t3);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .sb-btn:hover{background:rgba(255,255,255,.1);color:var(--t1)}
+
+        .stats{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:10px 12px;border-bottom:1px solid var(--glass-b)}
+        .st{text-align:center;padding:5px 2px;background:var(--glass);border-radius:6px}
+        .st-v{font-size:16px;font-weight:700}.st-l{font-size:6px;text-transform:uppercase;letter-spacing:.04em;color:var(--t3);margin-top:1px}
+
+        .sb-scroll{flex:1;overflow-y:auto;padding:10px}
+        .sec-hdr{display:flex;align-items:center;gap:6px;margin:10px 0 6px;padding:0 4px}
+        .sec-icon{font-size:12px}.sec-title{font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);font-weight:600;flex:1}
+        .sec-cnt{font-size:9px;color:var(--t2);background:var(--glass);padding:1px 6px;border-radius:8px}
+
+        .ac{background:var(--bg2);border:1px solid var(--glass-b);border-radius:9px;padding:10px;margin-bottom:6px;cursor:pointer;transition:all .15s}
+        .ac:hover{border-color:rgba(255,255,255,.15);transform:translateY(-1px)}
+        .ac.active{border-color:var(--accent);background:rgba(255,149,0,.08)}
+        .ac.selected{border-color:var(--green);background:rgba(48,209,88,.06)}
+        .ac.selected.active{border-color:var(--accent)}
+        .ac-sel{width:14px;height:14px;border-radius:4px;border:1.5px solid var(--t3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;transition:all .15s}
+        .ac.selected .ac-sel{border-color:var(--green);background:var(--green);color:#000}
+        .ac-hdr{display:flex;align-items:center;gap:8px}
+        .ac-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+        .ac-info{flex:1;min-width:0}.ac-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .ac-meta{font-size:9px;color:var(--t3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .badge{font-size:7px;padding:2px 5px;border-radius:3px;text-transform:uppercase;letter-spacing:.03em;font-weight:600}
+        .badge.github{background:rgba(240,136,62,.2);color:var(--c-github)}.badge.agentcore{background:rgba(191,90,242,.2);color:var(--c-agentcore)}
+        .badge.zenoh{background:rgba(48,209,88,.2);color:var(--c-zenoh)}.badge.local{background:rgba(0,255,136,.2);color:var(--c-local)}
+        .badge.browser{background:rgba(0,122,255,.2);color:var(--c-browser)}.badge.virtual{background:rgba(255,55,95,.2);color:var(--c-virtual)}
+        .ac-st{font-size:7px;padding:2px 5px;border-radius:3px;margin-left:3px}
+        .ac-st.ready{background:rgba(48,209,88,.15);color:var(--green)}.ac-st.streaming{background:rgba(48,209,88,.15);color:var(--green);animation:pl 1s infinite}
+        .ac-st.running{background:rgba(255,214,10,.15);color:var(--yellow)}.ac-st.failed{background:rgba(255,69,58,.15);color:var(--red)}
+        .ac-acts{display:none;gap:3px;margin-left:auto}
+        .ac:hover .ac-acts,.ac.active .ac-acts{display:flex}
+        .ac-ab{width:20px;height:20px;border-radius:4px;background:0;border:1px solid var(--glass-b);color:var(--t3);font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .ac-ab:hover{background:rgba(255,255,255,.1);color:var(--t1)}
+        .ac-ab.del:hover{background:rgba(255,69,58,.15);color:var(--red)}
+
+        .sb-spawn{display:flex;gap:4px;padding:8px 12px;border-top:1px solid var(--glass-b)}
+        .spawn-btn{flex:1;padding:8px;background:var(--glass);border:1px dashed var(--glass-b);border-radius:7px;color:var(--t3);font-size:10px;cursor:pointer;text-align:center}
+        .spawn-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+        /* ── MAIN ── */
+        .main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
+        .main-hdr{padding:10px 18px;border-bottom:1px solid var(--glass-b);display:flex;align-items:center;gap:10px;background:var(--bg1)}
+        .main-title{font-size:14px;font-weight:500;flex:1}
+        .main-acts{display:flex;gap:6px}
+        .abtn{padding:7px 12px;border-radius:7px;background:var(--glass);border:1px solid var(--glass-b);color:var(--t2);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:5px}
+        .abtn:hover{background:rgba(255,255,255,.08);color:var(--t1)}.abtn.pri{background:var(--accent);color:#000;border-color:var(--accent)}
+
+        /* ── CHAT INPUT (bottom floating) ── */
+        .chat-input-wrap{position:absolute;bottom:0;left:0;right:0;padding:16px 18px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--bg) 30%);pointer-events:none;z-index:10}
+        .chat-input-row{display:flex;gap:10px;align-items:flex-end;pointer-events:auto;max-width:800px;margin:0 auto}
+        .chat-targets{font-size:9px;color:var(--t3);margin-bottom:6px;pointer-events:auto;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+        .chat-targets .ct-tag{background:rgba(48,209,88,.12);color:var(--green);padding:2px 7px;border-radius:4px;font-weight:500}
+        .chat-in{flex:1;background:rgba(10,10,10,.85);backdrop-filter:blur(40px);border:1px solid var(--glass-b);border-radius:14px;padding:14px 18px;color:var(--t1);font-size:14px;min-height:50px;max-height:150px;resize:none;font-family:inherit}
+        .chat-in:focus{outline:none;border-color:rgba(255,255,255,.2);box-shadow:0 8px 32px rgba(0,0,0,.4)}
+        .chat-in::placeholder{color:var(--t3)}
+        .chat-send{width:50px;height:50px;border-radius:14px;background:var(--accent);border:none;color:#000;font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+        .chat-send:disabled{opacity:.3;cursor:not-allowed}
+
+        /* ── EPHEMERAL RESPONSE ── */
+        .eph{position:absolute;bottom:90px;left:18px;right:18px;max-height:320px;overflow-y:auto;background:rgba(17,17,17,.95);backdrop-filter:blur(20px);border:1px solid var(--glass-b);border-radius:12px;padding:14px;font-size:12px;line-height:1.7;z-index:11;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none;display:none}
+        .eph.active{display:block;opacity:1;transform:translateY(0);pointer-events:auto}
+        .eph.fading{opacity:0;transform:translateY(10px)}
+        .eph code{background:rgba(255,149,0,.15);padding:2px 5px;border-radius:4px;font-size:10px;font-family:'SF Mono',monospace}
+        .eph pre{background:rgba(0,0,0,.4);padding:10px;border-radius:7px;overflow-x:auto;font-size:10px;margin:8px 0;font-family:'SF Mono',monospace}
+        .eph-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+        .eph-pin{font-size:10px;cursor:pointer;padding:3px 7px;border-radius:4px;background:var(--glass);border:1px solid var(--glass-b);color:var(--t3);margin-left:auto}
+        .eph-pin:hover{color:var(--t1);background:rgba(255,255,255,.1)}
+        .eph-pin.pinned{color:var(--accent);border-color:var(--accent)}
+
+        .panels{flex:1;display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px;padding:16px;overflow-y:auto}
+        .pnl{background:var(--bg1);border:1px solid var(--glass-b);border-radius:12px;display:flex;flex-direction:column;min-height:280px;max-height:480px}
+        .pnl.github{border-left:3px solid var(--c-github)}.pnl.agentcore{border-left:3px solid var(--c-agentcore)}
+        .pnl.zenoh{border-left:3px solid var(--c-zenoh)}.pnl.local{border-left:3px solid var(--c-local)}
+        .pnl.browser{border-left:3px solid var(--c-browser)}.pnl.virtual{border-left:3px solid var(--c-virtual)}
+        .pnl.streaming{border-color:var(--green);box-shadow:0 0 20px rgba(48,209,88,.1)}
+        .pnl-hdr{padding:12px 14px;border-bottom:1px solid var(--glass-b);display:flex;align-items:center;gap:8px}
+        .pnl-icon{font-size:16px}.pnl-name{font-size:13px;font-weight:500;flex:1}.pnl-badges{display:flex;gap:5px;align-items:center}
+        .pnl-acts{display:flex;gap:3px;margin-right:4px}
+        .pnl-ab{width:22px;height:22px;border-radius:5px;background:0;border:1px solid var(--glass-b);color:var(--t3);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s}
+        .pnl:hover .pnl-ab{opacity:1}
+        .pnl-ab:hover{background:rgba(255,255,255,.1);color:var(--t1)}
+        .pnl-ab.del:hover{background:rgba(255,69,58,.15);color:var(--red)}
+        .pnl-body{flex:1;overflow-y:auto;padding:14px;font-size:12px;line-height:1.7}
+        .pnl-body code{background:rgba(255,149,0,.15);padding:2px 5px;border-radius:4px;font-size:10px;font-family:'SF Mono',monospace}
+        .pnl-body pre{background:rgba(0,0,0,.4);padding:10px;border-radius:7px;overflow-x:auto;font-size:10px;margin:8px 0;font-family:'SF Mono',monospace}
+        .pnl-body ul,.pnl-body ol{padding-left:18px}.pnl-body p{margin-bottom:8px}.pnl-body a{color:var(--accent)}
+        .pnl-ft{padding:10px 14px;border-top:1px solid var(--glass-b);display:flex;gap:8px}
+        .pnl-in{flex:1;background:var(--glass);border:1px solid var(--glass-b);border-radius:8px;padding:10px 14px;color:var(--t1);font-size:12px}
+        .pnl-in:focus{outline:none;border-color:var(--accent)}
+        .pnl-send{padding:10px 16px;border-radius:8px;background:var(--accent);border:none;color:#000;font-size:12px;font-weight:600;cursor:pointer}
+        .pnl-send:disabled{opacity:.3;cursor:not-allowed}
+        .cursor::after{content:'▋';animation:blink 1s infinite;color:var(--accent)}@keyframes blink{50%{opacity:0}}
+        .empty-pnl{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;color:var(--t3);text-align:center}
+        .empty-icon{font-size:44px;margin-bottom:14px}.empty-txt{font-size:11px;line-height:1.8}
+
+        /* ── RING PANEL ── */
+        .ring{width:260px;background:var(--bg1);border-left:1px solid var(--glass-b);display:flex;flex-direction:column;flex-shrink:0}
+        .ring-hdr{padding:12px 14px;border-bottom:1px solid var(--glass-b);display:flex;align-items:center;gap:6px}
+        .ring-title{font-size:11px;font-weight:500;flex:1;display:flex;align-items:center;gap:6px}
+        .ring-clr{font-size:9px;color:var(--t3);cursor:pointer;padding:3px 6px;border-radius:4px}.ring-clr:hover{color:var(--red);background:rgba(255,100,100,.1)}
+        .ring-body{flex:1;overflow-y:auto;padding:10px}
+        .re{background:var(--glass);border-radius:7px;padding:9px 10px;margin-bottom:6px;font-size:10px}
+        .re-hdr{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+        .re-agent{font-weight:600;flex:1}.re-time{color:var(--t3);font-size:8px}
+        .re-txt{color:var(--t2);line-height:1.5}
+
+        /* ── MODAL ── */
+        .modal{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(20px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
+        .modal.active{display:flex}
+        .mbox{background:var(--bg1);border:1px solid var(--glass-b);border-radius:14px;max-width:520px;width:100%;max-height:80vh;overflow-y:auto}
+        .mbox-hdr{padding:16px 18px;border-bottom:1px solid var(--glass-b);display:flex;align-items:center;gap:10px}
+        .mbox-title{font-size:15px;font-weight:600;flex:1}
+        .mbox-x{width:26px;height:26px;border-radius:6px;background:0;border:1px solid var(--glass-b);color:var(--t3);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+        .mbox-x:hover{background:var(--glass);color:var(--t1)}
+        .mbox-body{padding:18px}
+        .fg{margin-bottom:14px}.fl{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);margin-bottom:5px;font-weight:600}
+        .fi{width:100%;background:var(--glass);border:1px solid var(--glass-b);border-radius:7px;padding:10px 12px;color:var(--t1);font-size:12px;font-family:'SF Mono',monospace}
+        .fi:focus{outline:none;border-color:var(--accent)}.fi::placeholder{color:var(--t3)}
+        textarea.fi{min-height:70px;resize:vertical;font-family:inherit}
+        .fhint{font-size:9px;color:var(--t3);margin-top:4px}
+        .frow{display:flex;gap:10px}.frow .fg{flex:1}
+        .btn-row{display:flex;gap:8px;margin-top:16px}
+        .mbtn{flex:1;padding:12px 16px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--glass-b);background:var(--glass);color:var(--t2)}
+        .mbtn:hover{background:rgba(255,255,255,.08);color:var(--t1)}.mbtn.pri{background:var(--accent);color:#000;border-color:var(--accent)}
+
+        .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);padding:12px 22px;background:var(--bg1);border:1px solid var(--glass-b);border-radius:10px;font-size:12px;opacity:0;transition:all .3s;z-index:300;display:flex;align-items:center;gap:8px}
+        .toast.show{transform:translateX(-50%) translateY(0);opacity:1}.toast.ok{border-color:var(--green)}.toast.err{border-color:var(--red)}
+
+        .connecting{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .3s}
+        .connecting.hidden{opacity:0;pointer-events:none}.connecting-icon{font-size:56px;margin-bottom:20px;animation:bounce 1s infinite}
+        @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+        .connecting-txt{font-size:15px;color:var(--t2);margin-bottom:6px}.connecting-sub{font-size:11px;color:var(--t3)}
+
+        @media(max-width:1200px){.ring{display:none}}
+        @media(max-width:900px){.sb{width:250px}.panels{grid-template-columns:1fr}}
+        @media(max-width:600px){.sb{display:none}}
+    </style>
+</head>
+<body>
+<div class="connecting" id="overlay">
+    <div class="connecting-icon">🦆</div>
+    <div class="connecting-txt">Connecting to DevDuck Relay...</div>
+    <div class="connecting-sub" id="overlaySub">ws://localhost:10000</div>
+</div>
+
+<div class="app">
+<aside class="sb">
+    <div class="sb-hdr">
+        <div class="sb-icon">🕸️</div>
+        <div style="flex:1"><div class="sb-title">mesh</div><div class="sb-sub"><span class="dot" id="statusDot"></span><span id="statusTxt">disconnected</span></div></div>
+        <button class="sb-btn" onclick="openSettings()">⚙️</button>
+    </div>
+    <div class="stats">
+        <div class="st"><div class="st-v" id="cntLocal" style="color:var(--c-local)">0</div><div class="st-l">local</div></div>
+        <div class="st"><div class="st-v" id="cntVirtual" style="color:var(--c-virtual)">0</div><div class="st-l">virtual</div></div>
+        <div class="st"><div class="st-v" id="cntBrowser" style="color:var(--c-browser)">0</div><div class="st-l">browser</div></div>
+        <div class="st"><div class="st-v" id="cntGithub" style="color:var(--c-github)">0</div><div class="st-l">github</div></div>
+        <div class="st"><div class="st-v" id="cntCloud" style="color:var(--c-agentcore)">0</div><div class="st-l">cloud</div></div>
+        <div class="st"><div class="st-v" id="cntZenoh" style="color:var(--c-zenoh)">0</div><div class="st-l">zenoh</div></div>
+    </div>
+    <div class="sb-scroll" id="agentsList"></div>
+    <div class="sb-spawn">
+        <button class="spawn-btn" onclick="openSpawn('virtual')">+ virtual</button>
+        <button class="spawn-btn" onclick="openSpawn('browser')">+ browser</button>
+    </div>
+</aside>
+
+<main class="main">
+    <header class="main-hdr">
+        <div class="main-title" id="mainTitle">agents</div>
+        <div class="main-acts">
+            <button class="abtn" onclick="refresh()">🔄</button>
+            <button class="abtn" onclick="broadcastAll()">📢 Broadcast</button>
+            <button class="abtn" onclick="clearAll()">🗑️</button>
+        </div>
+    </header>
+    <div style="flex:1;position:relative;display:flex;flex-direction:column;min-height:0">
+    <div class="panels" id="panels" style="flex:1;padding-bottom:100px"></div>
+    <!-- Ephemeral response bubble -->
+    <div class="eph" id="ephResponse"></div>
+    <!-- Floating chat input -->
+    <div class="chat-input-wrap">
+        <div class="chat-targets" id="chatTargets"></div>
+        <div class="chat-input-row">
+            <textarea class="chat-in" id="chatInput" placeholder="Message selected agents..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSend()}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,150)+'px'"></textarea>
+            <button class="chat-send" id="chatSendBtn" onclick="chatSend()">→</button>
+        </div>
+    </div>
+    </div>
+</main>
+
+<aside class="ring">
+    <div class="ring-hdr">
+        <div class="ring-title"><span class="dot on"></span> Ring Context</div>
+        <span class="ring-clr" onclick="clearRing()">clear</span>
+    </div>
+    <div class="ring-body" id="ringBody"><div class="empty-pnl"><div style="font-size:9px;color:var(--t3)">Activity appears here</div></div></div>
+</aside>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="settingsModal">
+<div class="mbox">
+    <div class="mbox-hdr"><span>⚙️</span><span class="mbox-title">Settings</span><button class="mbox-x" onclick="closeModal('settingsModal')">×</button></div>
+    <div class="mbox-body">
+        <div class="fg"><label class="fl">Local DevDuck WS Port</label><input class="fi" id="sLocalPort" value="10001" placeholder="10001"><div class="fhint">Direct WS to local DevDuck</div></div>
+        <div class="fg"><label class="fl">GitHub PAT</label><input type="password" class="fi" id="sToken" placeholder="ghp_..."><div class="fhint">For GitHub agent discovery</div></div>
+        <div class="fg"><label class="fl">GitHub Repos (comma-separated)</label><input class="fi" id="sRepos" placeholder="owner/repo,owner2/repo2"></div>
+        <div class="frow">
+            <div class="fg"><label class="fl">AWS Region</label><input class="fi" id="sRegion" value="us-west-2"></div>
+            <div class="fg"><label class="fl">Relay Port</label><input class="fi" id="sRelayPort" value="10000"></div>
+        </div>
+        <div class="fg"><label class="fl">Anthropic API Key (for browser agents)</label><input type="password" class="fi" id="sAnthropicKey" placeholder="sk-ant-..."></div>
+        <div class="fg"><label class="fl">OpenAI API Key (for browser agents)</label><input type="password" class="fi" id="sOpenaiKey" placeholder="sk-..."></div>
+        <div class="fg"><label class="fl">Bedrock Bearer Token (for browser agents)</label><input type="password" class="fi" id="sBedrockKey" placeholder="Bearer token"><div class="fhint">From Bedrock API Keys console</div></div>
+        <div class="fg"><label class="fl">Bedrock Region</label><input class="fi" id="sBedrockRegion" value="us-east-1" placeholder="us-east-1"><div class="fhint">For Bedrock browser agents</div></div>
+        <div class="btn-row"><button class="mbtn" onclick="closeModal('settingsModal')">Cancel</button><button class="mbtn pri" onclick="saveSettings()">Save & Reconnect</button></div>
+    </div>
+</div>
+</div>
+
+<!-- SPAWN MODAL -->
+<div class="modal" id="spawnModal">
+<div class="mbox">
+    <div class="mbox-hdr"><span id="spawnIcon">🤖</span><span class="mbox-title" id="spawnTitle">New Agent</span><button class="mbox-x" onclick="closeModal('spawnModal')">×</button></div>
+    <div class="mbox-body">
+        <input type="hidden" id="spawnType" value="virtual">
+        <div class="frow">
+            <div class="fg"><label class="fl">Agent Name</label><input class="fi" id="spawnName" placeholder="e.g. researcher, coder"></div>
+            <div class="fg"><label class="fl">Color</label><input type="color" class="fi" id="spawnColor" value="#ff375f" style="height:38px;padding:3px"></div>
+        </div>
+        <!-- Virtual agent options -->
+        <div id="virtualOpts">
+            <div class="fg"><label class="fl">System Prompt</label><textarea class="fi" id="spawnPrompt" rows="3" placeholder="You are a helpful assistant..."></textarea></div>
+            <div class="frow">
+                <div class="fg"><label class="fl">Tools (optional)</label><input class="fi" id="spawnTools" placeholder="strands_tools:shell,editor"><div class="fhint">Leave empty for default DevDuck tools</div></div>
+                <div class="fg"><label class="fl">Model (optional)</label><input class="fi" id="spawnModel" placeholder="default"><div class="fhint">Override model on backend</div></div>
+            </div>
+        </div>
+        <!-- Browser agent options -->
+        <div id="browserOpts" style="display:none">
+            <div class="fg"><label class="fl">Provider</label><select class="fi" id="spawnProvider"><option value="anthropic">Anthropic</option><option value="openai">OpenAI</option><option value="bedrock">Amazon Bedrock</option></select></div>
+            <div class="fg"><label class="fl">Model ID (optional)</label><input class="fi" id="spawnModelId" placeholder="Leave empty for default"><div class="fhint" id="spawnModelHint">Default: claude-sonnet-4-20250514</div></div>
+            <div class="fg"><label class="fl">System Prompt</label><textarea class="fi" id="spawnBrowserPrompt" rows="3" placeholder="You are a helpful assistant..."></textarea></div>
+        </div>
+        <div class="btn-row"><button class="mbtn" onclick="closeModal('spawnModal')">Cancel</button><button class="mbtn pri" onclick="spawnAgent()">Create Agent</button></div>
+    </div>
+</div>
+</div>
+
+<!-- EDIT AGENT MODAL -->
+<div class="modal" id="editModal">
+<div class="mbox">
+    <div class="mbox-hdr"><span>✏️</span><span class="mbox-title">Edit Agent: <span id="editTitle"></span></span><button class="mbox-x" onclick="closeModal('editModal')">×</button></div>
+    <div class="mbox-body">
+        <input type="hidden" id="editId">
+        <div class="frow">
+            <div class="fg"><label class="fl">Agent Name</label><input class="fi" id="editName"></div>
+            <div class="fg"><label class="fl">Color</label><input type="color" class="fi" id="editColor" style="height:38px;padding:3px"></div>
+        </div>
+        <div class="fg"><label class="fl">System Prompt</label><textarea class="fi" id="editPrompt" rows="4"></textarea></div>
+        <div class="frow">
+            <div class="fg"><label class="fl">Tools (optional)</label><input class="fi" id="editTools" placeholder="strands_tools:shell,editor"></div>
+            <div class="fg"><label class="fl">Model (optional)</label><input class="fi" id="editModel" placeholder="default"></div>
+        </div>
+        <div class="fg" id="editProviderWrap" style="display:none">
+            <label class="fl">Provider</label>
+            <select class="fi" id="editProvider"><option value="anthropic">Anthropic</option><option value="openai">OpenAI</option><option value="bedrock">Amazon Bedrock</option></select>
+        </div>
+        <div class="fg" id="editModelIdWrap" style="display:none">
+            <label class="fl">Model ID</label><input class="fi" id="editModelId" placeholder="Leave empty for default">
+        </div>
+        <div class="btn-row">
+            <button class="mbtn" onclick="closeModal('editModal')">Cancel</button>
+            <button class="mbtn" style="color:var(--red);border-color:rgba(255,69,58,.3)" onclick="deleteAgent()">🗑️ Delete</button>
+            <button class="mbtn pri" onclick="saveEdit()">💾 Save</button>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// Polyfills
+if(typeof Symbol.dispose==='undefined')Symbol.dispose=Symbol('Symbol.dispose');
+if(typeof Symbol.asyncDispose==='undefined')Symbol.asyncDispose=Symbol('Symbol.asyncDispose');
+</script>
+
+<!-- Strands SDK for browser agents -->
+<script type="module">
+import { Agent, tool, Model, TextBlock, Message, z } from './strands.js';
+window._StrandsAgent=Agent;window._StrandsTool=tool;window._StrandsModel=Model;
+window._StrandsTextBlock=TextBlock;window._StrandsMessage=Message;window._StrandsZ=z;
+
+// ═══════════════════════════════════════════════════════════════
+// BROWSER MODEL PROVIDERS (reused from index.html architecture)
+// ═══════════════════════════════════════════════════════════════
+
+class AnthropicBrowserModel extends Model {
+    constructor(cfg={}){super();this._c={apiKey:cfg.apiKey||'',modelId:cfg.modelId||'claude-sonnet-4-20250514',maxTokens:cfg.maxTokens||8096,temperature:cfg.temperature||1.0}}
+    getConfig(){return this._c}
+    async *stream(messages,options){
+        const{apiKey,modelId,maxTokens,temperature}=this._c;if(!apiKey)throw new Error('Anthropic API key not set. Configure in Settings.');
+        const fmt=b=>{if(b.type==='textBlock')return{type:'text',text:b.text};if(b.type==='toolUseBlock')return{type:'tool_use',id:b.toolUseId,name:b.name,input:b.input};if(b.type==='toolResultBlock'){return{type:'tool_result',tool_use_id:b.toolUseId,content:b.content.map(c=>c.type==='textBlock'?{type:'text',text:c.text}:c.type==='jsonBlock'?{type:'text',text:JSON.stringify(c.json)}:{type:'text',text:String(c)})}}return{type:'text',text:String(b)}};
+        const body={model:modelId,max_tokens:maxTokens,temperature,stream:true,messages:messages.map(m=>({role:m.role,content:m.content.map(fmt)}))};
+        if(options?.systemPrompt){body.system=typeof options.systemPrompt==='string'?options.systemPrompt:options.systemPrompt.filter(b=>b.type==='textBlock').map(b=>b.text).join('\n')}
+        if(options?.toolSpecs?.length){body.tools=options.toolSpecs.map(s=>({name:s.name,description:s.description,input_schema:s.inputSchema}))}
+        const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
+        if(!res.ok)throw new Error(`Anthropic ${res.status}: ${await res.text()}`);
+        const reader=res.body.getReader();const dec=new TextDecoder();let buf='';
+        try{while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop()||'';
+        for(const ln of lines){if(!ln.startsWith('data: '))continue;const d=ln.slice(6);if(d==='[DONE]')continue;try{const ev=JSON.parse(d);
+            if(ev.type==='message_start')yield{type:'modelMessageStartEvent',role:'assistant'};
+            else if(ev.type==='content_block_start'){const s={type:'modelContentBlockStartEvent'};if(ev.content_block?.type==='tool_use')s.start={type:'toolUseStart',name:ev.content_block.name,toolUseId:ev.content_block.id};yield s}
+            else if(ev.type==='content_block_delta'){if(ev.delta?.type==='text_delta')yield{type:'modelContentBlockDeltaEvent',delta:{type:'textDelta',text:ev.delta.text}};else if(ev.delta?.type==='input_json_delta')yield{type:'modelContentBlockDeltaEvent',delta:{type:'toolUseInputDelta',input:ev.delta.partial_json}}}
+            else if(ev.type==='content_block_stop')yield{type:'modelContentBlockStopEvent'};
+            else if(ev.type==='message_delta'){if(ev.delta?.stop_reason){const m={'tool_use':'toolUse','max_tokens':'maxTokens','stop_sequence':'stopSequence'};yield{type:'modelMessageStopEvent',stopReason:m[ev.delta.stop_reason]||'endTurn'}}if(ev.usage)yield{type:'modelMetadataEvent',usage:{inputTokens:ev.usage.input_tokens||0,outputTokens:ev.usage.output_tokens||0}}}
+        }catch(e){}}}}finally{reader.releaseLock()}
+    }
+}
+
+class OpenAIBrowserModel extends Model {
+    constructor(cfg={}){super();this._c={apiKey:cfg.apiKey||'',modelId:cfg.modelId||'gpt-4o',maxTokens:cfg.maxTokens||8096,temperature:cfg.temperature||1.0}}
+    getConfig(){return this._c}
+    async *stream(messages,options){
+        const{apiKey,modelId,maxTokens,temperature}=this._c;if(!apiKey)throw new Error('OpenAI API key not set. Configure in Settings.');
+        const oMsgs=[];
+        if(options?.systemPrompt){const st=typeof options.systemPrompt==='string'?options.systemPrompt:options.systemPrompt.filter(b=>b.type==='textBlock').map(b=>b.text).join('\n');if(st)oMsgs.push({role:'system',content:st})}
+        for(const msg of messages){if(msg.role==='user'){const trs=msg.content.filter(b=>b.type==='toolResultBlock');const other=msg.content.filter(b=>b.type!=='toolResultBlock');if(other.length)oMsgs.push({role:'user',content:other.map(b=>b.type==='textBlock'?{type:'text',text:b.text}:{type:'text',text:String(b)})});for(const tr of trs)oMsgs.push({role:'tool',tool_call_id:tr.toolUseId,content:tr.content.map(c=>c.type==='textBlock'?c.text:c.type==='jsonBlock'?JSON.stringify(c.json):String(c)).join('')})}else{const tcs=[];const txts=[];for(const b of msg.content){if(b.type==='textBlock')txts.push(b.text);else if(b.type==='toolUseBlock')tcs.push({id:b.toolUseId,type:'function',function:{name:b.name,arguments:JSON.stringify(b.input)}})}const am={role:'assistant',content:txts.join('')};if(tcs.length)am.tool_calls=tcs;oMsgs.push(am)}}
+        const body={model:modelId,max_completion_tokens:maxTokens,temperature,stream:true,stream_options:{include_usage:true},messages:oMsgs};
+        if(options?.toolSpecs?.length)body.tools=options.toolSpecs.map(s=>({type:'function',function:{name:s.name,description:s.description,parameters:s.inputSchema}}));
+        const res=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},body:JSON.stringify(body)});
+        if(!res.ok)throw new Error(`OpenAI ${res.status}: ${await res.text()}`);
+        const reader=res.body.getReader();const dec=new TextDecoder();let buf='',started=false,txtStarted=false;const atc=new Map();
+        try{while(true){const{done,value}=await reader.read();if(done)break;buf+=dec.decode(value,{stream:true});const lines=buf.split('\n');buf=lines.pop()||'';
+        for(const ln of lines){if(!ln.startsWith('data: '))continue;const d=ln.slice(6);if(d==='[DONE]')continue;try{const ch=JSON.parse(d);if(!ch.choices?.length){if(ch.usage)yield{type:'modelMetadataEvent',usage:{inputTokens:ch.usage.prompt_tokens||0,outputTokens:ch.usage.completion_tokens||0}};continue}
+        const c=ch.choices[0],dl=c.delta;if(dl?.role&&!started){started=true;yield{type:'modelMessageStartEvent',role:dl.role}}
+        if(dl?.content?.length){if(!txtStarted){txtStarted=true;yield{type:'modelContentBlockStartEvent'}}yield{type:'modelContentBlockDeltaEvent',delta:{type:'textDelta',text:dl.content}}}
+        if(dl?.tool_calls){for(const tc of dl.tool_calls){if(tc.id&&tc.function?.name)yield{type:'modelContentBlockStartEvent',start:{type:'toolUseStart',name:tc.function.name,toolUseId:tc.id}};if(tc.function?.arguments)yield{type:'modelContentBlockDeltaEvent',delta:{type:'toolUseInputDelta',input:tc.function.arguments}}}}
+        if(c.finish_reason){if(txtStarted){yield{type:'modelContentBlockStopEvent'};txtStarted=false}for(const[i] of atc){yield{type:'modelContentBlockStopEvent'};atc.delete(i)}const sm={'stop':'endTurn','tool_calls':'toolUse','length':'maxTokens'};yield{type:'modelMessageStopEvent',stopReason:sm[c.finish_reason]||'endTurn'}}
+        }catch(e){}}}}finally{reader.releaseLock()}
+    }
+}
+
+class BedrockBrowserModel extends Model {
+    constructor(cfg={}){super();this._c={apiKey:cfg.apiKey||'',region:cfg.region||'us-east-1',modelId:cfg.modelId||'us.anthropic.claude-sonnet-4-20250514-v1:0',maxTokens:cfg.maxTokens||8096}}
+    getConfig(){return this._c}
+    async *stream(messages,options){
+        const{apiKey,region,modelId,maxTokens}=this._c;if(!apiKey)throw new Error('Bedrock API key not set. Configure in Settings.');
+        const fmt=b=>{if(b.type==='textBlock')return{text:b.text};if(b.type==='toolUseBlock')return{toolUse:{toolUseId:b.toolUseId,name:b.name,input:b.input}};if(b.type==='toolResultBlock')return{toolResult:{toolUseId:b.toolUseId,content:b.content.map(c=>c.type==='textBlock'?{text:c.text}:c.type==='jsonBlock'?{json:c.json}:{text:String(c)})}};return{text:String(b)}};
+        const body={messages:messages.map(m=>({role:m.role,content:m.content.map(fmt)})),inferenceConfig:{maxTokens}};
+        if(options?.systemPrompt)body.system=[{text:typeof options.systemPrompt==='string'?options.systemPrompt:options.systemPrompt.map(b=>b.text).join('\n')}];
+        if(options?.toolSpecs?.length)body.toolConfig={tools:options.toolSpecs.map(s=>({toolSpec:{name:s.name,description:s.description,inputSchema:{json:s.inputSchema}}}))};
+        const res=await fetch(`https://bedrock-runtime.${region}.amazonaws.com/model/${encodeURIComponent(modelId)}/converse-stream`,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},body:JSON.stringify(body)});
+        if(!res.ok)throw new Error(`Bedrock ${res.status}: ${await res.text()}`);
+        const reader=res.body.getReader();const dec=new TextDecoder();let buf=new Uint8Array(0),hasStart=false,hasStop=false,blkIdx=-1;
+        try{while(true){const{done,value}=await reader.read();if(done)break;const nb=new Uint8Array(buf.length+value.length);nb.set(buf);nb.set(value,buf.length);buf=nb;
+        while(buf.length>=12){const tl=(buf[0]<<24)|(buf[1]<<16)|(buf[2]<<8)|buf[3];const hl=(buf[4]<<24)|(buf[5]<<16)|(buf[6]<<8)|buf[7];if(tl<16||tl>1048576){buf=buf.slice(1);continue}if(buf.length<tl)break;const ps=12+hl,pe=tl-4;
+        if(pe>ps){try{const ev=JSON.parse(dec.decode(buf.slice(ps,pe)));for(const se of this._map(ev,blkIdx)){if(se.type==='modelMessageStartEvent')hasStart=true;if(se.type==='modelMessageStopEvent')hasStop=true;if(se.type==='modelContentBlockStartEvent')blkIdx++;yield se}}catch(e){}}buf=buf.slice(tl)}}}
+        finally{reader.releaseLock();if(!hasStart)yield{type:'modelMessageStartEvent',role:'assistant'};if(!hasStop)yield{type:'modelMessageStopEvent',stopReason:'endTurn'}}
+    }
+    *_map(ch,ci){
+        if(ch.role&&!ch.delta&&!ch.stopReason&&!ch.start){yield{type:'modelMessageStartEvent',role:ch.role};return}
+        if(ch.start!==undefined){const s={type:'modelContentBlockStartEvent'};if(ch.start.toolUse)s.start={type:'toolUseStart',name:ch.start.toolUse.name,toolUseId:ch.start.toolUse.toolUseId};yield s;return}
+        if(ch.delta!==undefined){const bi=ch.contentBlockIndex??0;if(bi>ci&&!ch.start)yield{type:'modelContentBlockStartEvent'};const d=ch.delta;if(d?.text!==undefined)yield{type:'modelContentBlockDeltaEvent',delta:{type:'textDelta',text:d.text}};else if(d?.toolUse?.input)yield{type:'modelContentBlockDeltaEvent',delta:{type:'toolUseInputDelta',input:d.toolUse.input}};return}
+        if(ch.contentBlockIndex!==undefined&&!ch.delta&&!ch.stopReason&&!ch.role&&!ch.start){yield{type:'modelContentBlockStopEvent'};return}
+        if(ch.stopReason!==undefined){const m={'end_turn':'endTurn','tool_use':'toolUse','max_tokens':'maxTokens'};yield{type:'modelMessageStopEvent',stopReason:m[ch.stopReason]||'endTurn'};return}
+        if(ch.usage!==undefined)yield{type:'modelMetadataEvent',usage:{inputTokens:ch.usage.inputTokens||0,outputTokens:ch.usage.outputTokens||0}}
+    }
+}
+
+window._BrowserModels={AnthropicBrowserModel,OpenAIBrowserModel,BedrockBrowserModel};
+
+// ═══════════════════════════════════════════════════════════════
+// BROWSER TOOLS for browser agents
+// ═══════════════════════════════════════════════════════════════
+const renderUiTool=tool({name:'render_ui',description:'Render HTML/CSS/JS in the chat panel.',inputSchema:z.object({html:z.string(),css:z.string().optional(),script:z.string().optional(),title:z.string().optional()}),callback:async(input)=>{return{rendered:true,title:input.title||'component'}}});
+const jsEvalTool=tool({name:'javascript_eval',description:'Execute JavaScript and return result.',inputSchema:z.object({code:z.string()}),callback:async(input)=>{try{return{result:String(eval(input.code))}}catch(e){return{error:e.message}}}});
+const storageGetTool=tool({name:'storage_get',description:'Read from localStorage.',inputSchema:z.object({key:z.string()}),callback:async(input)=>({key:input.key,value:localStorage.getItem(input.key)})});
+const storageSetTool=tool({name:'storage_set',description:'Write to localStorage.',inputSchema:z.object({key:z.string(),value:z.string()}),callback:async(input)=>{localStorage.setItem(input.key,input.value);return{success:true}}});
+const fetchUrlTool=tool({name:'fetch_url',description:'HTTP fetch (CORS applies).',inputSchema:z.object({url:z.string(),method:z.string().optional(),headers:z.record(z.string(),z.string()).optional(),body:z.string().optional()}),callback:async(input)=>{try{const r=await fetch(input.url,{method:input.method||'GET',headers:input.headers||{},body:input.body});const ct=r.headers.get('content-type');return{status:r.status,data:ct?.includes('json')?await r.json():await r.text()}}catch(e){return{error:e.message}}}});
+
+window._BrowserTools=[renderUiTool,jsEvalTool,storageGetTool,storageSetTool,fetchUrlTool];
+
+console.log('✅ Strands SDK loaded for browser agents');
+</script>
+
+<script type="module">
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const STORAGE='devduck_one_v2';
+const ICONS={github:'🐙',agentcore:'☁️',zenoh:'🔗',local:'💻',browser:'🧠',virtual:'🤖'};
+const DEFAULT_MODELS={anthropic:'claude-sonnet-4-20250514',openai:'gpt-4o',bedrock:'us.anthropic.claude-sonnet-4-20250514-v1:0'};
+
+const S={
+    relay:null, relayOk:false,
+    localWs:null, localOk:false,
+    agents:new Map(),
+    ring:[],
+    cfg:{
+        localPort:10001, relayPort:10000,
+        token:'', repos:['cagataycali/strands-coder'], region:'us-west-2',
+        anthropicKey:'', openaiKey:'', bedrockKey:'', bedrockRegion:'us-east-1',
+        virtualAgents:[], // {id,name,color,systemPrompt,tools,model}
+        browserAgents:[], // {id,name,color,provider,modelId,systemPrompt}
+    },
+    activePanel:null,
+    reconnectTimer:null,
+    selectedAgents:new Set(), // multi-select for fan-out
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS PERSISTENCE
+// ═══════════════════════════════════════════════════════════════
+function loadCfg(){
+    try{const s=localStorage.getItem(STORAGE);if(s)Object.assign(S.cfg,JSON.parse(s))}catch(e){}
+    // 🔑 Sync with AgentMesh unified credentials
+    if(window.AgentMesh?.getCredentials){
+        const meshCreds=window.AgentMesh.getCredentials();
+        if(meshCreds.anthropic?.apiKey&&!S.cfg.anthropicKey)S.cfg.anthropicKey=meshCreds.anthropic.apiKey;
+        if(meshCreds.openai?.apiKey&&!S.cfg.openaiKey)S.cfg.openaiKey=meshCreds.openai.apiKey;
+        if(meshCreds.bedrock?.apiKey&&!S.cfg.bedrockKey)S.cfg.bedrockKey=meshCreds.bedrock.apiKey;
+        if(meshCreds.bedrock?.region&&!S.cfg.bedrockRegion)S.cfg.bedrockRegion=meshCreds.bedrock.region;
+    }
+}
+function saveCfg(){try{localStorage.setItem(STORAGE,JSON.stringify(S.cfg))}catch(e){}}
+
+window.openSettings=()=>{
+    E('sLocalPort').value=S.cfg.localPort;E('sToken').value=S.cfg.token||'';
+    E('sRepos').value=(S.cfg.repos||[]).join(',');E('sRegion').value=S.cfg.region;
+    E('sRelayPort').value=S.cfg.relayPort;
+    E('sAnthropicKey').value=S.cfg.anthropicKey||'';E('sOpenaiKey').value=S.cfg.openaiKey||'';E('sBedrockKey').value=S.cfg.bedrockKey||'';E('sBedrockRegion').value=S.cfg.bedrockRegion||'us-east-1';
+    E('settingsModal').classList.add('active');
+};
+window.saveSettings=()=>{
+    S.cfg.localPort=parseInt(E('sLocalPort').value)||10001;
+    S.cfg.token=E('sToken').value.trim();
+    S.cfg.repos=E('sRepos').value.split(',').map(r=>r.trim()).filter(Boolean);
+    S.cfg.region=E('sRegion').value.trim()||'us-west-2';
+    S.cfg.relayPort=parseInt(E('sRelayPort').value)||10000;
+    S.cfg.anthropicKey=E('sAnthropicKey').value.trim();
+    S.cfg.openaiKey=E('sOpenaiKey').value.trim();
+    S.cfg.bedrockKey=E('sBedrockKey').value.trim();
+    S.cfg.bedrockRegion=E('sBedrockRegion').value.trim()||'us-east-1';
+    saveCfg();
+    // 🔑 Sync to AgentMesh unified credentials
+    if(window.AgentMesh?.setCredentials){
+        window.AgentMesh.setCredentials({
+            anthropic:{apiKey:S.cfg.anthropicKey,model:'anthropic.claude-opus-4-6-v1'},
+            openai:{apiKey:S.cfg.openaiKey,model:'gpt-5.2-2025-12-11'},
+            bedrock:{apiKey:S.cfg.bedrockKey,region:S.cfg.bedrockRegion,model:'global.anthropic.claude-opus-4-6-v1'}
+        });
+    }
+    closeModal('settingsModal');
+    _browserAgentInstances.clear(); // Re-create agents with new API keys
+    if(S.relay)S.relay.close();if(S.localWs)S.localWs.close();
+    connectRelay();connectLocal();toast('Settings saved','ok');
+};
+
+// ═══════════════════════════════════════════════════════════════
+// SPAWN AGENTS
+// ═══════════════════════════════════════════════════════════════
+window.openSpawn=(type)=>{
+    E('spawnType').value=type;
+    E('spawnTitle').textContent=type==='virtual'?'New Virtual Agent':'New Browser Agent';
+    E('spawnIcon').textContent=type==='virtual'?'🤖':'🧠';
+    E('virtualOpts').style.display=type==='virtual'?'block':'none';
+    E('browserOpts').style.display=type==='browser'?'block':'none';
+    E('spawnName').value='';E('spawnColor').value=type==='virtual'?'#ff375f':'#007aff';
+    E('spawnModal').classList.add('active');
+};
+
+window.spawnAgent=()=>{
+    const type=E('spawnType').value;
+    const name=E('spawnName').value.trim();if(!name){toast('Enter a name','err');return;}
+    const color=E('spawnColor').value;
+    const id=type+':'+name;
+
+    if(S.agents.has(id)){toast('Agent exists','err');return;}
+
+    if(type==='virtual'){
+        const cfg={id,name,color,type:'virtual',
+            systemPrompt:E('spawnPrompt').value.trim()||`You are ${name}, a helpful AI assistant.`,
+            tools:E('spawnTools').value.trim()||null,
+            model:E('spawnModel').value.trim()||null};
+        S.cfg.virtualAgents.push(cfg);saveCfg();
+        registerAgent({id,type:'virtual',name,color,status:'ready',
+            description:cfg.systemPrompt.slice(0,60)+'...',config:cfg});
+    } else {
+        const provider=E('spawnProvider').value;
+        const modelId=E('spawnModelId').value.trim()||null;
+        const sp=E('spawnBrowserPrompt').value.trim()||`You are ${name}, a helpful AI assistant.`;
+        const cfg={id,name,color,type:'browser',provider,modelId,systemPrompt:sp};
+        S.cfg.browserAgents.push(cfg);saveCfg();
+        registerAgent({id,type:'browser',name,color,status:'ready',
+            description:`${provider} ${modelId||DEFAULT_MODELS[provider]||''}`,config:cfg});
+    }
+    closeModal('spawnModal');updateUI();toast(`Agent "${name}" created`,'ok');
+};
+
+// ═══════════════════════════════════════════════════════════════
+// RELAY CONNECTION (port 10000)
+// ═══════════════════════════════════════════════════════════════
+function connectRelay(){
+    const port=S.cfg.relayPort||10000;
+    E('overlay').classList.remove('hidden');E('overlaySub').textContent=`ws://localhost:${port}`;
+    const ws=new WebSocket(`ws://localhost:${port}`);
+    const timeout=setTimeout(()=>{ws.close();relayFailed()},4000);
+    ws.onopen=()=>{
+        clearTimeout(timeout);S.relay=ws;S.relayOk=true;
+        E('overlay').classList.add('hidden');updateStatus();toast('Relay connected','ok');
+        ws.send(JSON.stringify({type:'configure',github_token:S.cfg.token,github_repos:S.cfg.repos,region:S.cfg.region}));
+        ws.send(JSON.stringify({type:'list_agents'}));ws.send(JSON.stringify({type:'get_ring',max_entries:50}));
+        // Explicitly fetch GitHub agents after configure
+        if(S.cfg.token&&S.cfg.repos?.length){ws.send(JSON.stringify({type:'list_github',token:S.cfg.token,repos:S.cfg.repos}))}
+    };
+    ws.onmessage=e=>handleRelayMsg(JSON.parse(e.data));
+    ws.onerror=()=>clearTimeout(timeout);
+    ws.onclose=()=>{S.relayOk=false;updateStatus();clearTimeout(S.reconnectTimer);S.reconnectTimer=setTimeout(connectRelay,5000)};
+}
+function relayFailed(){E('overlaySub').textContent='Relay not found — start agentcore_proxy';setTimeout(()=>E('overlay').classList.add('hidden'),2000);S.reconnectTimer=setTimeout(connectRelay,5000);updateUI();}
+
+function handleRelayMsg(msg){
+    console.log('📨 Relay msg:', msg.type, msg);
+    switch(msg.type){
+        case'connected':
+            if(msg.agents)msg.agents.forEach(a=>{if(a.type==='zenoh'&&!a.description)a.description=`${a.hostname||'?'} (${a.model||'?'})`;registerAgent(a)});
+            if(msg.ring_context){S.ring=msg.ring_context;renderRing()}
+            // Register this browser as a mesh peer so CLI/zenoh can invoke us
+            if(msg.ws_id){
+                S.myWsId=msg.ws_id;
+                const meshAgent=getMeshAgent();
+                S.relay.send(JSON.stringify({
+                    type:'register_browser_peer',
+                    name:meshAgent?meshAgent.name:'browser-mesh',
+                    model:meshAgent?`${meshAgent.config?.provider||'browser'} ${meshAgent.config?.modelId||'agent'}`:'browser-agent',
+                    tools:['render_ui','javascript_eval','fetch_url','storage_get','storage_set'],
+                    tool_count:5,
+                    system_prompt:meshAgent?.config?.systemPrompt?.slice(0,100)||'Browser mesh agent',
+                }));
+            }
+            break;
+        case'agents_list':
+            console.log('📋 agents_list received:', msg.agents?.length, 'agents, types:', msg.agents?.map(a=>a.type));
+            // Clear only remote-discovered agents (preserve local, virtual, user-created browser, AND github with active state)
+            for(const[id,a]of S.agents){
+                if(['local','virtual'].includes(a.type))continue;
+                if(a.type==='browser'&&(a.config||a._isMeshAgent))continue;
+                if(a.type==='github'&&(a.streaming||a.githubLogs))continue; // preserve active github agents
+                S.agents.delete(id);
+            }
+            (msg.agents||[]).forEach(a=>registerAgent(a));break;
+        case'github_list':case'agentcore_list':case'zenoh_list':
+            (msg.agents||msg.peers||[]).forEach(a=>registerAgent(a));break;
+        case'zenoh_peers_update':
+            console.log('🔗 zenoh_peers_update received:', msg.peers?.length, 'peers', msg.peers?.map(p=>`${p.id}(${p.type})`));
+            // Registry-based: peers now include ALL types (zenoh, browser, agentcore, etc.)
+            // Only clear zenoh + registry browser — PRESERVE github, agentcore, local, virtual, user-created browser
+            for(const[id,a]of S.agents){
+                if(a.type==='zenoh')S.agents.delete(id);
+                if(a.type==='browser'&&id.startsWith('browser:')&&!a.config&&!a._isMeshAgent)S.agents.delete(id);
+                // DO NOT delete github or agentcore agents here
+            }
+            (msg.peers||[]).forEach(p=>{
+                const type=p.type||'zenoh';
+                // Skip re-registering user-created browser agents
+                if(type==='browser'&&S.agents.has(p.id)&&S.agents.get(p.id).config)return;
+                registerAgent({
+                    id:p.id,type,name:p.name||p.hostname||p.id,
+                    hostname:p.hostname,model:p.model,status:p.status||'active',
+                    is_self:!!p.is_self,tools:p.tools||[],tool_count:p.tool_count||0,
+                    system_prompt:p.system_prompt||'',
+                    cwd:p.cwd||'',pplatform:p.platform||'',
+                    description:p.description||`${p.hostname||''} (${p.model||''})`+(p.is_self?' [self]':''),
+                })
+            });break;
+        case'turn_start':handleStreamStart(msg);break;
+        case'chunk':handleChunk(msg);break;
+        case'tool_start':case'tool_end':handleToolEvt(msg);break;
+        case'turn_end':handleStreamEnd(msg);break;
+        case'github_triggered':
+            if(msg.status==='success'){toast('GitHub workflow triggered!','ok');addRing('github','github',`Triggered: ${msg.message||msg.url||msg.repo}`);
+                // If we have a running poll, it'll auto-start from the proxy
+            }
+            else toast(`GitHub error: ${msg.error}`,'err');break;
+        case'github_status':handleGHStatus(msg);break;
+        case'github_logs':handleGHLogs(msg);break;
+        case'ring_context':S.ring=msg.entries||[];renderRing();break;
+        case'ring_update':{const e=msg.entry;if(e&&!S.ring.some(r=>r.id===e.id)){S.ring.push(e);if(S.ring.length>100)S.ring=S.ring.slice(-100);renderRing()}}break;
+        case'configured':case'pong':case'browser_peer_registered':case'browser_peer_updated':case'ring_added':break;
+        case'browser_peers_update':
+            // Update browser peers in agent list
+            for(const[id,a]of S.agents)if(a.type==='browser'&&id.startsWith('browser:')&&!a.config)S.agents.delete(id);
+            (msg.peers||[]).forEach(p=>registerAgent({
+                id:p.id,type:'browser',name:p.name||p.id,
+                model:p.model,status:'active',
+                tools:p.tools||[],tool_count:p.tool_count||0,
+                system_prompt:p.system_prompt||'',
+                description:`${p.model||'browser agent'}`,
+                ws_id:p.ws_id,
+            }));break;
+        case'browser_invoke':
+            // Incoming invoke from CLI/zenoh — run our mesh agent
+            handleBrowserInvoke(msg);break;
+        case'error':toast(`Error: ${msg.error}`,'err');break;
+    }
+    updateUI();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOCAL DEVDUCK CONNECTION (direct WS)
+// ═══════════════════════════════════════════════════════════════
+function connectLocal(){
+    const port=S.cfg.localPort||10001;
+    const ws=new WebSocket(`ws://localhost:${port}`);
+    ws.onopen=()=>{
+        S.localWs=ws;S.localOk=true;
+        registerAgent({id:'local:devduck',type:'local',name:'🦆 Local DevDuck',status:'ready',description:`ws://localhost:${port}`});
+        updateStatus();updateUI();
+    };
+    ws.onmessage=e=>{try{handleLocalMsg(JSON.parse(e.data))}catch(err){}};
+    ws.onerror=()=>{};
+    ws.onclose=()=>{S.localOk=false;S.localWs=null;const a=S.agents.get('local:devduck');if(a)a.status='offline';updateStatus();updateUI();setTimeout(connectLocal,5000)};
+}
+
+function handleLocalMsg(msg){
+    const a=S.agents.get('local:devduck');if(!a)return;
+    if(msg.type==='connected')return;
+    if(msg.type==='turn_start'){a.streaming=true;a.streamText='';a.streamTools=[];a.status='streaming';schedRender('local:devduck')}
+    else if(msg.type==='chunk'){if(!a.streaming){a.streaming=true;a.streamText='';a.status='streaming'}a.streamText=(a.streamText||'')+( msg.data||'');schedRender('local:devduck')}
+    else if(msg.type==='tool_start'){if(!a.streamTools)a.streamTools=[];a.streamTools.push({name:msg.data||'',id:msg.tool_id,status:'running'});schedRender('local:devduck')}
+    else if(msg.type==='tool_end'){const tc=(a.streamTools||[]).find(t=>t.id===msg.tool_id);if(tc)tc.status='done';schedRender('local:devduck')}
+    else if(msg.type==='turn_end'){const ft=(a.streamText||'').trim();if(ft)a.messages.push({role:'assistant',content:ft});a.streaming=false;a.streamTools=[];a.status='ready';addRing('local:devduck','local',ft.slice(0,150));updatePanel('local:devduck');updateUI()}
+    else if(msg.type==='error'){a.messages.push({role:'assistant',content:`❌ ${msg.data||msg.error||'unknown error'}`});a.streaming=false;a.status='ready';updatePanel('local:devduck');updateUI()}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AGENTS
+// ═══════════════════════════════════════════════════════════════
+function registerAgent(d){if(!d.id)return;const ex=S.agents.get(d.id)||{};S.agents.set(d.id,{...ex,...d,messages:ex.messages||[],streaming:ex.streaming||false,streamText:ex.streamText||''})}
+
+const _rt={};
+function schedRender(id){if(_rt[id])return;_rt[id]=setTimeout(()=>{delete _rt[id];updatePanel(id)},80)}
+
+// ═══════════════════════════════════════════════════════════════
+// STREAMING HANDLERS
+// ═══════════════════════════════════════════════════════════════
+function handleStreamStart(m){const id=m.agent_id;if(!id)return;if(!S.agents.has(id))registerAgent({id,type:m.agent_type||'agentcore',name:m.agent_id,status:'streaming'});const a=S.agents.get(id);a.streaming=true;a.streamText='';a.streamTools=[];a.status='streaming';if(m.agent_type)a.type=m.agent_type;updateUI()}
+function handleChunk(m){const id=m.agent_id;if(!id)return;const a=S.agents.get(id);if(!a)return;if(!a.streaming){a.streaming=true;a.streamText=a.streamText||'';a.status='streaming'}a.streamText=(a.streamText||'')+(m.data||'');schedRender(id)}
+function handleToolEvt(m){const id=m.agent_id;if(!id)return;const a=S.agents.get(id);if(!a)return;if(!a.streamTools)a.streamTools=[];if(m.type==='tool_start')a.streamTools.push({name:m.tool_name||m.data,id:m.tool_id,status:'running'});else{const tc=a.streamTools.find(t=>t.id===m.tool_id);if(tc)tc.status='done'}schedRender(id)}
+function handleStreamEnd(m){const id=m.agent_id;if(!id)return;const a=S.agents.get(id);if(!a)return;if(_rt[id]){clearTimeout(_rt[id]);delete _rt[id]}
+    // Skip if this is a GitHub agent that already completed via handleGHStatus (prevents duplicate messages)
+    if(a.type==='github'&&a._ghCompleted){a._ghCompleted=false;return}
+    const isGHL=a.type==='github'&&a.githubLogs;const ft=isGHL?'':((a.streamText||'').trim()||m.response||'');if(ft)a.messages.push({role:'assistant',content:ft});a.streaming=false;a.streamTools=[];a.status='ready';if(m.agent_type)a.type=m.agent_type;if(ft)addRing(id,a.type,ft.slice(0,150));updatePanel(id);updateUI()}
+
+function handleGHStatus(m){const id=m.agent_id;if(!id)return;const a=S.agents.get(id);if(!a)return;const sm={queued:'queued',in_progress:'running',completed:'ready',polling:'running',not_found:'failed'};a.status=sm[m.status]||m.status;a.run_url=m.url;a.run_id=m.run_id;a.conclusion=m.conclusion;
+    if(m.status==='completed'){
+        // FIRST: save accumulated logs as a message before clearing
+        if(a.githubLogs){const lines=a.githubLogs.split('\n');const tail=lines.slice(-100).join('\n');a.messages.push({role:'assistant',content:'```\n'+tail+'\n```'})}
+        const ic=m.conclusion==='success'?'✅':m.conclusion==='failure'?'❌':'⚠️';
+        a.messages.push({role:'assistant',content:`${ic} Run **${m.conclusion}**\n[View run](${m.url})`});
+        a.streaming=false;a.streamText='';a.githubLogs='';a._ghCompleted=true;
+        addRing(id,'github',`Run ${m.conclusion}: ${m.repo||id}`)}
+    else if(m.status==='polling'){a.messages.push({role:'assistant',content:`⏳ Tracking run [${m.run_id}](${m.url})...`});a.streaming=true;a.streamText='';a.githubLogs='';a._ghCompleted=false;addRing(id,'github',`Polling run ${m.run_id}`)}
+    else if(m.status==='in_progress'&&!a.streaming){a.streaming=true;addRing(id,'github',`Run in progress...`)}
+    else if(m.status==='not_found'){a.messages.push({role:'assistant',content:'❌ Could not find workflow run'});a.streaming=false}
+    updatePanel(id);updateUI()}
+function handleGHLogs(m){const id=m.agent_id;if(!id)return;const a=S.agents.get(id);if(!a)return;if(!a.githubLogs)a.githubLogs='';a.githubLogs+=m.log_chunk||'';a.streaming=true;
+    // Parse and show last N lines as streaming text with syntax highlighting
+    const lines=a.githubLogs.split('\n');const tailLines=lines.slice(-80).join('\n');a.streamText='```\n'+tailLines+'\n```';
+    // Inject notable log lines into ring (errors, completions, agent output)
+    const newLines=(m.log_chunk||'').split('\n');
+    for(const line of newLines){const l=line.trim();if(!l)continue;
+        if(l.includes('error')||l.includes('ERROR')||l.includes('❌')){addRing(id,'github',`⚠️ ${l.slice(0,120)}`)}
+        else if(l.includes('Agent output:')||l.includes('Result:')){addRing(id,'github',`📋 ${l.slice(0,120)}`)}
+    }
+    schedRender(id)}
+
+// Poll GitHub logs for a specific agent (e.g. to watch a recently triggered run)
+window.pollGHLogs=function(agentId){
+    if(!S.relay||!S.relayOk){toast('Relay not connected','err');return}
+    const a=S.agents.get(agentId);if(!a||a.type!=='github')return;
+    const parts=agentId.split(':');
+    if(parts.length<3)return;
+    S.relay.send(JSON.stringify({type:'poll_github_logs',repo:parts[1],workflow:parts[2]||'agent.yml',token:S.cfg.token,agent_id:agentId,run_id:a.run_id||null}));
+    toast('Polling GitHub logs...');
+};
+
+// ═══════════════════════════════════════════════════════════════
+// MESSAGING
+// ═══════════════════════════════════════════════════════════════
+window.sendMsg=function(agentId){
+    const sid=safeId(agentId);const input=E(`in-${sid}`);const txt=input?.value?.trim();if(!txt)return;input.value='';
+    const a=S.agents.get(agentId);if(!a)return;a.messages.push({role:'user',content:txt});
+    // Push user query to ring so CLI sees what browser is asking
+    addRing('browser:user',a.type||'browser',`→ ${agentId}: ${txt.slice(0,120)}`);
+
+    if(agentId==='local:devduck'){
+        if(S.localWs&&S.localWs.readyState===1)S.localWs.send(txt);
+        else a.messages.push({role:'assistant',content:'❌ Local DevDuck not connected'});
+    } else if(a.type==='virtual'){
+        // Virtual agent → send via local DevDuck WS with system_prompt + tools override
+        if(S.localWs&&S.localWs.readyState===1){
+            const payload={type:'message',text:txt,turn_id:crypto.randomUUID().slice(0,8),timestamp:Date.now()};
+            if(a.config?.systemPrompt)payload.system_prompt=a.config.systemPrompt;
+            // For virtual agents, we route through relay if available, or local WS
+            if(S.relay&&S.relayOk){
+                // Use relay invoke with agentcore type if the virtual agent has cloud backend
+                // Otherwise route through local DevDuck WS
+                S.localWs.send(JSON.stringify(payload));
+                a.streaming=true;a.streamText='';a.status='streaming';
+                // Track turn_id to map responses
+                a._turnId=payload.turn_id;
+            } else {
+                S.localWs.send(JSON.stringify(payload));
+                a.streaming=true;a.streamText='';a.status='streaming';
+                a._turnId=payload.turn_id;
+            }
+        } else a.messages.push({role:'assistant',content:'❌ Not connected to DevDuck'});
+    } else if(a.type==='browser'){
+        // Browser agent → run in-browser using Strands SDK
+        runBrowserAgent(a,txt);
+    } else if(a.type==='github'){
+        const parts=agentId.split(':');
+        S.relay?.send(JSON.stringify({type:'trigger_github',repo:parts[1],workflow:parts[2]||'agent.yml',prompt:txt,token:S.cfg.token}));
+    } else {
+        const turnId=crypto.randomUUID();
+        S.relay?.send(JSON.stringify({type:'invoke',agent_id:agentId,agent_type:a.type,prompt:txt,turn_id:turnId,
+            system_prompt:a.config?.systemPrompt||undefined,tools:a.config?.tools||undefined,model:a.config?.model||undefined}));
+    }
+    updateUI();
+};
+
+// ═══════════════════════════════════════════════════════════════
+// BROWSER AGENT EXECUTION (Strands SDK in-browser)
+// ═══════════════════════════════════════════════════════════════
+const _browserAgentInstances=new Map(); // agentId → {agent, model}
+
+async function runBrowserAgent(a,txt){
+    if(!window._StrandsAgent||!window._BrowserModels){a.messages.push({role:'assistant',content:'❌ Strands SDK not loaded yet. Refresh page.'});updateUI();return}
+    const cfg=a.config||{};const provider=cfg.provider||'anthropic';
+    // Resolve API key from settings
+    let apiKey='';
+    if(provider==='anthropic')apiKey=S.cfg.anthropicKey;
+    else if(provider==='openai')apiKey=S.cfg.openaiKey;
+    else if(provider==='bedrock')apiKey=S.cfg.bedrockKey;
+    if(!apiKey){a.messages.push({role:'assistant',content:`❌ No ${provider} API key configured. Open Settings to add it.`});updateUI();return}
+    // Create or reuse agent instance
+    let inst=_browserAgentInstances.get(a.id);
+    const modelId=cfg.modelId||null;
+    if(!inst){
+        let model;
+        const Models=window._BrowserModels;
+        if(provider==='anthropic')model=new Models.AnthropicBrowserModel({apiKey,modelId:modelId||'claude-sonnet-4-20250514'});
+        else if(provider==='openai')model=new Models.OpenAIBrowserModel({apiKey,modelId:modelId||'gpt-4o'});
+        else if(provider==='bedrock')model=new Models.BedrockBrowserModel({apiKey,region:S.cfg.bedrockRegion||'us-east-1',modelId:modelId||'us.anthropic.claude-sonnet-4-20250514-v1:0'});
+        else{a.messages.push({role:'assistant',content:`❌ Unknown provider: ${provider}`});updateUI();return}
+        const agent=new window._StrandsAgent({model,tools:window._BrowserTools||[],systemPrompt:cfg.systemPrompt||`You are ${a.name}, a helpful AI assistant running in the browser.`,printer:false});
+        inst={agent,model};_browserAgentInstances.set(a.id,inst);
+    } else {
+        // Update API key in case it changed
+        const mc=inst.model.getConfig();if(mc.apiKey!==apiKey)inst.model._c.apiKey=apiKey;
+    }
+    // Stream response
+    a.streaming=true;a.streamText='';a.streamTools=[];a.status='streaming';updateUI();
+    try{
+        let currentText='';
+        for await(const event of inst.agent.stream(txt)){
+            if(!event||!event.type)continue;
+            if(event.type==='modelContentBlockDeltaEvent'&&event.delta?.type==='textDelta'){currentText+=event.delta.text;a.streamText=currentText;schedRender(a.id)}
+            else if(event.type==='modelContentBlockStartEvent'&&event.start?.type==='toolUseStart'){if(!a.streamTools)a.streamTools=[];a.streamTools.push({name:event.start.name,id:event.start.toolUseId,status:'running'});schedRender(a.id)}
+            else if(event.type==='beforeToolCallEvent'){if(!a.streamTools)a.streamTools=[];a.streamTools.push({name:event.toolUse?.name||'',id:event.toolUse?.toolUseId,status:'running'});schedRender(a.id)}
+            else if(event.type==='afterToolCallEvent'){const tc=(a.streamTools||[]).find(t=>t.name===(event.toolUse?.name));if(tc)tc.status='done';schedRender(a.id)}
+        }
+        const ft=currentText.trim();if(ft)a.messages.push({role:'assistant',content:ft});
+        a.streaming=false;a.streamText='';a.streamTools=[];a.status='ready';
+        addRing(a.id,'browser',ft.slice(0,150));
+    }catch(e){
+        a.messages.push({role:'assistant',content:`❌ ${e.message}`});a.streaming=false;a.streamText='';a.streamTools=[];a.status='failed';
+    }
+    updatePanel(a.id);updateUI();
+}
+
+window.invokeAll=function(){const txt=prompt('Send to ALL agents:');if(!txt?.trim())return;let n=0;for(const[id,a]of S.agents){if(a.is_self)continue;a.messages.push({role:'user',content:txt});n++;if(id==='local:devduck'){if(S.localWs?.readyState===1)S.localWs.send(txt)}else if(a.type==='browser'){runBrowserAgent(a,txt)}else if(a.type==='github'){const p=id.split(':');S.relay?.send(JSON.stringify({type:'trigger_github',repo:p[1],workflow:p[2]||'agent.yml',prompt:txt,token:S.cfg.token}))}else{S.relay?.send(JSON.stringify({type:'invoke',agent_id:id,agent_type:a.type,prompt:txt,turn_id:crypto.randomUUID()}))}}S.relay?.send(JSON.stringify({type:'broadcast',message:txt}));addRing('mesh','local',`Invoked all (${n}): ${txt.slice(0,100)}`);updateUI();toast(`Sent to ${n} agents`)};
+window.broadcastAll=function(){const txt=prompt('Broadcast to Zenoh peers:');if(!txt?.trim())return;S.relay?.send(JSON.stringify({type:'broadcast',message:txt}));toast('Broadcast sent')};
+window.refresh=function(){
+    S.relay?.send(JSON.stringify({type:'list_agents'}));
+    // Also refresh GitHub agents explicitly
+    if(S.cfg.token&&S.cfg.repos?.length){S.relay?.send(JSON.stringify({type:'list_github',token:S.cfg.token,repos:S.cfg.repos}))}
+    updateUI();toast('Refreshing...')
+};
+window.clearAll=function(){if(!confirm('Clear all messages?'))return;S.agents.forEach(a=>a.messages=[]);updateUI()};
+window.selectAgent=function(id){
+    // Toggle selection for fan-out
+    if(S.selectedAgents.has(id)){S.selectedAgents.delete(id)}else{S.selectedAgents.add(id)}
+    S.activePanel=id;updateUI();updateChatTargets();
+    const sid=safeId(id);E(`pnl-${sid}`)?.scrollIntoView({behavior:'smooth'});
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT TARGETS DISPLAY
+// ═══════════════════════════════════════════════════════════════
+function updateChatTargets(){
+    const el=E('chatTargets');if(!el)return;
+    if(S.selectedAgents.size===0){el.innerHTML='<span style="color:var(--t3)">Click agents in sidebar to select targets</span>';E('chatInput').placeholder='Select agents first, then type...';return}
+    el.innerHTML=[...S.selectedAgents].map(id=>{const a=S.agents.get(id);return`<span class="ct-tag">${esc(a?.name||id)}</span>`}).join('')+`<span style="color:var(--t3);cursor:pointer" onclick="S.selectedAgents.clear();updateUI();updateChatTargets()">✕ clear</span>`;
+    E('chatInput').placeholder=`Message ${S.selectedAgents.size} agent${S.selectedAgents.size>1?'s':''}...`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDIT / DELETE AGENTS
+// ═══════════════════════════════════════════════════════════════
+window.openEdit=function(id,ev){
+    if(ev)ev.stopPropagation();
+    const a=S.agents.get(id);if(!a)return;
+    E('editId').value=id;
+    E('editTitle').textContent=a.name||id;
+    E('editName').value=a.name||'';
+    E('editColor').value=a.color||'#ff375f';
+    E('editPrompt').value=a.config?.systemPrompt||'';
+    E('editTools').value=a.config?.tools||'';
+    E('editModel').value=a.config?.model||'';
+    // Show provider fields for browser agents
+    const isBrowser=a.type==='browser';
+    E('editProviderWrap').style.display=isBrowser?'block':'none';
+    E('editModelIdWrap').style.display=isBrowser?'block':'none';
+    if(isBrowser){E('editProvider').value=a.config?.provider||'anthropic';E('editModelId').value=a.config?.modelId||''}
+    E('editModal').classList.add('active');
+};
+
+window.saveEdit=function(){
+    const id=E('editId').value;const a=S.agents.get(id);if(!a)return;
+    const name=E('editName').value.trim()||a.name;
+    const color=E('editColor').value;
+    const systemPrompt=E('editPrompt').value.trim();
+    const tools=E('editTools').value.trim()||null;
+    const model=E('editModel').value.trim()||null;
+    // Update agent
+    a.name=name;a.color=color;
+    if(!a.config)a.config={};
+    a.config.systemPrompt=systemPrompt;a.config.tools=tools;a.config.model=model;
+    a.description=(systemPrompt||'').slice(0,60)+'...';
+    if(a.type==='browser'){a.config.provider=E('editProvider').value;a.config.modelId=E('editModelId').value.trim()||null;a.description=`${a.config.provider} ${a.config.modelId||DEFAULT_MODELS[a.config.provider]||''}`;_browserAgentInstances.delete(id)}
+    // Persist
+    if(a.type==='virtual'){const idx=S.cfg.virtualAgents.findIndex(v=>v.id===id);if(idx>=0)S.cfg.virtualAgents[idx]={...S.cfg.virtualAgents[idx],name,color,systemPrompt,tools,model};saveCfg()}
+    if(a.type==='browser'){const idx=S.cfg.browserAgents.findIndex(v=>v.id===id);if(idx>=0)S.cfg.browserAgents[idx]={...S.cfg.browserAgents[idx],name,color,systemPrompt,provider:a.config.provider,modelId:a.config.modelId};saveCfg()}
+    closeModal('editModal');updateUI();toast(`"${name}" updated`,'ok');
+};
+
+window.deleteAgent=function(){
+    const id=E('editId').value;const a=S.agents.get(id);if(!a)return;
+    if(!confirm(`Delete agent "${a.name||id}"?`))return;
+    S.agents.delete(id);
+    if(a.type==='virtual'){S.cfg.virtualAgents=S.cfg.virtualAgents.filter(v=>v.id!==id);saveCfg()}
+    if(a.type==='browser'){S.cfg.browserAgents=S.cfg.browserAgents.filter(v=>v.id!==id);saveCfg()}
+    closeModal('editModal');updateUI();toast(`"${a.name||id}" deleted`);
+};
+
+window.deleteAgentDirect=function(id,ev){
+    if(ev)ev.stopPropagation();
+    const a=S.agents.get(id);if(!a)return;
+    if(!confirm(`Delete "${a.name||id}"?`))return;
+    S.agents.delete(id);
+    if(a.type==='virtual'){S.cfg.virtualAgents=S.cfg.virtualAgents.filter(v=>v.id!==id);saveCfg()}
+    if(a.type==='browser'){S.cfg.browserAgents=S.cfg.browserAgents.filter(v=>v.id!==id);saveCfg()}
+    updateUI();toast(`"${a.name||id}" deleted`);
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT SEND — Fan-out to selected agents + ephemeral response
+// ═══════════════════════════════════════════════════════════════
+let _ephTimer=null,_ephPinned=false;
+function showEph(html,streaming=false){
+    const el=E('ephResponse');if(!el)return;
+    if(_ephTimer){clearTimeout(_ephTimer);_ephTimer=null}
+    el.innerHTML=`<div class="eph-hdr"><span style="font-size:9px;color:var(--t3)">${streaming?'⏳ streaming...':'✅ done'}</span><button class="eph-pin ${_ephPinned?'pinned':''}" onclick="togglePin()">📌 ${_ephPinned?'unpin':'pin'}</button></div><div class="eph-body">${html}</div>`;
+    el.classList.add('active');el.classList.remove('fading');
+    el.scrollTop=el.scrollHeight;
+    if(!streaming&&!_ephPinned){_ephTimer=setTimeout(()=>{el.classList.add('fading');setTimeout(()=>el.classList.remove('active','fading'),400)},8000)}
+}
+window.togglePin=function(){_ephPinned=!_ephPinned;const pin=document.querySelector('.eph-pin');if(pin){pin.classList.toggle('pinned',_ephPinned);pin.textContent=`📌 ${_ephPinned?'unpin':'pin'}`}if(_ephPinned&&_ephTimer){clearTimeout(_ephTimer);_ephTimer=null}};
+
+let _chatBusy=false;
+window.chatSend=function(){
+    const input=E('chatInput');const txt=input?.value?.trim();if(!txt||_chatBusy)return;
+    const targets=[...S.selectedAgents];
+    // If nothing selected, send to local devduck as orchestration
+    if(targets.length===0){
+        // Route through local devduck with ring context
+        if(!S.localWs||S.localWs.readyState!==1){toast('No DevDuck connected','err');return}
+        input.value='';input.style.height='auto';
+        _chatBusy=true;E('chatSendBtn').disabled=true;
+        const ringBlock=S.ring.slice(-10).map(e=>`[${e.agent_id}] ${e.text||''}`).join('\n');
+        const agentList=[...S.agents.values()].map(a=>`• ${a.id} (${a.type}) — ${a.name||a.id}`).join('\n');
+        const prompt=`[Mesh Context]\nAgents: ${agentList}\nRing:\n${ringBlock||'(none)'}\n\n${txt}`;
+        S.localWs.send(prompt);
+        showEph('<div style="color:var(--t3)">thinking...</div>',true);
+        // Capture the response
+        const origOnMsg=S.localWs.onmessage;let streamText='';
+        S.localWs.onmessage=e=>{
+            try{const msg=JSON.parse(e.data);
+                if(msg.type==='chunk'){streamText+=(msg.data||'');try{showEph(marked.parse(streamText),true)}catch{showEph('<pre>'+esc(streamText)+'</pre>',true)}}
+                else if(msg.type==='tool_start'){showEph((streamText?marked.parse(streamText):'')+'<div style="font-size:9px;display:inline-block;padding:2px 6px;background:rgba(255,149,0,.12);border-radius:5px;color:var(--accent);margin:2px">⏳ '+esc(msg.data||'')+'</div>',true)}
+                else if(msg.type==='turn_end'){
+                    const ft=(streamText).trim()||msg.response||'';
+                    if(ft)try{showEph(marked.parse(ft),false)}catch{showEph('<pre>'+esc(ft)+'</pre>',false)}
+                    _chatBusy=false;E('chatSendBtn').disabled=false;
+                    S.localWs.onmessage=origOnMsg;
+                    addRing('chat','local',ft.slice(0,150));
+                }
+                else if(msg.type==='turn_start'){streamText=''}
+                else if(msg.type==='error'){showEph(`<div style="color:var(--red)">❌ ${msg.data||msg.error||'unknown error'}</div>`,false);_chatBusy=false;E('chatSendBtn').disabled=false;S.localWs.onmessage=origOnMsg}
+                else{origOnMsg(e)} // pass through non-chat messages
+            }catch(err){origOnMsg(e)}
+        };
+        addRing('chat','local',`💬 ${txt.slice(0,120)}`);
+        return;
+    }
+
+    input.value='';input.style.height='auto';
+    // Fan-out: send to every selected agent
+    addRing('chat','local',`→ [${targets.map(id=>S.agents.get(id)?.name||id).join(', ')}]: ${txt.slice(0,100)}`);
+    for(const id of targets){
+        // For browser agents, inject ring context into prompt
+        const a=S.agents.get(id);
+        if(a&&a.type==='browser'){
+            const ringBlock=S.ring.slice(-8).map(e=>`[${e.agent_id}] ${e.text||''}`).join('\n');
+            const enriched=ringBlock?`[Ring Context]\n${ringBlock}\n\n[User Query]\n${txt}`:txt;
+            sendMsg(id,enriched);
+        } else {
+            sendMsg(id,txt);
+        }
+    }
+    toast(`Sent to ${targets.length} agent${targets.length>1?'s':''}`);
+};
+
+// Override sendMsg to accept optional text param for fan-out
+const _origSendMsg=window.sendMsg;
+window.sendMsg=function(agentId,textOverride){
+    if(textOverride){
+        const a=S.agents.get(agentId);
+        if(a){
+            a.messages.push({role:'user',content:textOverride});
+            addRing('browser:user',a.type||'browser',`→ ${agentId}: ${textOverride.slice(0,120)}`);
+            if(agentId==='local:devduck'){if(S.localWs&&S.localWs.readyState===1)S.localWs.send(textOverride)}
+            else if(a.type==='browser'){runBrowserAgent(a,textOverride)}
+            else if(a.type==='virtual'){if(S.localWs&&S.localWs.readyState===1){const p={type:'message',text:textOverride,turn_id:crypto.randomUUID().slice(0,8),timestamp:Date.now()};if(a.config?.systemPrompt)p.system_prompt=a.config.systemPrompt;S.localWs.send(JSON.stringify(p));a.streaming=true;a.streamText='';a.status='streaming';a._turnId=p.turn_id}}
+            else if(a.type==='github'){const p=agentId.split(':');S.relay?.send(JSON.stringify({type:'trigger_github',repo:p[1],workflow:p[2]||'agent.yml',prompt:textOverride,token:S.cfg.token}))}
+            else{S.relay?.send(JSON.stringify({type:'invoke',agent_id:agentId,agent_type:a.type,prompt:textOverride,turn_id:crypto.randomUUID(),system_prompt:a.config?.systemPrompt,tools:a.config?.tools,model:a.config?.model}))}
+            updateUI();
+        }
+    } else {
+        _origSendMsg(agentId);
+    }
+};
+
+// Virtual agent responses come through local WS — intercept by turn_id
+const _origLocalMsg=handleLocalMsg;
+// Override handleLocalMsg to route virtual agent responses
+const origHandleLocal=handleLocalMsg;
+// We need to intercept local WS messages for virtual agents
+function handleLocalMsgV2(msg){
+    // Check if any virtual agent is waiting for this turn
+    for(const[id,a]of S.agents){
+        if(a.type==='virtual'&&a._turnId&&a.streaming){
+            // Route messages to virtual agent panel
+            if(msg.type==='turn_start'){a.streamText='';a.streamTools=[];a.status='streaming';schedRender(id);return}
+            if(msg.type==='chunk'){a.streamText=(a.streamText||'')+(msg.data||'');schedRender(id);return}
+            if(msg.type==='tool_start'){if(!a.streamTools)a.streamTools=[];a.streamTools.push({name:msg.data||'',id:msg.tool_id,status:'running'});schedRender(id);return}
+            if(msg.type==='tool_end'){const tc=(a.streamTools||[]).find(t=>t.id===msg.tool_id);if(tc)tc.status='done';schedRender(id);return}
+            if(msg.type==='turn_end'){const ft=(a.streamText||'').trim();if(ft)a.messages.push({role:'assistant',content:ft});a.streaming=false;a.streamTools=[];a.status='ready';a._turnId=null;addRing(id,'virtual',ft.slice(0,150));updatePanel(id);updateUI();return}
+            if(msg.type==='error'){a.messages.push({role:'assistant',content:`❌ ${msg.data||msg.error||'unknown error'}`});a.streaming=false;a.status='ready';a._turnId=null;updatePanel(id);updateUI();return}
+        }
+    }
+    // Fallback to local devduck handler
+    handleLocalMsg(msg);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RING CONTEXT
+// ═══════════════════════════════════════════════════════════════
+function addRing(aid,atype,txt){const entry={agent_id:aid,agent_type:atype,text:txt||'',timestamp:Date.now()/1000};S.ring.push(entry);if(S.ring.length>100)S.ring=S.ring.slice(-100);renderRing();
+// ── Bidirectional sync: push to relay so CLI/AgentCore see browser ring ──
+if(S.relay&&S.relayOk){S.relay.send(JSON.stringify({type:'add_ring',agent_id:aid,agent_type:atype,text:txt||''}))}}
+window.clearRing=()=>{S.ring=[];renderRing()};
+function renderRing(){const el=E('ringBody');const entries=S.ring.slice(-30).reverse();if(!entries.length){el.innerHTML='<div class="empty-pnl"><div style="font-size:9px;color:var(--t3)">Activity appears here</div></div>';return}el.innerHTML=entries.map(e=>{const t=new Date((e.timestamp||0)*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});return`<div class="re"><div class="re-hdr"><span class="re-agent">${esc(e.agent_id)}</span><span class="badge ${e.agent_type}">${e.agent_type}</span><span class="re-time">${t}</span></div><div class="re-txt">${esc(e.text||'')}</div></div>`}).join('')}
+
+// ═══════════════════════════════════════════════════════════════
+// UI RENDERING
+// ═══════════════════════════════════════════════════════════════
+function updateUI(){updateStatus();updateStats();updateAgentsList();updatePanels()}
+
+function updateStatus(){
+    const d=E('statusDot'),t=E('statusTxt');
+    if(S.relayOk&&S.localOk){d.className='dot on';t.textContent=`relay:${S.cfg.relayPort} + local:${S.cfg.localPort}`}
+    else if(S.relayOk){d.className='dot on';t.textContent=`relay:${S.cfg.relayPort}`}
+    else if(S.localOk){d.className='dot wait';t.textContent=`local:${S.cfg.localPort}`}
+    else{d.className='dot';t.textContent='disconnected'}
+}
+
+function updateStats(){
+    const a=[...S.agents.values()];
+    const zenohCount=a.filter(x=>x.type==='zenoh').length;
+    console.log('📊 updateStats: total=', a.length, 'zenoh=', zenohCount, 'types:', a.map(x=>x.type));
+    E('cntLocal').textContent=a.filter(x=>x.type==='local').length;
+    E('cntVirtual').textContent=a.filter(x=>x.type==='virtual').length;
+    E('cntBrowser').textContent=a.filter(x=>x.type==='browser').length;
+    E('cntGithub').textContent=a.filter(x=>x.type==='github').length;
+    E('cntCloud').textContent=a.filter(x=>x.type==='agentcore').length;
+    E('cntZenoh').textContent=a.filter(x=>x.type==='zenoh').length;
+}
+
+function updateAgentsList(){
+    const el=E('agentsList');const agents=[...S.agents.values()];
+    if(!agents.length){el.innerHTML='<div style="padding:16px;text-align:center;color:var(--t3);font-size:10px">No agents discovered</div>';return}
+    const groups={local:[],virtual:[],browser:[],github:[],agentcore:[],zenoh:[]};
+    for(const a of agents)(groups[a.type]||(groups.other=groups.other||[])).push(a);
+    let html='';
+    for(const[type,list]of Object.entries(groups)){
+        if(!list||!list.length)continue;
+        html+=`<div class="sec-hdr"><span class="sec-icon">${ICONS[type]||'🤖'}</span><span class="sec-title">${type}</span><span class="sec-cnt">${list.length}</span></div>`;
+        for(const a of list){
+            const isAct=S.activePanel===a.id;const eid=a.id.replace(/'/g,"\\'");
+            const canEdit=['virtual','browser'].includes(a.type);
+            const isSel=S.selectedAgents.has(a.id);
+            html+=`<div class="ac ${isAct?'active':''} ${isSel?'selected':''}" onclick="selectAgent('${eid}')"><div class="ac-hdr"><span class="ac-sel">${isSel?'✓':''}</span><span class="ac-dot" style="background:${a.color||`var(--c-${a.type})`}"></span><div class="ac-info"><div class="ac-name">${esc(a.name||a.id)}${a.is_self?' <span style="font-size:8px;color:var(--c-zenoh)">(you)</span>':''}</div><div class="ac-meta">${a.type==='zenoh'&&a.tool_count?`${esc(a.model||'')} · ${a.tool_count} tools`:a.type==='github'?`${esc(a.repo||'')} · ${esc(a.workflow||'agent.yml')}${a.last_run?` · ${a.last_run.conclusion||a.last_run.status||'?'}`:''}`+`${a.stars?` · ⭐${a.stars}`:''}`:esc(a.description||a.repo||a.model||a.hostname||'')}</div></div>${canEdit?`<div class="ac-acts"><button class="ac-ab" onclick="openEdit('${eid}',event)" title="Edit">✎</button><button class="ac-ab del" onclick="deleteAgentDirect('${eid}',event)" title="Delete">✕</button></div>`:''}<span class="ac-st ${a.status||'ready'}">${a.streaming?'streaming':(a.status||'ready')}</span>${a.type==='github'&&a.run_url?`<a href="${a.run_url}" target="_blank" style="font-size:7px;color:var(--accent);text-decoration:none;margin-left:3px" title="View run">🔗</a>`:''}</div></div>`;
+        }
+    }
+    el.innerHTML=html;
+}
+
+function updatePanels(){
+    const el=E('panels');const agents=[...S.agents.values()];
+    if(!agents.length){el.innerHTML=`<div class="empty-pnl"><div class="empty-icon">🦆</div><div class="empty-txt">No agents yet.<br><br>• DevDuck relay on port ${S.cfg.relayPort}<br>• Local DevDuck on port ${S.cfg.localPort}<br>• Create Virtual or Browser agents</div></div>`;return}
+    el.innerHTML=agents.map(a=>{
+        const sid=safeId(a.id);let body='';
+        if(a.messages?.length)body+=a.messages.map(m=>m.role==='user'?`<div style="margin-bottom:8px;padding:7px 10px;background:rgba(255,149,0,.1);border-radius:7px;font-size:11px"><strong>You:</strong> ${esc(m.content)}</div>`:`<div style="margin-bottom:8px">${marked.parse(m.content)}</div>`).join('');
+        if(a.streaming&&a.streamText){try{body+=`<div style="margin-bottom:8px">${marked.parse(a.streamText)}</div>`}catch{body+=`<pre>${esc(a.streamText)}</pre>`}}
+        let tools='';if(a.streamTools?.length)tools='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">'+a.streamTools.map(tc=>`<span style="font-size:9px;padding:2px 6px;background:rgba(255,149,0,.12);border-radius:5px;color:var(--accent)">${tc.status==='done'?'✅':'⏳'} ${esc(tc.name)}</span>`).join('')+'</div>';
+        const content=tools+body;
+        return`<div class="pnl ${a.type} ${a.streaming?'streaming':''}" id="pnl-${sid}"><div class="pnl-hdr"><span class="pnl-icon">${ICONS[a.type]||'🤖'}</span><span class="pnl-name">${esc(a.name||a.id)}</span><div class="pnl-acts">${['virtual','browser'].includes(a.type)?`<button class="pnl-ab" onclick="openEdit('${a.id.replace(/'/g,"\\'")}',event)" title="Edit">✎</button><button class="pnl-ab del" onclick="deleteAgentDirect('${a.id.replace(/'/g,"\\'")}',event)" title="Delete">✕</button>`:''}</div><div class="pnl-badges">${a.run_url?`<a href="${a.run_url}" target="_blank" style="font-size:8px;color:var(--accent);text-decoration:none" title="View run">🔗</a>`:''}<span class="badge ${a.type}">${a.type}</span><span class="ac-st ${a.streaming?'streaming':(a.status||'ready')}">${a.streaming?'streaming':(a.status||'ready')}</span></div></div><div class="pnl-body ${a.streaming?'cursor':''}" id="body-${sid}">${content||`<div class="empty-pnl"><div class="empty-icon">${ICONS[a.type]||'🤖'}</div><div class="empty-txt">${getDesc(a)}</div></div>`}</div><div class="pnl-ft"><input class="pnl-in" id="in-${sid}" data-aid="${a.id}" placeholder="Message ${esc(a.name||a.id)}..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendMsg(this.dataset.aid)}"><button class="pnl-send" onclick="sendMsg('${a.id.replace(/'/g,"\\'")}')" ${a.streaming?'disabled':''}>${a.type==='github'?'🚀':'→'}</button></div></div>`
+    }).join('');
+    for(const[id,a]of S.agents){if(a.streaming||a.messages?.length){const b=E(`body-${safeId(id)}`);if(b)b.scrollTop=b.scrollHeight}}
+}
+
+function updatePanel(id){
+    const a=S.agents.get(id);if(!a)return;const sid=safeId(id);const body=E(`body-${sid}`);if(!body)return;
+    let html='';
+    if(a.messages?.length)html+=a.messages.map(m=>m.role==='user'?`<div style="margin-bottom:8px;padding:7px 10px;background:rgba(255,149,0,.1);border-radius:7px;font-size:11px"><strong>You:</strong> ${esc(m.content)}</div>`:`<div style="margin-bottom:8px">${marked.parse(m.content)}</div>`).join('');
+    if(a.streamTools?.length)html+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">'+a.streamTools.map(tc=>`<span style="font-size:9px;padding:2px 6px;background:rgba(255,149,0,.12);border-radius:5px;color:var(--accent)">${tc.status==='done'?'✅':'⏳'} ${esc(tc.name)}</span>`).join('')+'</div>';
+    if(a.streaming&&a.streamText){try{html+=marked.parse(a.streamText)}catch{html+='<pre>'+esc(a.streamText)+'</pre>'}}
+    if(html){body.innerHTML=html;body.scrollTop=body.scrollHeight}
+    const pnl=E(`pnl-${sid}`);if(pnl)pnl.classList.toggle('streaming',!!a.streaming);
+}
+
+function getDesc(a){
+    if(a.type==='local')return`<strong>Local DevDuck</strong><br><br>Direct WebSocket chat`;
+    if(a.type==='virtual')return`<strong>Virtual Agent</strong><br><br>${esc(a.config?.systemPrompt?.slice(0,100)||'')}...<br>Routes through DevDuck backend`;
+    if(a.type==='browser')return`<strong>Browser Agent</strong><br><br>${a.config?.provider||'unknown'} — runs in-browser`;
+    if(a.type==='github')return`<strong>${esc(a.repo||a.name)}</strong><br><br>${esc(a.description||'GitHub Actions agent')}<br>${a.workflow?`Workflow: <code>${esc(a.workflow)}</code><br>`:''}${a.stars?`⭐ ${a.stars} stars<br>`:''}${a.last_run?`Last run: ${a.last_run.conclusion||a.last_run.status||'?'}<br>`:''}Send prompt to trigger workflow`;
+    if(a.type==='agentcore')return`<strong>AgentCore</strong><br><br>Cloud: ${a.region||'us-west-2'}<br>${esc(a.name||a.id)}`;
+    if(a.type==='zenoh'){let d=`<strong>Zenoh Peer</strong><br>Host: ${esc(a.hostname||'?')} &middot; Model: ${esc(a.model||'?')}`;if(a.is_self)d+=`<br><em style="color:var(--c-zenoh)">This is you (local DevDuck)</em>`;if(a.cwd)d+=`<br>📁 <code>${esc(a.cwd)}</code>`;if(a.pplatform)d+=`<br>💻 ${esc(a.pplatform)}`;if(a.system_prompt)d+=`<br><br><strong>System Prompt:</strong><br><span style="color:var(--t2);font-size:10px">${esc(a.system_prompt)}</span>`;if(a.tools?.length){d+=`<br><br><strong>Tools (${a.tool_count||a.tools.length}):</strong><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">${a.tools.map(t=>`<span style="font-size:8px;padding:2px 6px;background:rgba(48,209,88,.1);border:1px solid rgba(48,209,88,.2);border-radius:4px;color:var(--c-zenoh)">${esc(t)}</span>`).join('')}</div>`}return d}
+    return'Agent ready';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MESH AGENT — Auto-created browser agent for cross-mesh communication
+// ═══════════════════════════════════════════════════════════════
+function getMeshAgent(){
+    // Find or create the mesh browser agent
+    for(const[id,a]of S.agents){if(a.type==='browser'&&a._isMeshAgent)return a}
+    return null;
+}
+
+function ensureMeshAgent(){
+    if(getMeshAgent())return;
+    // Auto-create a mesh browser agent if we have any API key configured
+    const provider=S.cfg.bedrockKey?'bedrock':S.cfg.anthropicKey?'anthropic':S.cfg.openaiKey?'openai':null;
+    if(!provider)return; // No API key, can't create
+    const id='browser:mesh-chat';
+    const cfg={id,name:'🕸️ mesh',color:'#00d4ff',type:'browser',provider,
+        modelId:null, // use default
+        systemPrompt:`You are the Mesh Chat agent running in the browser. You are part of a unified agent mesh that includes CLI DevDuck terminals (via Zenoh P2P), cloud agents (AgentCore), GitHub agents, and other browser agents.
+
+Your role:
+- You can be invoked by CLI terminals, zenoh peers, or other agents
+- You have access to browser tools (render_ui, javascript_eval, fetch_url, storage)
+- When invoked from the mesh, process the request and respond helpfully
+- You can see the ring context showing what other agents are working on
+- Be concise and helpful
+
+You are connected to the DevDuck mesh network.`};
+    S.cfg.browserAgents.push(cfg);saveCfg();
+    const a={id,type:'browser',name:cfg.name,color:cfg.color,status:'ready',
+        description:`${provider} (mesh chat)`,config:cfg,_isMeshAgent:true};
+    registerAgent(a);
+    console.log('🌐 🕸️ mesh agent auto-created with',provider);
+    return a;
+}
+
+async function handleBrowserInvoke(msg){
+    // Incoming invoke from CLI/zenoh — run our mesh agent
+    const prompt=msg.prompt||'';
+    const turnId=msg.turn_id||'';
+    const fromWsId=msg.from_ws_id||'';
+    const zenohRequesterId=msg.zenoh_requester_id||'';
+    
+    console.log('🧠 Browser invoke received:',prompt.slice(0,80),'from:',fromWsId||zenohRequesterId);
+    
+    // Find or create mesh agent
+    let meshAgent=getMeshAgent();
+    if(!meshAgent){ensureMeshAgent();meshAgent=getMeshAgent()}
+    if(!meshAgent){
+        // No API key — send error back
+        if(S.relay&&S.relayOk){
+            S.relay.send(JSON.stringify({type:'browser_invoke_response',turn_id:turnId,response:'❌ No API key configured for browser agent. Open Settings in mesh.html.',requester_ws_id:fromWsId,zenoh_requester_id:zenohRequesterId}));
+        }
+        return;
+    }
+    
+    // Add the query to mesh agent's messages for display
+    meshAgent.messages.push({role:'user',content:`[from ${fromWsId||zenohRequesterId||'mesh'}] ${prompt}`});
+    updateUI();
+    
+    // Run the browser agent
+    meshAgent.streaming=true;meshAgent.streamText='';meshAgent.streamTools=[];meshAgent.status='streaming';
+    updateUI();
+    
+    try{
+        // Stream chunks back to the relay for zenoh forwarding
+        const cfg=meshAgent.config||{};
+        const provider=cfg.provider||'anthropic';
+        let apiKey='';
+        if(provider==='anthropic')apiKey=S.cfg.anthropicKey;
+        else if(provider==='openai')apiKey=S.cfg.openaiKey;
+        else if(provider==='bedrock')apiKey=S.cfg.bedrockKey;
+        
+        if(!apiKey){throw new Error(`No ${provider} API key configured`)}
+        
+        let inst=_browserAgentInstances.get(meshAgent.id);
+        if(!inst){
+            let model;const Models=window._BrowserModels;
+            if(provider==='anthropic')model=new Models.AnthropicBrowserModel({apiKey,modelId:cfg.modelId||'claude-sonnet-4-20250514'});
+            else if(provider==='openai')model=new Models.OpenAIBrowserModel({apiKey,modelId:cfg.modelId||'gpt-4o'});
+            else if(provider==='bedrock')model=new Models.BedrockBrowserModel({apiKey,region:S.cfg.bedrockRegion||'us-east-1',modelId:cfg.modelId||'us.anthropic.claude-sonnet-4-20250514-v1:0'});
+            else throw new Error(`Unknown provider: ${provider}`);
+            const agent=new window._StrandsAgent({model,tools:window._BrowserTools||[],systemPrompt:cfg.systemPrompt||'You are a mesh browser agent.',printer:false});
+            inst={agent,model};_browserAgentInstances.set(meshAgent.id,inst);
+        }
+        
+        let currentText='';
+        for await(const event of inst.agent.stream(prompt)){
+            if(!event||!event.type)continue;
+            if(event.type==='modelContentBlockDeltaEvent'&&event.delta?.type==='textDelta'){
+                currentText+=event.delta.text;
+                meshAgent.streamText=currentText;
+                schedRender(meshAgent.id);
+                // Stream chunk back to relay for zenoh
+                if(S.relay&&S.relayOk&&zenohRequesterId){
+                    S.relay.send(JSON.stringify({type:'browser_stream_chunk',turn_id:turnId,zenoh_requester_id:zenohRequesterId,data:event.delta.text}));
+                }
+            }
+        }
+        
+        const ft=currentText.trim();
+        if(ft)meshAgent.messages.push({role:'assistant',content:ft});
+        meshAgent.streaming=false;meshAgent.streamText='';meshAgent.streamTools=[];meshAgent.status='ready';
+        
+        // Send final response back to relay
+        if(S.relay&&S.relayOk){
+            S.relay.send(JSON.stringify({type:'browser_invoke_response',turn_id:turnId,response:ft,requester_ws_id:fromWsId,zenoh_requester_id:zenohRequesterId}));
+        }
+        addRing(meshAgent.id,'browser',ft.slice(0,150));
+    }catch(e){
+        meshAgent.messages.push({role:'assistant',content:`❌ ${e.message}`});
+        meshAgent.streaming=false;meshAgent.status='failed';
+        if(S.relay&&S.relayOk){
+            S.relay.send(JSON.stringify({type:'browser_invoke_response',turn_id:turnId,response:`❌ ${e.message}`,requester_ws_id:fromWsId,zenoh_requester_id:zenohRequesterId}));
+        }
+    }
+    updatePanel(meshAgent.id);updateUI();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function E(id){return document.getElementById(id)}
+function safeId(id){return id.replace(/[^a-zA-Z0-9_-]/g,'_')}
+function esc(t){const d=document.createElement('div');d.textContent=t;return d.innerHTML}
+function closeModal(id){E(id)?.classList.remove('active')}
+window.closeModal=closeModal;
+function toast(msg,type=''){const t=E('toast');t.textContent=msg;t.className=`toast ${type} show`;setTimeout(()=>t.classList.remove('show'),3000)}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+console.log('%c🦆 one — unified mesh','font-size:18px;font-weight:bold;color:#ff9500');
+loadCfg();
+
+// 🔑 Listen for credential changes from other tabs via AgentMesh
+window.addEventListener('agimesh:credentials',(e)=>{
+    const creds=e.detail;
+    if(creds.anthropic?.apiKey)S.cfg.anthropicKey=creds.anthropic.apiKey;
+    if(creds.openai?.apiKey)S.cfg.openaiKey=creds.openai.apiKey;
+    if(creds.bedrock?.apiKey)S.cfg.bedrockKey=creds.bedrock.apiKey;
+    if(creds.bedrock?.region)S.cfg.bedrockRegion=creds.bedrock.region;
+    // Update settings form if open
+    const ak=E('sAnthropicKey');if(ak)ak.value=S.cfg.anthropicKey||'';
+    const ok=E('sOpenaiKey');if(ok)ok.value=S.cfg.openaiKey||'';
+    const bk=E('sBedrockKey');if(bk)bk.value=S.cfg.bedrockKey||'';
+    const br=E('sBedrockRegion');if(br)br.value=S.cfg.bedrockRegion||'us-east-1';
+    _browserAgentInstances.clear();// Re-create agents with new keys
+    ensureMeshAgent();
+    toast('Credentials synced from another tab','ok');
+});
+
+// Restore virtual agents from config
+for(const cfg of S.cfg.virtualAgents||[]){
+    registerAgent({id:cfg.id,type:'virtual',name:cfg.name,color:cfg.color,status:'ready',description:(cfg.systemPrompt||'').slice(0,60)+'...',config:cfg});
+}
+// Restore browser agents from config
+for(const cfg of S.cfg.browserAgents||[]){
+    registerAgent({id:cfg.id,type:'browser',name:cfg.name,color:cfg.color,status:'ready',description:`${cfg.provider} ${cfg.modelId||DEFAULT_MODELS[cfg.provider]||''}`,config:cfg});
+}
+
+updateUI();renderRing();
+updateChatTargets();
+
+// Auto-create mesh chat agent if API key is configured
+ensureMeshAgent();
+
+// Patch local WS handler for virtual agent routing
+const _origConnectLocal=connectLocal;
+window._connectLocalPatched=false;
+const origConnLocal=connectLocal;
+function connectLocalPatched(){
+    const port=S.cfg.localPort||10001;
+    const ws=new WebSocket(`ws://localhost:${port}`);
+    ws.onopen=()=>{
+        S.localWs=ws;S.localOk=true;
+        registerAgent({id:'local:devduck',type:'local',name:'🦆 Local DevDuck',status:'ready',description:`ws://localhost:${port}`});
+        updateStatus();updateUI();
+    };
+    ws.onmessage=e=>{try{const msg=JSON.parse(e.data);handleLocalMsgV2(msg)}catch(err){console.warn('Local WS non-JSON:',e.data?.slice?.(0,100))}};
+    ws.onerror=()=>{};
+    ws.onclose=()=>{S.localOk=false;S.localWs=null;const a=S.agents.get('local:devduck');if(a)a.status='offline';updateStatus();updateUI();setTimeout(connectLocalPatched,5000)};
+}
+
+connectRelay();
+connectLocalPatched();
+
+// 🔑 Delayed credential sync after AgentMesh initializes (agent-mesh.js loads after this module)
+setTimeout(()=>{
+    if(window.AgentMesh?.getCredentials){
+        const meshCreds=window.AgentMesh.getCredentials();
+        let updated=false;
+        if(meshCreds.anthropic?.apiKey&&!S.cfg.anthropicKey){S.cfg.anthropicKey=meshCreds.anthropic.apiKey;updated=true}
+        if(meshCreds.openai?.apiKey&&!S.cfg.openaiKey){S.cfg.openaiKey=meshCreds.openai.apiKey;updated=true}
+        if(meshCreds.bedrock?.apiKey&&!S.cfg.bedrockKey){S.cfg.bedrockKey=meshCreds.bedrock.apiKey;updated=true}
+        if(meshCreds.bedrock?.region&&!S.cfg.bedrockRegion){S.cfg.bedrockRegion=meshCreds.bedrock.region;updated=true}
+        if(updated){
+            console.log('🔑 Loaded credentials from AgentMesh unified storage');
+            _browserAgentInstances.clear();
+            ensureMeshAgent();
+        }
+    }
+},600);
+
+window.S=S;window.toast=toast;
+</script>
+</body>
+</html>
