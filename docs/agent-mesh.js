@@ -16,17 +16,14 @@
     const MESH_VERSION = '2.0.0'; // SPA Navigation support
     const CHANNEL_NAME = 'agi-mesh';
     
-    // Page detection
-    const PAGES = {
-        'index.html': { id: 'single', label: 'single', icon: '◈', color: '#ffffff' },
-        'agi.html': { id: 'multi', label: 'multi', icon: '◈◈', color: '#00ff88' },
-        'sauhsoj-ii.html': { id: 'kaa', label: 'kaa', icon: '🦆', color: '#00ff88' },
-        'mesh.html': { id: 'mesh', label: 'mesh', icon: '🕸️', color: '#ff9500' }
-    };
+    // Page detection — loaded from mesh-pages.json
+    let PAGES = {};
+    const _pagesReady = fetch('mesh-pages.json', {cache:'no-cache'}).then(r => r.json()).then(j => { Object.assign(PAGES, j); }).catch(() => {});
     
     // Detect current page
     const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-    const currentPage = PAGES[currentPath] || PAGES['index.html'];
+    let currentPage = { id: 'unknown', label: currentPath, icon: '?', color: '#fff' };
+    _pagesReady.then(() => { Object.assign(currentPage, PAGES[currentPath] || Object.values(PAGES)[0] || {}); });
     
     // ═══════════════════════════════════════════════════════════════════════════
     // UNIFIED CREDENTIALS - Shared API keys across all tabs
@@ -1715,21 +1712,18 @@
         initPostMessageBridge();
         initSPANavigation(); // Initialize SPA-style navigation
         
-        // Inject nav after DOM ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                injectNavigation();
-                createRingPanel();
-                updateRingButtonState();
-                // Register tools after page is loaded (tools arrays should exist)
-                setTimeout(registerMeshTools, 500);
-            });
-        } else {
+        // Inject nav after DOM ready + pages loaded
+        const _initNav = () => _pagesReady.then(() => {
+            currentPage = PAGES[currentPath] || Object.values(PAGES)[0] || { id: 'unknown', label: currentPath, icon: '?', color: '#fff' };
             injectNavigation();
             createRingPanel();
             updateRingButtonState();
-            // Register tools after a short delay to ensure page's TOOLS are defined
             setTimeout(registerMeshTools, 500);
+        });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', _initNav);
+        } else {
+            _initNav();
         }
         
         // Also try to register tools periodically until successful
