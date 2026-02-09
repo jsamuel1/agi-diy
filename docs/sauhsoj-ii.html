@@ -1141,6 +1141,14 @@
                     <div class="form-hint">Extended thinking, betas, etc. For Anthropic/Bedrock.</div>
                 </div>
                 <div class="form-group">
+                    <label class="form-label">MCP Servers (optional)</label>
+                    <div id="spawnMcpServers"></div>
+                    <div style="display:flex;gap:4px;margin-top:4px;">
+                        <button class="btn" type="button" onclick="addMcpServerEntry('spawnMcpServers')" style="font-size:11px;padding:2px 8px;">+ Add MCP Server</button>
+                        <button class="btn" type="button" onclick="importMcpFromJson('spawnMcpServers')" style="font-size:11px;padding:2px 8px;">📋 Import JSON</button>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label class="form-label">Tools</label>
                     <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
                         <button class="btn" onclick="selectToolGroup('all')" style="font-size:11px;padding:2px 8px;">All</button>
@@ -1356,6 +1364,14 @@
                     <div class="form-hint">Extended thinking, betas, etc. For Anthropic/Bedrock.</div>
                 </div>
                 <div class="form-group">
+                    <label class="form-label">MCP Servers (optional)</label>
+                    <div id="editMcpServers"></div>
+                    <div style="display:flex;gap:4px;margin-top:4px;">
+                        <button class="btn" type="button" onclick="addMcpServerEntry('editMcpServers')" style="font-size:11px;padding:2px 8px;">+ Add MCP Server</button>
+                        <button class="btn" type="button" onclick="importMcpFromJson('editMcpServers')" style="font-size:11px;padding:2px 8px;">📋 Import JSON</button>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label class="form-label">Tools</label>
                     <div id="editToolsList" class="tools-grid"></div>
                 </div>
@@ -1420,7 +1436,7 @@
     </script>
 
     <script type="module">
-    import { Agent, tool, Model, z, BeforeModelCallEvent, AfterInvocationEvent, SlidingWindowConversationManager, BedrockModel } from './strands.js';
+    import { Agent, tool, Model, z, BeforeModelCallEvent, AfterInvocationEvent, SlidingWindowConversationManager, BedrockModel, McpClient, StreamableHTTPClientTransport } from './strands.js?v=2';
     
     // ╔═══════════════════════════════════════════════════════════════════════════╗
     // ║  agi.html — Multi-Agent System                                          ║
@@ -3600,6 +3616,11 @@ Example - create a tool that gets weather:
             const customTools = buildCustomTools();
             const allTools = [...selectedTools, ...customTools];
             
+            // Connect MCP servers if configured
+            const mcpServers = getMcpServersConfig('spawnMcpServers');
+            const { clients: mcpClients, toolNames: mcpToolNames, tools: mcpTools } = await connectMcpServers(mcpServers);
+            allTools.push(...mcpTools);
+            
             const agent = new Agent({
                 model,
                 tools: allTools,
@@ -3619,8 +3640,11 @@ Example - create a tool that gets weather:
                     systemPrompt, 
                     maxTokens,
                     additionalRequestFields,
-                    enabledTools: allToolsEnabled ? null : enabledTools
+                    enabledTools: allToolsEnabled ? null : enabledTools,
+                    mcpServers: mcpServers.length ? mcpServers : undefined
                 },
+                mcpClients,
+                mcpToolNames,
                 messages: [],
                 status: 'ready',
                 color
@@ -3683,6 +3707,12 @@ ${getRingContext()}`;
         event.stopPropagation();
         if (!confirm(`Kill agent ${agentId}?`)) return;
         
+        // Disconnect MCP clients
+        const agentData = state.agents.get(agentId);
+        if (agentData?.mcpClients) {
+            for (const c of agentData.mcpClients) c.disconnect().catch(() => {});
+        }
+        
         state.agents.delete(agentId);
         if (state.activeAgentId === agentId) {
             state.activeAgentId = state.agents.keys().next().value || null;
@@ -3713,7 +3743,7 @@ ${getRingContext()}`;
                         <span class="agent-status ${data.status}">${statusText}</span>
                     </div>
                     <div class="agent-meta">
-                        <span>${data.config.provider}</span>
+                        <span>${data.config.provider}${data.mcpToolNames?.length ? ` · ${data.mcpToolNames.length} mcp` : ''}</span>
                         <span>
                             <span class="agent-edit" onclick="openEditAgentModal('${id}', event)" title="Edit agent">✎</span>
                             <span class="agent-kill" onclick="killAgent('${id}', event)" title="Kill agent">✕</span>
@@ -4461,6 +4491,87 @@ ${getRingContext()}`;
     // MODALS — spawn, edit, settings, tool groups
     // ═══════════════════════════════════════════════════════════════════════════
     
+    // ─── MCP SERVER HELPERS ───
+    window.addMcpServerEntry = (containerId, cfg = {}) => {
+        const div = document.createElement('div');
+        div.className = 'mcp-server-entry';
+        div.style.cssText = 'border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;display:grid;gap:4px;';
+        div.innerHTML = `
+            <input class="form-input mcp-url" placeholder="https://mcp-server.example.com/mcp" value="${cfg.url || ''}" style="font-size:12px;">
+            <input class="form-input mcp-token" placeholder="Bearer token (optional)" value="${cfg.bearerToken || ''}" style="font-size:12px;">
+            <div style="display:flex;gap:6px;align-items:center;">
+                <input class="form-input mcp-filter" placeholder="Tool filter regexps (comma-sep) or empty=all" value="${cfg.toolFilter && cfg.toolFilter !== 'all' ? cfg.toolFilter.join(', ') : ''}" style="font-size:12px;flex:1;">
+                <label style="font-size:11px;white-space:nowrap;display:flex;align-items:center;gap:3px;">
+                    <input type="checkbox" class="mcp-agentcore" ${cfg.isAgentCore ? 'checked' : ''}> AgentCore
+                </label>
+                <button class="btn" type="button" onclick="this.closest('.mcp-server-entry').remove()" style="font-size:11px;padding:1px 6px;">✕</button>
+            </div>`;
+        document.getElementById(containerId).appendChild(div);
+    };
+
+    function getMcpServersConfig(containerId) {
+        return [...document.getElementById(containerId).querySelectorAll('.mcp-server-entry')].map(el => {
+            const url = el.querySelector('.mcp-url').value.trim();
+            if (!url) return null;
+            const filterVal = el.querySelector('.mcp-filter').value.trim();
+            return {
+                url,
+                bearerToken: el.querySelector('.mcp-token').value.trim() || undefined,
+                toolFilter: filterVal ? filterVal.split(',').map(s => s.trim()).filter(Boolean) : 'all',
+                isAgentCore: el.querySelector('.mcp-agentcore').checked
+            };
+        }).filter(Boolean);
+    }
+
+    // Import MCP servers from kiro-cli agent JSON format
+    // Accepts full agent JSON or just the mcpServers object
+    // Only imports http-type servers (stdio not supported in browser)
+    window.importMcpFromJson = (containerId) => {
+        const json = prompt('Paste kiro-cli agent JSON (or just the mcpServers block):');
+        if (!json) return;
+        try {
+            const parsed = JSON.parse(json);
+            const servers = parsed.mcpServers || parsed; // full agent or just mcpServers
+            if (typeof servers !== 'object' || Array.isArray(servers)) throw new Error('Expected mcpServers object map');
+            let count = 0;
+            for (const [name, srv] of Object.entries(servers)) {
+                if (srv.disabled) continue;
+                // Only http type or servers with a url (skip stdio-only)
+                if (!srv.url && srv.type !== 'http') continue;
+                const url = srv.url || '';
+                if (!url) continue;
+                const bearer = srv.headers?.Authorization?.replace(/^Bearer\s+/i, '') || '';
+                addMcpServerEntry(containerId, { url, bearerToken: bearer, toolFilter: 'all', isAgentCore: url.includes('gateway.bedrock-agentcore') });
+                count++;
+            }
+            showToast(count ? `Imported ${count} HTTP MCP server${count > 1 ? 's' : ''} (stdio servers skipped)` : 'No HTTP MCP servers found in JSON', count ? 'success' : 'warning');
+        } catch (e) { showToast(`Import failed: ${e.message}`, 'error'); }
+    };
+
+    async function connectMcpServers(mcpServers) {
+        const clients = [], toolNames = [], tools = [];
+        for (const srv of mcpServers) {
+            try {
+                const opts = srv.bearerToken ? { requestInit: { headers: { 'Authorization': `Bearer ${srv.bearerToken}` } } } : {};
+                const transport = new StreamableHTTPClientTransport(srv.url, opts);
+                const client = new McpClient({ transport });
+                await client.connect();
+                if (!srv.isAgentCore) {
+                    let mcpTools = await client.listTools();
+                    if (srv.toolFilter !== 'all') mcpTools = mcpTools.filter(t => srv.toolFilter.some(p => new RegExp(p).test(t.name)));
+                    toolNames.push(...mcpTools.map(t => t.name));
+                    tools.push(...mcpTools);
+                }
+                clients.push(client);
+                showToast(`MCP: ${srv.isAgentCore ? 'gateway' : tools.length + ' tools'} from ${new URL(srv.url).hostname}`);
+            } catch (e) {
+                console.warn('MCP connect failed:', srv.url, e);
+                showToast(`MCP failed: ${e.message}`, 'error');
+            }
+        }
+        return { clients, toolNames, tools };
+    }
+
     window.openSpawnModal = () => {
         // Reset form with bedrock defaults
         document.getElementById('spawnId').value = '';
@@ -4469,6 +4580,7 @@ ${getRingContext()}`;
         document.getElementById('spawnPrompt').value = '';
         document.getElementById('spawnMaxTokens').value = String(DEFAULT_MAX_TOKENS);
         document.getElementById('spawnAdditionalFields').value = JSON.stringify(DEFAULT_BEDROCK_ADDITIONAL_FIELDS, null, 2);
+        document.getElementById('spawnMcpServers').innerHTML = '';
         
         // Update model hint
         updateSpawnModelDefaults();
@@ -4594,6 +4706,9 @@ ${getRingContext()}`;
         document.getElementById('editAdditionalFields').value = agentData.config.additionalRequestFields 
             ? JSON.stringify(agentData.config.additionalRequestFields, null, 2) 
             : '';
+        const editMcpContainer = document.getElementById('editMcpServers');
+        editMcpContainer.innerHTML = '';
+        for (const srv of agentData.config.mcpServers || []) addMcpServerEntry('editMcpServers', srv);
         
         // Update model hint
         updateEditModelDefaults();
@@ -4707,6 +4822,26 @@ ${getRingContext()}`;
             const customTools = buildCustomTools();
             const allTools = [...selectedTools, ...customTools];
             
+            // Handle MCP server changes
+            const mcpServers = getMcpServersConfig('editMcpServers');
+            const oldServers = JSON.stringify(agentData.config.mcpServers || []);
+            const newServers = JSON.stringify(mcpServers);
+            var mcpClients = agentData.mcpClients || [];
+            var mcpToolNames = agentData.mcpToolNames || [];
+            
+            if (newServers !== oldServers) {
+                for (const c of mcpClients) c.disconnect().catch(() => {});
+                const result = await connectMcpServers(mcpServers);
+                mcpClients = result.clients;
+                mcpToolNames = result.toolNames;
+                allTools.push(...result.tools);
+            } else if (mcpClients.length) {
+                // Same config — re-list tools to merge
+                for (const c of mcpClients) {
+                    try { const t = await c.listTools(); mcpToolNames.push(...t.map(x => x.name)); allTools.push(...t); } catch (e) {}
+                }
+            }
+            
             // Create new agent instance
             const agent = new Agent({
                 model,
@@ -4718,13 +4853,16 @@ ${getRingContext()}`;
             // Update agent data
             agentData.agent = agent;
             agentData.model = model;
+            agentData.mcpClients = mcpClients;
+            agentData.mcpToolNames = mcpToolNames;
             agentData.config = {
                 provider,
                 modelId: modelId || undefined,
                 systemPrompt,
                 maxTokens,
                 additionalRequestFields,
-                enabledTools: allToolsEnabled ? null : enabledTools
+                enabledTools: allToolsEnabled ? null : enabledTools,
+                mcpServers: mcpServers.length ? mcpServers : undefined
             };
             
             closeModal('editAgentModal');
@@ -4944,7 +5082,7 @@ ${getRingContext()}`;
         localStorage.setItem('agi_multi_state', JSON.stringify(data));
     }
     
-    function loadState() {
+    async function loadState() {
         try {
             const stored = localStorage.getItem('agi_multi_state');
             if (!stored) return;
@@ -4956,9 +5094,21 @@ ${getRingContext()}`;
             for (const agentData of data.agents || []) {
                 try {
                     const model = createModel(agentData.config.provider, agentData.config);
+                    const allTools = [...TOOLS, ...buildCustomTools()];
+                    var mcpClients = [];
+                    var mcpToolNames = [];
+                    
+                    // Reconnect MCP servers if configured
+                    if (agentData.config.mcpServers?.length) {
+                        const result = await connectMcpServers(agentData.config.mcpServers);
+                        mcpClients = result.clients;
+                        mcpToolNames = result.toolNames;
+                        allTools.push(...result.tools);
+                    }
+                    
                     const agent = new Agent({
                         model,
-                        tools: TOOLS,
+                        tools: allTools,
                         systemPrompt: buildSystemPrompt(agentData.id, agentData.config.systemPrompt),
                         printer: false
                     });
@@ -4967,6 +5117,8 @@ ${getRingContext()}`;
                         agent,
                         model,
                         config: agentData.config,
+                        mcpClients,
+                        mcpToolNames,
                         messages: agentData.messages || [],
                         status: 'ready',
                         color: agentData.color || state.agentColors[state.colorIndex++ % state.agentColors.length]
@@ -5120,7 +5272,7 @@ ${getRingContext()}`;
         document.addEventListener('mouseup', () => { if (dragging) { dragging = false; r.classList.remove('dragging'); document.body.style.cursor = ''; document.body.style.userSelect = ''; } });
     })();
 
-    loadState();
+    await loadState();
     updateAgentUI();
     updateRingUI();
     
