@@ -657,6 +657,14 @@
         nav.appendChild(style);
         
         document.body.appendChild(nav);
+        
+        // Hide tabs for pages that don't exist on this server
+        for (const [file, page] of Object.entries(PAGES)) {
+            if (page.id === currentPage.id) continue;
+            fetch(file, {method:'HEAD'}).then(r => {
+                if (!r.ok) { const tab = nav.querySelector(`a[href="${file}"]`); if (tab) tab.style.display = 'none'; }
+            }).catch(() => { const tab = nav.querySelector(`a[href="${file}"]`); if (tab) tab.style.display = 'none'; });
+        }
     }
     
     function updatePeerUI() {
