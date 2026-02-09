@@ -3765,6 +3765,21 @@ ${getRingContext()}`;
             targetOptions.push(`<option value="${id}">${id}</option>`);
         }
         
+        // Show remote mesh agents
+        if (window.AgentMesh?.getRemoteMeshAgents) {
+            for (const a of window.AgentMesh.getRemoteMeshAgents()) {
+                agentListHtml.push(`
+                <div class="agent-card" style="opacity:0.6;cursor:default">
+                    <div class="agent-card-header">
+                        <span class="agent-dot" style="background:#ff9500"></span>
+                        <span class="agent-name">🌐 ${a.agentId}</span>
+                        <span class="agent-status ready">${a.pageLabel || 'mesh'}</span>
+                    </div>
+                    <div class="agent-meta"><span>${a.agentType || 'remote'}</span></div>
+                </div>`);
+            }
+        }
+
         document.getElementById('agentList').innerHTML = agentListHtml.join('') || '<div style="font-size:11px;color:var(--text-tertiary);">No agents yet</div>';
         document.getElementById('mobileAgentList').innerHTML = agentListHtml.join('') || '<div style="font-size:11px;color:var(--text-tertiary);">No agents yet</div>';
         document.getElementById('targetAgent').innerHTML = targetOptions.join('');
@@ -5384,6 +5399,11 @@ ${getRingContext()}`;
         if (!window.AgentMesh?.subscribe) return;
         window.AgentMesh.subscribe('ring-update', () => updateRingUI());
         window.AgentMesh.subscribe('ring-clear', () => updateRingUI());
+        window.AgentMesh.subscribe('ping', () => updateAgentUI());
+        // Register local agents with mesh
+        for (const [id, data] of state.agents) {
+            window.AgentMesh.registerAgent?.(id, 'strands', { model: data.config?.provider, status: data.status });
+        }
         // Pull credentials from mesh if we don't have them
         const mc = window.AgentMesh.getCredentials?.();
         if (mc) {

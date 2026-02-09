@@ -20,6 +20,7 @@
     const PAGES = {
         'index.html': { id: 'single', label: 'single', icon: '◈', color: '#ffffff' },
         'agi.html': { id: 'multi', label: 'multi', icon: '◈◈', color: '#00ff88' },
+        'sauhsoj-ii.html': { id: 'kaa', label: 'kaa', icon: '🦆', color: '#00ff88' },
         'mesh.html': { id: 'mesh', label: 'mesh', icon: '🕸️', color: '#ff9500' }
     };
     
