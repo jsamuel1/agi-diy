@@ -1,3 +1,4 @@
 sdk-typescript/
 node_modules/
 package-lock.json
+p2p-server/.bedrock_agentcore.yaml
