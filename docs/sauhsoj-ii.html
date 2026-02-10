@@ -3740,17 +3740,15 @@ ${getRingContext()}`;
         const hasAnthropic = state.credentials.anthropic.apiKey;
         const hasOpenAI = state.credentials.openai.apiKey;
         const hasBedrock = state.credentials.bedrock.apiKey;
+        const hasCompat = state.credentials.openai_compatible?.baseUrl;
         
-        if (!hasAnthropic && !hasOpenAI && !hasBedrock) {
-            console.log('No API keys configured - please add credentials in settings');
-            return;
-        }
-        
-        // Determine which provider to use (priority: bedrock > anthropic > openai)
-        let provider = 'bedrock';
+        // Determine which provider to use (priority: bedrock > anthropic > openai > compat > webllm)
+        let provider;
         if (hasBedrock) provider = 'bedrock';
         else if (hasAnthropic) provider = 'anthropic';
         else if (hasOpenAI) provider = 'openai';
+        else if (hasCompat) provider = 'openai_compatible';
+        else provider = 'webllm';
         
         try {
             // Use bedrock defaults with extended thinking
