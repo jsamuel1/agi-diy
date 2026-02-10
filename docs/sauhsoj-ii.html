@@ -5022,32 +5022,33 @@ ${getRingContext()}`;
         const buf = await crypto.subtle.digest('SHA-256', typeof data === 'string' ? _enc.encode(data) : data);
         return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
     }
+    function _uriEncode(str) {
+        // SigV4 URI encoding: encode everything except A-Za-z0-9-_.~
+        return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+    }
     async function generateAgentCorePresignedUrl(accessKeyId, secretAccessKey, sessionToken, region, runtimeArn, expires = 300) {
         const service = 'bedrock-agentcore';
         const host = `${service}.${region}.amazonaws.com`;
-        const encodedArn = encodeURIComponent(runtimeArn);
-        const path = `/runtimes/${encodedArn}/ws`;
+        const path = `/runtimes/${_uriEncode(runtimeArn)}/ws`;
         const sessionId = crypto.randomUUID();
         const now = new Date();
         const dateStamp = now.toISOString().replace(/[-:]/g, '').slice(0, 8);
         const amzDate = dateStamp + 'T' + now.toISOString().replace(/[-:]/g, '').slice(9, 15) + 'Z';
         const credential = `${accessKeyId}/${dateStamp}/${region}/${service}/aws4_request`;
-        // Query params (must be sorted)
-        const params = new URLSearchParams();
-        params.set('X-Amz-Algorithm', 'AWS4-HMAC-SHA256');
-        params.set('X-Amz-Credential', credential);
-        params.set('X-Amz-Date', amzDate);
-        params.set('X-Amz-Expires', String(expires));
-        if (sessionToken) params.set('X-Amz-Security-Token', sessionToken);
-        params.set('X-Amz-SignedHeaders', 'host');
-        params.set('X-Amzn-Bedrock-AgentCore-Runtime-Session-Id', sessionId);
-        params.sort();
-        const canonicalQs = params.toString().replace(/\+/g, '%20');
-        // Canonical request
-        const canonical = `GET\n${path}\n${canonicalQs}\nhost:${host}\n\nhost\n${'UNSIGNED-PAYLOAD'}`;
+        // Build sorted query params with SigV4-compliant encoding
+        const qp = [
+            ['X-Amz-Algorithm', 'AWS4-HMAC-SHA256'],
+            ['X-Amz-Credential', credential],
+            ['X-Amz-Date', amzDate],
+            ['X-Amz-Expires', String(expires)],
+            ...(sessionToken ? [['X-Amz-Security-Token', sessionToken]] : []),
+            ['X-Amz-SignedHeaders', 'host'],
+            ['X-Amzn-Bedrock-AgentCore-Runtime-Session-Id', sessionId],
+        ].sort((a, b) => a[0] < b[0] ? -1 : 1);
+        const canonicalQs = qp.map(([k, v]) => `${_uriEncode(k)}=${_uriEncode(v)}`).join('&');
+        const canonical = `GET\n${path}\n${canonicalQs}\nhost:${host}\n\nhost\nUNSIGNED-PAYLOAD`;
         const canonicalHash = await _sha256hex(canonical);
         const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${dateStamp}/${region}/${service}/aws4_request\n${canonicalHash}`;
-        // Signing key
         let key = await _hmac('AWS4' + secretAccessKey, dateStamp);
         key = await _hmac(key, region);
         key = await _hmac(key, service);
