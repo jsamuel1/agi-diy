@@ -1281,6 +1281,15 @@
                         <div class="form-hint">WebSocket URL for cross-browser/device P2P</div>
                     </div>
                     <div class="form-group">
+                        <label class="form-label">AgentCore Relay</label>
+                        <input type="text" class="form-input" id="agentcoreArn" placeholder="arn:aws:bedrock-agentcore:us-east-1:123456:runtime/relay-xxx" style="margin-bottom:6px;">
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-secondary" id="generatePresignedUrl" style="font-size:11px;padding:4px 10px;">Generate Presigned URL</button>
+                            <span id="presignedStatus" style="font-size:11px;color:var(--text-tertiary);align-self:center;"></span>
+                        </div>
+                        <div class="form-hint">Enter ARN → Generate → auto-fills Relay URL above. Requires <code>pip install bedrock-agentcore</code> locally or paste a presigned URL directly.</div>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Instance ID</label>
                         <input type="text" class="form-input" id="instanceId" placeholder="Leave blank for auto-generated">
                         <div class="form-hint">Unique identifier for this browser instance</div>

@@ -1,126 +1,71 @@
 # P2P WebSocket Relay Server
 
-WebSocket message broker for agi.diy mesh networking. Deployed to AWS via [Bedrock AgentCore](https://github.com/aws/bedrock-agentcore-starter-toolkit) with OAuth authentication.
+WebSocket message broker for agi.diy mesh networking. Deployed to AWS via [Bedrock AgentCore](https://github.com/aws/bedrock-agentcore-starter-toolkit) with Cognito authentication.
 
 ## Quick Start
 
 ```bash
-pip install bedrock-agentcore-starter-toolkit websockets
+pip install bedrock-agentcore-starter-toolkit
 
-# Configure
 cd p2p-server
 agentcore configure --entrypoint relay.py --non-interactive
-
-# Test locally
-agentcore launch --local
-# → ws://localhost:8080
-
-# Deploy to AWS
-agentcore launch
-# → Returns agent runtime ARN + WebSocket URL
+agentcore launch --local   # test locally on ws://localhost:8080/ws
+agentcore launch           # deploy to AWS
 ```
 
-## OAuth Authentication
+## Authentication
 
-AgentCore validates JWT bearer tokens at the gateway before requests reach the relay. Any OIDC-compliant provider works (Cognito, Okta, Microsoft Entra ID). Below uses Cognito as an example.
+AgentCore uses IAM SigV4 for WebSocket auth. Browsers can't set custom HTTP headers on WebSocket connections, so we use **Cognito Identity Pool** to bridge OAuth login → temporary AWS credentials → SigV4 presigned URL.
 
-### 1. Create a Cognito User Pool
-
-```bash
-# Create user pool
-aws cognito-idp create-user-pool \
-  --pool-name agi-diy-relay \
-  --auto-verified-attributes email \
-  --query 'UserPool.Id' --output text
-# → us-east-1_XXXXXXXXX
-
-# Create app client (public — for browser use, no secret)
-aws cognito-idp create-user-pool-client \
-  --user-pool-id us-east-1_XXXXXXXXX \
-  --client-name agi-diy-web \
-  --explicit-auth-flows ALLOW_USER_SRP_AUTH ALLOW_REFRESH_TOKEN_AUTH \
-  --supported-identity-providers COGNITO \
-  --allowed-o-auth-flows implicit \
-  --allowed-o-auth-scopes openid \
-  --callback-urls '["https://agi.diy/callback"]' \
-  --query 'UserPoolClient.ClientId' --output text
-# → YYYYYYYYYYYYYYYYYYYYYYYYYYYY
-
-# Create a domain for the hosted UI
-aws cognito-idp create-user-pool-domain \
-  --user-pool-id us-east-1_XXXXXXXXX \
-  --domain agi-diy-relay
-
-# Create a test user
-aws cognito-idp admin-create-user \
-  --user-pool-id us-east-1_XXXXXXXXX \
-  --username testuser \
-  --temporary-password 'TempPass123!' \
-  --user-attributes Name=email,Value=you@example.com
+```text
+User → Cognito login → id_token → Identity Pool → temp AWS creds → SigV4 presigned URL → WebSocket
 ```
 
-### 2. Configure AgentCore with OAuth
+### Prerequisites
 
-Run `agentcore configure` interactively and select JWT authorization, or pass the config directly:
+- A Cognito User Pool with an app client (implicit flow, openid scope)
+- A Cognito Identity Pool linked to the User Pool, with an authenticated IAM role that allows `bedrock-agentcore:InvokeAgentRuntime`
 
-```bash
-agentcore configure --entrypoint relay.py
-# When prompted for authorization, choose "JWT Bearer Token" and provide:
-#   Discovery URL: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_XXXXXXXXX/.well-known/openid-configuration
-#   Allowed Clients: YYYYYYYYYYYYYYYYYYYYYYYYYYYY
-```
-
-Or create/edit `.bedrock_agentcore.yaml` to include:
-
-```yaml
-authorizer_configuration:
-  custom_jwt_authorizer:
-    discovery_url: https://cognito-idp.us-east-1.amazonaws.com/us-east-1_XXXXXXXXX/.well-known/openid-configuration
-    allowed_clients:
-      - YYYYYYYYYYYYYYYYYYYYYYYYYYYY
-```
-
-Then deploy:
-
-```bash
-agentcore launch
-# Note the agent runtime ARN from the output
-```
-
-### 3. Connect from the Browser
-
-Get a token from Cognito's hosted UI, then connect to the relay:
+### Browser Flow
 
 ```javascript
-// Redirect user to Cognito login
-const COGNITO_DOMAIN = 'agi-diy-relay.auth.us-east-1.amazoncognito.com';
-const CLIENT_ID = 'YYYYYYYYYYYYYYYYYYYYYYYYYYYY';
-const CALLBACK = encodeURIComponent('https://agi.diy/callback');
-window.location = `https://${COGNITO_DOMAIN}/oauth2/authorize?response_type=token&client_id=${CLIENT_ID}&redirect_uri=${CALLBACK}&scope=openid`;
+const IDENTITY_POOL_ID = 'us-east-1:xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+const USER_POOL_PROVIDER = 'cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_XXXXXXXXX';
+const AGENT_ARN = 'arn:aws:bedrock-agentcore:us-east-1:123456789012:runtime/relay-XXXXXXXXXX';
 
-// After redirect, extract token from URL hash
-const token = new URLSearchParams(window.location.hash.substring(1)).get('id_token');
+// 1. User logs in via Cognito hosted UI → get id_token from URL hash
+// 2. Exchange id_token for AWS credentials:
+const idResp = await fetch('https://cognito-identity.us-east-1.amazonaws.com/', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/x-amz-json-1.1', 'X-Amz-Target': 'AWSCognitoIdentityService.GetId' },
+  body: JSON.stringify({ IdentityPoolId: IDENTITY_POOL_ID, Logins: { [USER_POOL_PROVIDER]: idToken } })
+});
+const { IdentityId } = await idResp.json();
 
-// Connect to relay with token
-const ws = new WebSocket(`wss://<runtime-endpoint>/ws?token=${token}`);
+const credsResp = await fetch('https://cognito-identity.us-east-1.amazonaws.com/', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/x-amz-json-1.1', 'X-Amz-Target': 'AWSCognitoIdentityService.GetCredentialsForIdentity' },
+  body: JSON.stringify({ IdentityId, Logins: { [USER_POOL_PROVIDER]: idToken } })
+});
+const { Credentials } = await credsResp.json();
+
+// 3. SigV4-sign the WebSocket URL using temp credentials
+// 4. new WebSocket(presignedUrl)
 ```
 
-### 4. Connect from Python
+### Python Client
 
 ```python
 from bedrock_agentcore.runtime import AgentCoreRuntimeClient
 
 client = AgentCoreRuntimeClient(region="us-east-1")
-ws_url, headers = client.generate_ws_connection_oauth(
-    runtime_arn="<agent-runtime-arn>",
-    bearer_token="<your-jwt-token>"
-)
-# Use ws_url + headers with any WebSocket client
+url = client.generate_presigned_url(runtime_arn="<agent-runtime-arn>")
+# Connect with any WebSocket library
 ```
 
 ## Protocol
 
-Messages are JSON with this base shape:
+Messages are JSON:
 
 ```json
 {
@@ -138,10 +83,7 @@ Messages are JSON with this base shape:
 | `heartbeat` | Server only (updates last_seen) |
 | `broadcast` | All peers except sender |
 | `direct` | Single target peer |
-| `stream` | All peers except sender |
-| `ack` | All peers except sender |
-| `turn_end` | All peers except sender |
-| `error` | All peers except sender |
+| `stream`, `ack`, `turn_end`, `error` | All peers except sender |
 
 Peers that miss heartbeats for 30s are reaped automatically.
 
@@ -149,8 +91,10 @@ Peers that miss heartbeats for 30s are reaped automatically.
 
 ```text
 Browser A ──ws──┐
-Browser B ──ws──┤── AgentCore Gateway (OAuth) ──→ relay.py (port 8080)
+Browser B ──ws──┤── AgentCore (SigV4) ──→ relay.py (/ws on port 8080)
 Browser C ──ws──┘
+        ↑
+  Cognito login → Identity Pool → temp AWS creds → presigned URL
 ```
 
 The relay is stateless between restarts — peers reconnect and re-announce via `presence`.
