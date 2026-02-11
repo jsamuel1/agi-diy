@@ -96,7 +96,35 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 .wl-entry .wl-msg { font-size: 11px; line-height: 1.5; }
 
 /* ── Mobile ── */
-@media (max-width: 768px) { .layout { flex-direction: column; } }
+@media (max-width: 768px) {
+  .layout { flex-direction: column; }
+  .add-bar { gap: 4px; flex-wrap: wrap; height: auto; padding: 6px; }
+  .add-btn { font-size: 10px; padding: 3px 8px; }
+}
+@media (max-width: 480px) {
+  .block-header { padding: 0 6px; }
+  .block-title { font-size: 10px; }
+}
+
+/* ── Animations ── */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes completePop { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+.ring-entry { animation: fadeIn .2s ease-out; }
+.task-item { animation: slideIn .15s ease-out; }
+.task-item[data-status="complete"] { animation: completePop .3s ease-out; }
+.agent-card { animation: fadeIn .2s ease-out; }
+.msg { animation: fadeIn .2s ease-out; }
+
+/* ── Working Indicator ── */
+.typing-dots { display: inline-flex; gap: 3px; padding: 4px 0; }
+.typing-dots span { width: 5px; height: 5px; border-radius: 50%; background: var(--text-muted); animation: typingBounce .6s infinite; }
+.typing-dots span:nth-child(2) { animation-delay: .15s; }
+.typing-dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes typingBounce { 0%,100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+
+/* ── Task Elapsed Time ── */
+.task-elapsed { font-size: 9px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -406,6 +434,7 @@ function refreshUI() {
     const body = bl.querySelector('.block-body');
     if (cfg.type === 'agents') renderAgentsBlock(body);
     else if (cfg.type === 'ring') renderRingBlock(body);
+    else if (cfg.type === 'tasks') renderTasksBlock(body);
   });
 }
 
@@ -494,6 +523,12 @@ async function sendChatMessage(text, blockId) {
 
 function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+function formatElapsed(start, end) {
+  const s = Math.floor((end - start) / 1000);
+  if (s < 60) return `${s}s`;
+  return `${Math.floor(s/60)}m${s%60}s`;
+}
+
 // ── Mock Data (fallback when no mesh) ──
 function loadMockData() {
   [
@@ -543,7 +578,7 @@ function renderAgentsBlock(container) {
         <div class="agent-name">${a.id}</div>
         <div class="agent-model">${a.model}</div>
       </div>
-      <div class="agent-badge" style="color:${a.status==='processing'?a.color:'var(--text-muted)'}">${a.status}</div>
+      <div class="agent-badge" style="color:${a.status==='processing'?a.color:'var(--text-muted)'}">${a.status === 'processing' ? '<span class="typing-dots"><span></span><span></span><span></span></span>' : a.status}</div>
     </div>
   `).join('') + '</div>';
 }
@@ -561,6 +596,7 @@ function renderTasksBlock(container) {
         <div class="task-meta">
           ${task.agentId ? `<span style="color:${color}">${task.agentId}</span>` : '<span>unassigned</span>'}
           ${task.worklog.length ? `<span>${task.worklog.length} logs</span>` : ''}
+          ${task.worklog.length ? `<span class="task-elapsed">${formatElapsed(task.worklog[0].ts, task.status === 'complete' ? task.worklog[task.worklog.length-1].ts : Date.now())}</span>` : ''}
         </div>
       </div>
     </div>`);
