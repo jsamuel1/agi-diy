@@ -118,6 +118,85 @@ if (typeof Symbol.asyncDispose === 'undefined') Symbol.asyncDispose = Symbol('Sy
 </script>
 <script type="module">
 import { Agent, tool, z, AnthropicModel, OpenAIModel, BedrockModel } from './strands.js';
+
+// ═══ TASK TOOLS ═══
+let taskIdCounter = 100;
+
+const createTaskTool = tool({
+  name: 'create_task',
+  description: 'Create a new task. Use parentId to create sub-tasks for hierarchical decomposition.',
+  inputSchema: z.object({
+    title: z.string().describe('Task title'),
+    parentId: z.string().optional().describe('Parent task ID for sub-tasks'),
+    agentId: z.string().optional().describe('Agent to assign'),
+    source: z.string().optional().describe('Origin: manual, jira, slack, email'),
+  }),
+  callback: (input) => {
+    const id = `t${taskIdCounter++}`;
+    const task = { id, title: input.title, status: 'pending', agentId: input.agentId || null, parentId: input.parentId || null, children: [], worklog: [], source: input.source || 'manual' };
+    state.tasks.set(id, task);
+    if (input.parentId) { const p = state.tasks.get(input.parentId); if (p) p.children.push(id); }
+    refreshUI(); saveTasks();
+    return JSON.stringify({ id, title: task.title, status: task.status });
+  }
+});
+
+const updateTaskTool = tool({
+  name: 'update_task',
+  description: 'Update task status or add a worklog entry.',
+  inputSchema: z.object({
+    taskId: z.string().describe('Task ID'),
+    status: z.enum(['pending','in-progress','waiting','complete','failed']).optional(),
+    worklog: z.string().optional().describe('Worklog message to append'),
+    agentId: z.string().optional().describe('Reassign to agent'),
+  }),
+  callback: (input) => {
+    const t = state.tasks.get(input.taskId);
+    if (!t) return JSON.stringify({ error: 'Task not found' });
+    if (input.status) t.status = input.status;
+    if (input.agentId) t.agentId = input.agentId;
+    if (input.worklog) t.worklog.push({ ts: Date.now(), agentId: input.agentId || t.agentId || 'system', msg: input.worklog });
+    refreshUI(); saveTasks();
+    return JSON.stringify({ id: t.id, status: t.status, agentId: t.agentId });
+  }
+});
+
+const listTasksTool = tool({
+  name: 'list_tasks',
+  description: 'List tasks, optionally filtered by status or agent.',
+  inputSchema: z.object({
+    status: z.string().optional(),
+    agentId: z.string().optional(),
+  }),
+  callback: (input) => {
+    let tasks = [...state.tasks.values()];
+    if (input.status) tasks = tasks.filter(t => t.status === input.status);
+    if (input.agentId) tasks = tasks.filter(t => t.agentId === input.agentId);
+    return JSON.stringify(tasks.map(t => ({ id: t.id, title: t.title, status: t.status, agentId: t.agentId, parentId: t.parentId })));
+  }
+});
+
+const claimTaskTool = tool({
+  name: 'claim_task',
+  description: 'Claim an unassigned task for an agent and set it to in-progress.',
+  inputSchema: z.object({
+    taskId: z.string(),
+    agentId: z.string(),
+  }),
+  callback: (input) => {
+    const t = state.tasks.get(input.taskId);
+    if (!t) return JSON.stringify({ error: 'Task not found' });
+    t.agentId = input.agentId; t.status = 'in-progress';
+    t.worklog.push({ ts: Date.now(), agentId: input.agentId, msg: `Claimed by ${input.agentId}` });
+    refreshUI(); saveTasks();
+    return JSON.stringify({ id: t.id, status: t.status, agentId: t.agentId });
+  }
+});
+
+const TASK_TOOLS = [createTaskTool, updateTaskTool, listTasksTool, claimTaskTool];
+
+function saveTasks() { try { localStorage.setItem('dashboard_tasks', JSON.stringify([...state.tasks.values()])); } catch(e) {} }
+function loadTasks() { try { const d = JSON.parse(localStorage.getItem('dashboard_tasks')); if (d?.length) { state.tasks.clear(); d.forEach(t => state.tasks.set(t.id, t)); return true; } } catch(e) {} return false; }
 // ═══════════════════════════════════════════════════════════════
 // SECTION INDEX
 // STATE ............. Constants, mock data, layout config
@@ -247,7 +326,7 @@ function ensureChatAgent() {
   if (!provider) return false;
   if (state.chatAgent) return true;
   const model = createModel(provider, { maxTokens: 8192 });
-  state.chatAgent = new Agent({ model, tools: [], systemPrompt: 'You are a helpful chat agent in a multi-agent mesh dashboard. Be concise.', printer: false });
+  state.chatAgent = new Agent({ model, tools: TASK_TOOLS, systemPrompt: `You are a chat agent in a multi-agent mesh dashboard. You can create, update, list, and claim tasks. Use create_task to decompose goals into sub-tasks (set parentId). Use update_task to change status and add worklog entries. Use claim_task to assign agents. Be concise.`, printer: false });
   // Register in mesh
   if (window.AgentMesh?.registerAgent) window.AgentMesh.registerAgent('dashboard-chat', 'browser', { model: provider });
   state.agents.set('dashboard-chat', { id: 'dashboard-chat', model: provider, status: 'ready', color: COLORS[state.colorIndex++ % COLORS.length] });
@@ -286,7 +365,7 @@ async function sendChatMessage(text, blockId) {
     // Fresh agent per message for parallelism
     const provider = detectProvider();
     const model = createModel(provider, { maxTokens: 8192 });
-    const agent = new Agent({ model, tools: [], systemPrompt: 'You are a helpful chat agent in a multi-agent mesh dashboard. Be concise.', printer: false });
+    const agent = new Agent({ model, tools: TASK_TOOLS, systemPrompt: `You are a chat agent in a multi-agent mesh dashboard. You can create, update, list, and claim tasks. Use create_task to decompose goals into sub-tasks (set parentId). Use update_task to change status and add worklog entries. Use claim_task to assign agents. Be concise.`, printer: false });
     // Inject history
     for (const m of state.chatMessages.slice(-20)) {
       agent.messages.push({ role: m.role, content: [{ type: 'textBlock', text: m.content }] });
@@ -558,7 +637,12 @@ function updateWallClock() {
 
 // ═══ INIT ═══
 loadCredentials();
-loadMockData(); // Always load mock tasks for demo; agents merge with mesh
+if (!loadTasks()) loadMockData(); // Persisted tasks or mock fallback
+else { // Still need mock agents for display
+  loadMockData();
+  // Re-load persisted tasks over mock
+  loadTasks();
+}
 syncAgentsFromMesh();
 syncRingFromMesh();
 buildLayout();
