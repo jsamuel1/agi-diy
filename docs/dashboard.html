@@ -111,11 +111,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 </div>
 <div class="wall-clock" id="wallClock">⏱ 0:00</div>
 
+<script src="agent-mesh.js"></script>
 <script>
 if (typeof Symbol.dispose === 'undefined') Symbol.dispose = Symbol('Symbol.dispose');
 if (typeof Symbol.asyncDispose === 'undefined') Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
 </script>
 <script type="module">
+import { Agent, tool, z, AnthropicModel, OpenAIModel, BedrockModel } from './strands.js';
 // ═══════════════════════════════════════════════════════════════
 // SECTION INDEX
 // STATE ............. Constants, mock data, layout config
@@ -144,6 +146,10 @@ const state = {
   tasks: new Map(),
   ringBuffer: [],
   wallClockStart: null,
+  chatAgent: null,
+  chatMessages: [],
+  credentials: {},
+  colorIndex: 0,
   layout: [
     { id:'col-left', type:'col', flex:1, children:[
       { id:'b-agents', type:'agents', flex:1 },
@@ -156,7 +162,163 @@ const state = {
   maximizedBlock: null,
 };
 
-// ── Mock Data ──
+const DEFAULT_MAX_TOKENS = 60000;
+
+// ── Credentials & Model Factory ──
+function loadCredentials() {
+  if (window.AgentMesh?.getCredentials) {
+    state.credentials = window.AgentMesh.getCredentials();
+  } else {
+    try { state.credentials = JSON.parse(localStorage.getItem('agi_shared_credentials') || '{}'); } catch(e) {}
+  }
+}
+
+function createModel(provider, cfg = {}) {
+  const creds = state.credentials[provider] || {};
+  if (provider === 'anthropic') return new AnthropicModel({ apiKey: creds.apiKey, modelId: cfg.modelId || creds.model || 'claude-sonnet-4-20250514', maxTokens: cfg.maxTokens || DEFAULT_MAX_TOKENS });
+  if (provider === 'openai') return new OpenAIModel({ apiKey: creds.apiKey, modelId: cfg.modelId || creds.model || 'gpt-4o', maxTokens: cfg.maxTokens || DEFAULT_MAX_TOKENS });
+  if (provider === 'bedrock') return new BedrockModel({ apiKey: creds.apiKey, region: creds.region || 'us-east-1', modelId: cfg.modelId || creds.model || 'us.anthropic.claude-sonnet-4-20250514-v1:0', maxTokens: cfg.maxTokens || DEFAULT_MAX_TOKENS });
+  throw new Error(`Unknown provider: ${provider}`);
+}
+
+function detectProvider() {
+  const c = state.credentials;
+  if (c.anthropic?.apiKey) return 'anthropic';
+  if (c.openai?.apiKey) return 'openai';
+  if (c.bedrock?.apiKey) return 'bedrock';
+  return null;
+}
+
+// ── Mesh Sync ──
+function syncAgentsFromMesh() {
+  if (!window.AgentMesh) return;
+  const meshAgents = window.AgentMesh.getAllMeshAgents?.() || [];
+  for (const ma of meshAgents) {
+    if (!state.agents.has(ma.agentId)) {
+      state.agents.set(ma.agentId, {
+        id: ma.agentId, model: ma.model || ma.agentType || '?',
+        status: ma.status || 'idle',
+        color: COLORS[state.colorIndex++ % COLORS.length],
+        remote: true,
+      });
+    } else {
+      const a = state.agents.get(ma.agentId);
+      if (ma.status) a.status = ma.status;
+    }
+  }
+}
+
+function syncRingFromMesh() {
+  if (!window.AgentMesh?.getRingContext) return;
+  const meshRing = window.AgentMesh.getRingContext();
+  for (const entry of meshRing) {
+    const isDup = state.ringBuffer.some(e => e.agentId === entry.agentId && Math.abs(e.ts - entry.timestamp) < 5000);
+    if (!isDup) {
+      state.ringBuffer.push({ agentId: entry.agentId, content: entry.text, ts: entry.timestamp, mesh: true });
+    }
+  }
+  if (state.ringBuffer.length > 100) state.ringBuffer.splice(0, state.ringBuffer.length - 100);
+}
+
+function refreshUI() {
+  syncAgentsFromMesh();
+  syncRingFromMesh();
+  // Re-render agent and ring blocks in-place
+  document.querySelectorAll('.block').forEach(bl => {
+    const cfg = findBlockCfg(bl.id);
+    if (!cfg) return;
+    const body = bl.querySelector('.block-body');
+    if (cfg.type === 'agents') renderAgentsBlock(body);
+    else if (cfg.type === 'ring') renderRingBlock(body);
+  });
+}
+
+function findBlockCfg(id) {
+  for (const n of state.layout) {
+    if (n.id === id) return n;
+    if (n.children) { const c = n.children.find(x => x.id === id); if (c) return c; }
+  }
+  return null;
+}
+
+// ── Chat Agent ──
+function ensureChatAgent() {
+  const provider = detectProvider();
+  if (!provider) return false;
+  if (state.chatAgent) return true;
+  const model = createModel(provider, { maxTokens: 8192 });
+  state.chatAgent = new Agent({ model, tools: [], systemPrompt: 'You are a helpful chat agent in a multi-agent mesh dashboard. Be concise.', printer: false });
+  // Register in mesh
+  if (window.AgentMesh?.registerAgent) window.AgentMesh.registerAgent('dashboard-chat', 'browser', { model: provider });
+  state.agents.set('dashboard-chat', { id: 'dashboard-chat', model: provider, status: 'ready', color: COLORS[state.colorIndex++ % COLORS.length] });
+  return true;
+}
+
+async function sendChatMessage(text, blockId) {
+  if (!text.trim()) return;
+  if (!ensureChatAgent()) { alert('No API key configured. Set keys in another agi.diy tab (Settings).'); return; }
+
+  const msgEl = document.querySelector(`#msg-${blockId}`);
+  if (!msgEl) return;
+  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Show user message
+  msgEl.insertAdjacentHTML('beforeend', `<div class="msg user">${escapeHtml(text)}<div class="msg-time">${time}</div></div>`);
+  msgEl.scrollTop = msgEl.scrollHeight;
+
+  // Add to ring
+  state.ringBuffer.push({ agentId: 'user', content: text.slice(0, 300), ts: Date.now() });
+  if (window.AgentMesh?.addToRingContext) window.AgentMesh.addToRingContext('dashboard-chat', 'browser', `[User] ${text.slice(0, 300)}`);
+
+  // Update agent status
+  const agentData = state.agents.get('dashboard-chat');
+  if (agentData) agentData.status = 'processing';
+  refreshUI();
+
+  // Stream response
+  const streamDiv = document.createElement('div');
+  streamDiv.className = 'msg assistant';
+  streamDiv.innerHTML = `<div class="msg-agent" style="color:${agentData?.color || 'var(--green)'}">dashboard-chat</div><span class="stream-text"></span>`;
+  msgEl.appendChild(streamDiv);
+
+  try {
+    let currentText = '';
+    // Fresh agent per message for parallelism
+    const provider = detectProvider();
+    const model = createModel(provider, { maxTokens: 8192 });
+    const agent = new Agent({ model, tools: [], systemPrompt: 'You are a helpful chat agent in a multi-agent mesh dashboard. Be concise.', printer: false });
+    // Inject history
+    for (const m of state.chatMessages.slice(-20)) {
+      agent.messages.push({ role: m.role, content: [{ type: 'textBlock', text: m.content }] });
+    }
+
+    for await (const event of agent.stream(text)) {
+      if (event?.type === 'modelContentBlockDeltaEvent' && event.delta?.type === 'textDelta') {
+        currentText += event.delta.text;
+        streamDiv.querySelector('.stream-text').textContent = currentText;
+        msgEl.scrollTop = msgEl.scrollHeight;
+      }
+    }
+
+    streamDiv.querySelector('.stream-text').textContent = currentText;
+    streamDiv.insertAdjacentHTML('beforeend', `<div class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`);
+    state.chatMessages.push({ role: 'user', content: text }, { role: 'assistant', content: currentText });
+
+    // Ring buffer
+    state.ringBuffer.push({ agentId: 'dashboard-chat', content: currentText.slice(0, 500), ts: Date.now() });
+    if (window.AgentMesh?.addToRingContext) window.AgentMesh.addToRingContext('dashboard-chat', 'browser', currentText.slice(0, 500));
+  } catch (e) {
+    streamDiv.querySelector('.stream-text').textContent = `Error: ${e.message}`;
+    streamDiv.style.color = 'var(--red)';
+  }
+
+  if (agentData) agentData.status = 'ready';
+  refreshUI();
+}
+
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Mock Data (fallback when no mesh) ──
 function loadMockData() {
   [
     { id:'orchestrator', model:'Claude Sonnet', status:'ready', color:COLORS[0] },
@@ -164,6 +326,7 @@ function loadMockData() {
     { id:'coder', model:'GPT-4o', status:'processing', color:COLORS[2] },
     { id:'reviewer', model:'WebLLM Qwen 3B', status:'idle', color:COLORS[3] },
   ].forEach(a => state.agents.set(a.id, a));
+  state.colorIndex = 4;
 
   [
     { id:'t1', title:'Build Space Minecraft (Browser)', status:'in-progress', agentId:'orchestrator', parentId:null, children:['t1a','t1b','t1c'], worklog:[
@@ -235,29 +398,20 @@ function renderTasksBlock(container) {
 }
 
 function renderChatBlock(container) {
-  if (container.querySelector('.chat-wrap')) return; // already initialized
+  if (container.querySelector('.chat-wrap')) return;
+  const blockId = container.closest('.block').id;
   container.innerHTML = `<div class="chat-wrap">
-    <div class="messages" id="msg-${container.closest('.block').id}">
-      <div class="msg assistant">
-        <div class="msg-agent" style="color:var(--green)">orchestrator</div>
-        Ready. 4 agents online. Give me a goal and I'll decompose it into parallel tasks.
-        <div class="msg-time">2:15 PM</div>
-      </div>
-      <div class="msg user">Build Space Minecraft two ways, triage Slack, draft emails, fix auth bug.<div class="msg-time">2:15 PM</div></div>
-      <div class="msg assistant">
-        <div class="msg-agent" style="color:var(--green)">orchestrator</div>
-        Created 4 top-level tasks. Coder → Minecraft, Researcher → Slack. Auth bug already fixed ✓
-        <div class="msg-time">2:16 PM</div>
-      </div>
-    </div>
+    <div class="messages" id="msg-${blockId}"></div>
     <div class="input-area">
       <textarea placeholder="Message the mesh…" rows="1"></textarea>
       <button class="send-btn">Send</button>
     </div>
   </div>`;
   const ta = container.querySelector('textarea');
+  const send = () => { const t = ta.value; ta.value = ''; ta.style.height = 'auto'; sendChatMessage(t, blockId); };
   ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; });
-  ta.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey) e.preventDefault(); });
+  ta.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
+  container.querySelector('.send-btn').addEventListener('click', send);
 }
 
 function renderRingBlock(container) {
@@ -403,10 +557,20 @@ function updateWallClock() {
 }
 
 // ═══ INIT ═══
-loadMockData();
+loadCredentials();
+loadMockData(); // Always load mock tasks for demo; agents merge with mesh
+syncAgentsFromMesh();
+syncRingFromMesh();
 buildLayout();
 setInterval(updateWallClock, 1000);
+setInterval(refreshUI, 3000); // Poll mesh every 3s
 updateWallClock();
+
+// Subscribe to mesh events
+if (window.AgentMesh) {
+  window.AgentMesh.subscribe?.('ring-update', () => { syncRingFromMesh(); refreshUI(); });
+  window.AgentMesh.subscribe?.('ping', () => { syncAgentsFromMesh(); refreshUI(); });
+}
 </script>
 </body>
 </html>
