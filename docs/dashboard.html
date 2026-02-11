@@ -11,362 +11,402 @@
   --accent: #7c5cff; --green: #00ff88; --blue: #00aaff; --pink: #ff88ff;
   --orange: #ffaa00; --red: #ff6666; --cyan: #88ffff;
   --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --block-header: 32px;
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: var(--font); background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
-.app { display: grid; grid-template-columns: 280px 1fr 300px; height: 100vh; }
 
-/* ── Left Panel ── */
-.left-panel { background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-.panel-section { padding: 12px; }
-.panel-title { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-.panel-title .count { background: var(--bg-card); border-radius: 10px; padding: 1px 7px; font-size: 9px; color: var(--text-dim); }
+/* ── Block Layout Engine ── */
+.layout { display: flex; height: 100vh; width: 100vw; gap: 1px; background: var(--border); }
+.layout-col { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.block { background: var(--bg-panel); display: flex; flex-direction: column; min-height: 0; overflow: hidden; position: relative; }
+.block.maximized { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; }
+.block-header { height: var(--block-header); min-height: var(--block-header); display: flex; align-items: center; padding: 0 10px; gap: 6px; background: var(--bg-card); border-bottom: 1px solid var(--border); cursor: default; user-select: none; }
+.block-icon { font-size: 12px; }
+.block-title { font-size: 11px; font-weight: 600; color: var(--text-dim); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.block-btn { background: none; border: none; color: var(--text-muted); font-size: 12px; cursor: pointer; padding: 2px 4px; border-radius: 3px; line-height: 1; }
+.block-btn:hover { color: var(--text); background: var(--bg-hover); }
+.block-body { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.block-body::-webkit-scrollbar { width: 4px; }
+.block-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-/* Agents */
-.agent-list { display: flex; flex-direction: column; gap: 4px; }
-.agent-card { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer; transition: background .15s; }
+/* ── Add Block Bar ── */
+.add-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 36px; background: var(--bg-card); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 8px; z-index: 50; }
+.add-btn { background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-dim); font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.add-btn:hover { color: var(--text); border-color: var(--accent); }
+.wall-clock { font-size: 11px; color: var(--accent); font-variant-numeric: tabular-nums; position: fixed; bottom: 0; right: 12px; height: 36px; display: flex; align-items: center; z-index: 51; }
+
+/* ── Agent List ── */
+.agent-list { display: flex; flex-direction: column; gap: 2px; padding: 6px; }
+.agent-card { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 6px; cursor: pointer; transition: background .12s; }
 .agent-card:hover { background: var(--bg-hover); }
 .agent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .agent-dot.pulse { animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
 .agent-info { flex: 1; min-width: 0; }
-.agent-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-name { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .agent-model { font-size: 10px; color: var(--text-muted); }
 .agent-badge { font-size: 9px; padding: 2px 6px; border-radius: 4px; background: var(--bg); }
 
-/* Tasks */
-.task-section { flex: 1; overflow-y: auto; border-top: 1px solid var(--border); }
-.task-section::-webkit-scrollbar { width: 4px; }
-.task-section::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-.task-tree { display: flex; flex-direction: column; gap: 2px; }
-.task-item { display: flex; align-items: flex-start; gap: 8px; padding: 6px 10px; border-radius: 6px; cursor: pointer; transition: background .15s; border-left: 3px solid transparent; }
+/* ── Task Tree ── */
+.task-tree { display: flex; flex-direction: column; gap: 1px; padding: 6px; }
+.task-item { display: flex; align-items: flex-start; gap: 6px; padding: 5px 8px; border-radius: 5px; cursor: pointer; transition: background .12s; border-left: 3px solid transparent; }
 .task-item:hover { background: var(--bg-hover); }
-.task-item.depth-1 { padding-left: 28px; }
-.task-item.depth-2 { padding-left: 46px; }
-.task-status { font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+.task-item.d1 { padding-left: 22px; } .task-item.d2 { padding-left: 38px; }
+.task-status { font-size: 11px; flex-shrink: 0; margin-top: 1px; }
 .task-info { flex: 1; min-width: 0; }
-.task-title { font-size: 12px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.task-meta { font-size: 10px; color: var(--text-muted); display: flex; gap: 8px; margin-top: 2px; }
-.task-item[data-status="complete"] .task-title { color: var(--text-dim); text-decoration: line-through; }
+.task-title { font-size: 11px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-meta { font-size: 9px; color: var(--text-muted); display: flex; gap: 6px; margin-top: 1px; }
+.task-item[data-status="complete"] .task-title { color: var(--text-muted); text-decoration: line-through; }
 
-/* ── Center Panel ── */
-.center-panel { display: flex; flex-direction: column; background: var(--bg); }
-.chat-header { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.chat-header-left { display: flex; align-items: center; gap: 8px; }
-.chat-header-title { font-size: 14px; font-weight: 600; }
-.chat-header-sub { font-size: 11px; color: var(--text-muted); }
-.wall-clock { font-size: 11px; color: var(--accent); font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 4px; }
-.messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+/* ── Chat ── */
+.chat-wrap { display: flex; flex-direction: column; height: 100%; }
+.messages { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .messages::-webkit-scrollbar { width: 4px; }
 .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-.msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
-.msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
-.msg.assistant { align-self: flex-start; background: var(--bg-card); border-bottom-left-radius: 4px; }
-.msg .msg-agent { font-size: 10px; font-weight: 600; margin-bottom: 4px; }
-.msg .msg-time { font-size: 9px; color: var(--text-muted); margin-top: 4px; text-align: right; }
-.input-area { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
-.input-area textarea { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 10px 12px; font-family: var(--font); font-size: 13px; resize: none; outline: none; min-height: 42px; max-height: 120px; }
+.msg { max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.5; }
+.msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 3px; }
+.msg.assistant { align-self: flex-start; background: var(--bg-card); border-bottom-left-radius: 3px; }
+.msg .msg-agent { font-size: 10px; font-weight: 600; margin-bottom: 3px; }
+.msg .msg-time { font-size: 9px; color: var(--text-muted); margin-top: 3px; text-align: right; }
+.input-area { padding: 8px 12px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
+.input-area textarea { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 8px 10px; font-family: var(--font); font-size: 12px; resize: none; outline: none; min-height: 36px; max-height: 100px; }
 .input-area textarea:focus { border-color: var(--accent); }
-.send-btn { background: var(--accent); border: none; color: #fff; border-radius: var(--radius); padding: 0 16px; cursor: pointer; font-size: 13px; font-weight: 500; transition: opacity .15s; }
+.send-btn { background: var(--accent); border: none; color: #fff; border-radius: var(--radius); padding: 0 14px; cursor: pointer; font-size: 12px; font-weight: 500; }
 .send-btn:hover { opacity: .85; }
 
-/* Task Detail View (hidden by default) */
-.task-detail { display: none; flex: 1; overflow-y: auto; padding: 16px; }
-.task-detail.active { display: flex; flex-direction: column; gap: 12px; }
-.task-detail-header { display: flex; align-items: center; gap: 8px; }
-.task-detail-back { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 18px; padding: 4px; }
-.task-detail-back:hover { color: var(--text); }
-.task-detail-title { font-size: 16px; font-weight: 600; }
-.task-detail-status { font-size: 11px; padding: 3px 8px; border-radius: 4px; }
-.worklog { display: flex; flex-direction: column; gap: 8px; }
-.worklog-entry { padding: 10px 12px; background: var(--bg-card); border-radius: var(--radius); border-left: 3px solid var(--border); }
-.worklog-entry .wl-header { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
-.worklog-entry .wl-content { font-size: 12px; line-height: 1.5; }
-
-/* ── Right Panel ── */
-.right-panel { background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-.ring-header { padding: 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.ring-title { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); }
-.ring-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-.ring-clear { background: none; border: none; color: var(--text-muted); font-size: 10px; cursor: pointer; }
-.ring-clear:hover { color: var(--text); }
-.ring-entries { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
-.ring-entries::-webkit-scrollbar { width: 4px; }
-.ring-entries::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-.ring-entry { padding: 8px 10px; background: var(--bg-card); border-radius: 6px; border-left: 3px solid var(--border); }
-.ring-entry .re-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-.ring-entry .re-agent { font-size: 11px; font-weight: 600; }
+/* ── Ring Buffer ── */
+.ring-entries { display: flex; flex-direction: column; gap: 4px; padding: 6px; }
+.ring-entry { padding: 6px 8px; background: var(--bg-card); border-radius: 5px; border-left: 3px solid var(--border); }
+.ring-entry .re-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 3px; }
+.ring-entry .re-agent { font-size: 10px; font-weight: 600; }
 .ring-entry .re-time { font-size: 9px; color: var(--text-muted); }
-.ring-entry .re-text { font-size: 11px; color: var(--text-dim); line-height: 1.4; }
-.ring-entry.mesh { border-left-color: var(--blue); }
+.ring-entry .re-text { font-size: 10px; color: var(--text-dim); line-height: 1.4; }
+
+/* ── Task Detail ── */
+.task-detail-view { padding: 12px; }
+.td-back { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 16px; padding: 2px 6px; }
+.td-back:hover { color: var(--text); }
+.td-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.td-title { font-size: 14px; font-weight: 600; }
+.td-status { font-size: 10px; padding: 2px 8px; border-radius: 4px; }
+.worklog { display: flex; flex-direction: column; gap: 6px; }
+.wl-entry { padding: 8px 10px; background: var(--bg-card); border-radius: 6px; border-left: 3px solid var(--border); }
+.wl-entry .wl-head { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-muted); margin-bottom: 3px; }
+.wl-entry .wl-msg { font-size: 11px; line-height: 1.5; }
 
 /* ── Mobile ── */
-@media (max-width: 900px) {
-  .app { grid-template-columns: 1fr; }
-  .left-panel, .right-panel { display: none; }
-}
+@media (max-width: 768px) { .layout { flex-direction: column; } }
 </style>
 </head>
 <body>
-<div class="app">
-  <!-- Left Panel: Agents + Tasks -->
-  <div class="left-panel">
-    <div class="panel-section">
-      <div class="panel-title">Agents <span class="count" id="agentCount">0</span></div>
-      <div class="agent-list" id="agentList"></div>
-    </div>
-    <div class="task-section panel-section">
-      <div class="panel-title">Tasks <span class="count" id="taskCount">0</span></div>
-      <div class="task-tree" id="taskTree"></div>
-    </div>
-  </div>
-
-  <!-- Center Panel: Chat / Task Detail -->
-  <div class="center-panel">
-    <div class="chat-header">
-      <div class="chat-header-left">
-        <div class="chat-header-title" id="chatTitle">Chat Agent</div>
-        <div class="chat-header-sub" id="chatSub">Haiku · ready</div>
-      </div>
-      <div class="wall-clock" id="wallClock">⏱ 0:00</div>
-    </div>
-    <div class="messages" id="messages"></div>
-    <div class="task-detail" id="taskDetail"></div>
-    <div class="input-area">
-      <textarea id="chatInput" placeholder="Message the mesh…" rows="1"></textarea>
-      <button class="send-btn" id="sendBtn">Send</button>
-    </div>
-  </div>
-
-  <!-- Right Panel: Ring Buffer -->
-  <div class="right-panel">
-    <div class="ring-header">
-      <div class="ring-title"><span class="ring-dot"></span> Ring Buffer</div>
-      <button class="ring-clear" id="ringClear">Clear</button>
-    </div>
-    <div class="ring-entries" id="ringEntries"></div>
-  </div>
+<!-- Layout is built by JS -->
+<div id="root"></div>
+<div class="add-bar">
+  <button class="add-btn" onclick="addBlock('chat')">+ Chat</button>
+  <button class="add-btn" onclick="addBlock('agents')">+ Agents</button>
+  <button class="add-btn" onclick="addBlock('tasks')">+ Tasks</button>
+  <button class="add-btn" onclick="addBlock('ring')">+ Ring</button>
+  <button class="add-btn" onclick="addBlock('task-detail')">+ Task Detail</button>
 </div>
+<div class="wall-clock" id="wallClock">⏱ 0:00</div>
 
+<script>
+if (typeof Symbol.dispose === 'undefined') Symbol.dispose = Symbol('Symbol.dispose');
+if (typeof Symbol.asyncDispose === 'undefined') Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
+</script>
 <script type="module">
 // ═══════════════════════════════════════════════════════════════
 // SECTION INDEX
-// STATE ............. App state, constants, mock data
-// RENDER ............ UI rendering functions
-// TASK DETAIL ....... Click-to-zoom task detail view
-// INIT .............. Startup, event listeners
+// STATE ............. Constants, mock data, layout config
+// BLOCKS ............ Block registry, renderers, layout engine
+// RENDERERS ......... Per-block-type content renderers
+// TASK DETAIL ....... Click-to-zoom task detail
+// LAYOUT ............ Build/rebuild layout from config
+// INIT .............. Startup
 // ═══════════════════════════════════════════════════════════════
 
 // ═══ STATE ═══
 const COLORS = ['#00ff88','#00aaff','#ff88ff','#ffaa00','#ff6666','#88ffff'];
-const STATUS_ICON = { pending: '⬜', 'in-progress': '🔵', waiting: '⏳', complete: '🟢', failed: '🔴' };
-const STATUS_LABEL = { pending: 'Pending', 'in-progress': 'In Progress', waiting: 'Waiting', complete: 'Complete', failed: 'Failed' };
+const STATUS_ICON = { pending:'⬜', 'in-progress':'🔵', waiting:'⏳', complete:'🟢', failed:'🔴' };
+const STATUS_LABEL = { pending:'Pending', 'in-progress':'In Progress', waiting:'Waiting', complete:'Complete', failed:'Failed' };
+const BLOCK_META = {
+  agents:       { icon:'👥', title:'Agents' },
+  tasks:        { icon:'📋', title:'Tasks' },
+  chat:         { icon:'💬', title:'Chat' },
+  ring:         { icon:'🔵', title:'Ring Buffer' },
+  'task-detail':{ icon:'🔍', title:'Task Detail' },
+  preview:      { icon:'🖼️', title:'Preview' },
+};
 
 const state = {
   agents: new Map(),
   tasks: new Map(),
   ringBuffer: [],
-  activeTaskId: null,
   wallClockStart: null,
+  layout: [
+    { id:'col-left', type:'col', flex:1, children:[
+      { id:'b-agents', type:'agents', flex:1 },
+      { id:'b-tasks', type:'tasks', flex:2 },
+    ]},
+    { id:'b-chat', type:'chat', flex:2 },
+    { id:'b-ring', type:'ring', flex:1 },
+  ],
+  blockCounter: 10,
+  maximizedBlock: null,
 };
 
 // ── Mock Data ──
 function loadMockData() {
-  const agents = [
-    { id: 'orchestrator', model: 'Claude Sonnet', status: 'ready', color: COLORS[0] },
-    { id: 'researcher', model: 'Claude Haiku', status: 'processing', color: COLORS[1] },
-    { id: 'coder', model: 'GPT-4o', status: 'processing', color: COLORS[2] },
-    { id: 'reviewer', model: 'WebLLM Qwen 3B', status: 'idle', color: COLORS[3] },
-  ];
-  agents.forEach(a => state.agents.set(a.id, a));
+  [
+    { id:'orchestrator', model:'Claude Sonnet', status:'ready', color:COLORS[0] },
+    { id:'researcher', model:'Claude Haiku', status:'processing', color:COLORS[1] },
+    { id:'coder', model:'GPT-4o', status:'processing', color:COLORS[2] },
+    { id:'reviewer', model:'WebLLM Qwen 3B', status:'idle', color:COLORS[3] },
+  ].forEach(a => state.agents.set(a.id, a));
 
-  const tasks = [
-    { id: 't1', title: 'Build Space Minecraft (Browser)', status: 'in-progress', agentId: 'orchestrator', parentId: null, children: ['t1a','t1b','t1c'], worklog: [
-      { ts: Date.now()-120000, agentId: 'orchestrator', msg: 'Decomposed into 3 sub-tasks: world gen, player controls, rendering' },
+  [
+    { id:'t1', title:'Build Space Minecraft (Browser)', status:'in-progress', agentId:'orchestrator', parentId:null, children:['t1a','t1b','t1c'], worklog:[
+      { ts:Date.now()-120000, agentId:'orchestrator', msg:'Decomposed into 3 sub-tasks' },
     ]},
-    { id: 't1a', title: 'Voxel world generation', status: 'in-progress', agentId: 'coder', parentId: 't1', children: [], worklog: [
-      { ts: Date.now()-90000, agentId: 'coder', msg: 'Implementing perlin noise terrain generator in JS' },
-      { ts: Date.now()-30000, agentId: 'coder', msg: 'Terrain gen complete, adding biome colors' },
+    { id:'t1a', title:'Voxel world generation', status:'in-progress', agentId:'coder', parentId:'t1', children:[], worklog:[
+      { ts:Date.now()-90000, agentId:'coder', msg:'Implementing perlin noise terrain' },
+      { ts:Date.now()-30000, agentId:'coder', msg:'Terrain gen complete, adding biomes' },
     ]},
-    { id: 't1b', title: 'Player movement & controls', status: 'waiting', agentId: null, parentId: 't1', children: [], worklog: [] },
-    { id: 't1c', title: 'WebGL rendering pipeline', status: 'pending', agentId: null, parentId: 't1', children: [], worklog: [] },
-    { id: 't2', title: 'Triage Slack messages', status: 'in-progress', agentId: 'researcher', parentId: null, children: [], worklog: [
-      { ts: Date.now()-60000, agentId: 'researcher', msg: 'Scanning #eng-general, #incidents, #demos — 47 unread' },
+    { id:'t1b', title:'Player movement & controls', status:'waiting', agentId:null, parentId:'t1', children:[], worklog:[] },
+    { id:'t1c', title:'WebGL rendering pipeline', status:'pending', agentId:null, parentId:'t1', children:[], worklog:[] },
+    { id:'t2', title:'Triage Slack messages', status:'in-progress', agentId:'researcher', parentId:null, children:[], worklog:[
+      { ts:Date.now()-60000, agentId:'researcher', msg:'Scanning channels — 47 unread' },
     ]},
-    { id: 't3', title: 'Draft email responses', status: 'pending', agentId: null, parentId: null, children: [], worklog: [] },
-    { id: 't4', title: 'Fix auth bug in relay', status: 'complete', agentId: 'coder', parentId: null, children: [], worklog: [
-      { ts: Date.now()-300000, agentId: 'coder', msg: 'SigV4 signing was using URLSearchParams — switched to manual encoding' },
-      { ts: Date.now()-240000, agentId: 'reviewer', msg: 'LGTM, tested against ap-southeast-2 endpoint' },
+    { id:'t3', title:'Draft email responses', status:'pending', agentId:null, parentId:null, children:[], worklog:[] },
+    { id:'t4', title:'Fix auth bug in relay', status:'complete', agentId:'coder', parentId:null, children:[], worklog:[
+      { ts:Date.now()-300000, agentId:'coder', msg:'SigV4 signing fix — manual URI encoding' },
+      { ts:Date.now()-240000, agentId:'reviewer', msg:'LGTM, tested against ap-southeast-2' },
     ]},
-  ];
-  tasks.forEach(t => state.tasks.set(t.id, t));
+  ].forEach(t => state.tasks.set(t.id, t));
 
   state.ringBuffer = [
-    { agentId: 'orchestrator', content: 'Decomposed "Build Space Minecraft" into 3 parallel sub-tasks', ts: Date.now()-120000 },
-    { agentId: 'coder', content: 'Starting voxel world generation with perlin noise', ts: Date.now()-90000 },
-    { agentId: 'researcher', content: 'Scanning Slack channels for triage — 47 unread messages found', ts: Date.now()-60000 },
-    { agentId: 'coder', content: 'Terrain generation complete. Adding biome color mapping.', ts: Date.now()-30000 },
-    { agentId: 'orchestrator', content: 'Auth bug fix verified. Moving coder to rendering pipeline next.', ts: Date.now()-10000 },
+    { agentId:'orchestrator', content:'Decomposed "Build Space Minecraft" into 3 parallel sub-tasks', ts:Date.now()-120000 },
+    { agentId:'coder', content:'Starting voxel world generation with perlin noise', ts:Date.now()-90000 },
+    { agentId:'researcher', content:'Scanning Slack channels — 47 unread messages found', ts:Date.now()-60000 },
+    { agentId:'coder', content:'Terrain generation complete. Adding biome color mapping.', ts:Date.now()-30000 },
+    { agentId:'orchestrator', content:'Auth bug fix verified. Moving coder to rendering next.', ts:Date.now()-10000 },
   ];
-
   state.wallClockStart = Date.now() - 135000;
 }
 
-// ═══ RENDER ═══
-function renderAgents() {
-  const el = document.getElementById('agentList');
-  document.getElementById('agentCount').textContent = state.agents.size;
-  el.innerHTML = [...state.agents.values()].map(a => `
+// ═══ RENDERERS ═══
+function renderAgentsBlock(container) {
+  container.innerHTML = '<div class="agent-list">' + [...state.agents.values()].map(a => `
     <div class="agent-card" data-agent="${a.id}">
-      <div class="agent-dot ${a.status === 'processing' ? 'pulse' : ''}" style="background:${a.color}"></div>
+      <div class="agent-dot ${a.status==='processing'?'pulse':''}" style="background:${a.color}"></div>
       <div class="agent-info">
         <div class="agent-name">${a.id}</div>
         <div class="agent-model">${a.model}</div>
       </div>
-      <div class="agent-badge" style="color:${a.status === 'processing' ? a.color : 'var(--text-muted)'}">${a.status}</div>
+      <div class="agent-badge" style="color:${a.status==='processing'?a.color:'var(--text-muted)'}">${a.status}</div>
     </div>
-  `).join('');
+  `).join('') + '</div>';
 }
 
-function renderTasks() {
+function renderTasksBlock(container) {
   const roots = [...state.tasks.values()].filter(t => !t.parentId);
-  document.getElementById('taskCount').textContent = state.tasks.size;
   const html = [];
   function walk(task, depth) {
     const agent = task.agentId ? state.agents.get(task.agentId) : null;
     const color = agent?.color || 'var(--text-muted)';
-    html.push(`
-      <div class="task-item depth-${depth}" data-task="${task.id}" data-status="${task.status}" style="border-left-color:${color}">
-        <span class="task-status">${STATUS_ICON[task.status]}</span>
-        <div class="task-info">
-          <div class="task-title">${task.title}</div>
-          <div class="task-meta">
-            ${task.agentId ? `<span style="color:${color}">${task.agentId}</span>` : '<span>unassigned</span>'}
-            ${task.worklog.length ? `<span>${task.worklog.length} log${task.worklog.length > 1 ? 's' : ''}</span>` : ''}
-          </div>
+    html.push(`<div class="task-item d${depth}" data-task="${task.id}" data-status="${task.status}" style="border-left-color:${color}">
+      <span class="task-status">${STATUS_ICON[task.status]}</span>
+      <div class="task-info">
+        <div class="task-title">${task.title}</div>
+        <div class="task-meta">
+          ${task.agentId ? `<span style="color:${color}">${task.agentId}</span>` : '<span>unassigned</span>'}
+          ${task.worklog.length ? `<span>${task.worklog.length} logs</span>` : ''}
         </div>
       </div>
-    `);
-    (task.children || []).forEach(cid => { const c = state.tasks.get(cid); if (c) walk(c, depth + 1); });
+    </div>`);
+    (task.children||[]).forEach(cid => { const c = state.tasks.get(cid); if(c) walk(c, depth+1); });
   }
   roots.forEach(t => walk(t, 0));
-  document.getElementById('taskTree').innerHTML = html.join('');
-
-  document.querySelectorAll('.task-item').forEach(el => {
-    el.addEventListener('click', () => showTaskDetail(el.dataset.task));
+  container.innerHTML = '<div class="task-tree">' + html.join('') + '</div>';
+  container.querySelectorAll('.task-item').forEach(el => {
+    el.addEventListener('click', () => openTaskDetail(el.dataset.task));
   });
 }
 
-function renderRing() {
-  const el = document.getElementById('ringEntries');
-  const sorted = [...state.ringBuffer].sort((a, b) => b.ts - a.ts);
-  el.innerHTML = sorted.map(e => {
+function renderChatBlock(container) {
+  if (container.querySelector('.chat-wrap')) return; // already initialized
+  container.innerHTML = `<div class="chat-wrap">
+    <div class="messages" id="msg-${container.closest('.block').id}">
+      <div class="msg assistant">
+        <div class="msg-agent" style="color:var(--green)">orchestrator</div>
+        Ready. 4 agents online. Give me a goal and I'll decompose it into parallel tasks.
+        <div class="msg-time">2:15 PM</div>
+      </div>
+      <div class="msg user">Build Space Minecraft two ways, triage Slack, draft emails, fix auth bug.<div class="msg-time">2:15 PM</div></div>
+      <div class="msg assistant">
+        <div class="msg-agent" style="color:var(--green)">orchestrator</div>
+        Created 4 top-level tasks. Coder → Minecraft, Researcher → Slack. Auth bug already fixed ✓
+        <div class="msg-time">2:16 PM</div>
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea placeholder="Message the mesh…" rows="1"></textarea>
+      <button class="send-btn">Send</button>
+    </div>
+  </div>`;
+  const ta = container.querySelector('textarea');
+  ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; });
+  ta.addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey) e.preventDefault(); });
+}
+
+function renderRingBlock(container) {
+  const sorted = [...state.ringBuffer].sort((a,b) => b.ts - a.ts);
+  container.innerHTML = '<div class="ring-entries">' + sorted.map(e => {
     const agent = state.agents.get(e.agentId);
     const color = agent?.color || '#888';
-    const time = new Date(e.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    return `
-      <div class="ring-entry" style="border-left-color:${color}">
-        <div class="re-header">
-          <span class="re-agent" style="color:${color}">${e.agentId}</span>
-          <span class="re-time">${time}</span>
-        </div>
-        <div class="re-text">${e.content.slice(0, 200)}</div>
-      </div>
-    `;
-  }).join('');
+    const time = new Date(e.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    return `<div class="ring-entry" style="border-left-color:${color}">
+      <div class="re-header"><span class="re-agent" style="color:${color}">${e.agentId}</span><span class="re-time">${time}</span></div>
+      <div class="re-text">${e.content.slice(0,200)}</div>
+    </div>`;
+  }).join('') + '</div>';
 }
 
-function renderMessages() {
-  const el = document.getElementById('messages');
-  el.innerHTML = `
-    <div class="msg assistant">
-      <div class="msg-agent" style="color:var(--green)">orchestrator</div>
-      Ready. I can see 4 agents online. Give me a goal and I'll decompose it into parallel tasks.
-      <div class="msg-time">2:15 PM</div>
-    </div>
-    <div class="msg user">
-      Build Space Minecraft two ways, triage Slack, draft my emails, and fix the auth bug in the relay.
-      <div class="msg-time">2:15 PM</div>
-    </div>
-    <div class="msg assistant">
-      <div class="msg-agent" style="color:var(--green)">orchestrator</div>
-      On it. Created 4 top-level tasks. Assigning coder to Minecraft browser build, researcher to Slack triage. I'll handle decomposition and coordination. Auth bug is already fixed ✓
-      <div class="msg-time">2:16 PM</div>
-    </div>
-  `;
-  el.scrollTop = el.scrollHeight;
-}
-
-// ═══ TASK DETAIL ═══
-function showTaskDetail(taskId) {
+function renderTaskDetailBlock(container, blockCfg) {
+  const taskId = blockCfg?.taskId;
+  if (!taskId) { container.innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:12px;text-align:center">Click a task to view details</div>'; return; }
   const task = state.tasks.get(taskId);
-  if (!task) return;
-  state.activeTaskId = taskId;
+  if (!task) { container.innerHTML = '<div style="padding:20px;color:var(--text-muted);font-size:12px">Task not found</div>'; return; }
   const agent = task.agentId ? state.agents.get(task.agentId) : null;
   const color = agent?.color || 'var(--text-muted)';
-  const statusColor = { pending: 'var(--text-muted)', 'in-progress': 'var(--blue)', waiting: 'var(--orange)', complete: 'var(--green)', failed: 'var(--red)' };
-
-  const detail = document.getElementById('taskDetail');
-  detail.innerHTML = `
-    <div class="task-detail-header">
-      <button class="task-detail-back" id="taskBack">←</button>
-      <div>
-        <div class="task-detail-title">${task.title}</div>
+  const sc = {'pending':'var(--text-muted)','in-progress':'var(--blue)','waiting':'var(--orange)','complete':'var(--green)','failed':'var(--red)'};
+  container.innerHTML = `<div class="task-detail-view">
+    <div class="td-header">
+      <div><div class="td-title">${task.title}</div>
         <div style="display:flex;gap:8px;margin-top:4px;align-items:center">
-          <span class="task-detail-status" style="background:${statusColor[task.status]}22;color:${statusColor[task.status]}">${STATUS_ICON[task.status]} ${STATUS_LABEL[task.status]}</span>
+          <span class="td-status" style="background:${sc[task.status]}22;color:${sc[task.status]}">${STATUS_ICON[task.status]} ${STATUS_LABEL[task.status]}</span>
           ${task.agentId ? `<span style="font-size:11px;color:${color}">⬤ ${task.agentId}</span>` : '<span style="font-size:11px;color:var(--text-muted)">unassigned</span>'}
         </div>
       </div>
     </div>
-    <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-top:8px">Worklog</div>
-    <div class="worklog">
-      ${task.worklog.length ? task.worklog.map(w => {
-        const wa = state.agents.get(w.agentId);
-        const wc = wa?.color || '#888';
-        return `<div class="worklog-entry" style="border-left-color:${wc}">
-          <div class="wl-header">
-            <span style="color:${wc}">${w.agentId}</span>
-            <span>${new Date(w.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-          </div>
-          <div class="wl-content">${w.msg}</div>
-        </div>`;
-      }).join('') : '<div style="font-size:12px;color:var(--text-muted);padding:12px">No worklog entries yet</div>'}
-    </div>
-  `;
-
-  document.getElementById('messages').style.display = 'none';
-  detail.classList.add('active');
-  document.getElementById('taskBack').addEventListener('click', hideTaskDetail);
+    <div style="font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin:8px 0 4px">Worklog</div>
+    <div class="worklog">${task.worklog.length ? task.worklog.map(w => {
+      const wa = state.agents.get(w.agentId); const wc = wa?.color || '#888';
+      return `<div class="wl-entry" style="border-left-color:${wc}">
+        <div class="wl-head"><span style="color:${wc}">${w.agentId}</span><span>${new Date(w.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</span></div>
+        <div class="wl-msg">${w.msg}</div>
+      </div>`;
+    }).join('') : '<div style="font-size:11px;color:var(--text-muted);padding:8px">No worklog entries</div>'}</div>
+  </div>`;
 }
 
-function hideTaskDetail() {
-  state.activeTaskId = null;
-  document.getElementById('taskDetail').classList.remove('active');
-  document.getElementById('messages').style.display = 'flex';
+const RENDERERS = { agents: renderAgentsBlock, tasks: renderTasksBlock, chat: renderChatBlock, ring: renderRingBlock, 'task-detail': renderTaskDetailBlock };
+
+// ═══ BLOCKS ═══
+function makeBlockEl(cfg) {
+  const meta = BLOCK_META[cfg.type] || { icon:'📦', title:cfg.type };
+  const div = document.createElement('div');
+  div.className = 'block';
+  div.id = cfg.id;
+  div.style.flex = cfg.flex || 1;
+  div.innerHTML = `<div class="block-header">
+    <span class="block-icon">${meta.icon}</span>
+    <span class="block-title">${meta.title}</span>
+    <button class="block-btn maximize-btn" title="Maximize">⤢</button>
+    <button class="block-btn close-btn" title="Close">✕</button>
+  </div><div class="block-body"></div>`;
+  div.querySelector('.maximize-btn').addEventListener('click', () => toggleMaximize(cfg.id));
+  div.querySelector('.close-btn').addEventListener('click', () => removeBlock(cfg.id));
+  const body = div.querySelector('.block-body');
+  const renderer = RENDERERS[cfg.type];
+  if (renderer) renderer(body, cfg);
+  return div;
+}
+
+function buildLayout() {
+  const root = document.getElementById('root');
+  root.innerHTML = '';
+  const container = document.createElement('div');
+  container.className = 'layout';
+  container.style.height = 'calc(100vh - 36px)';
+
+  for (const node of state.layout) {
+    if (node.type === 'col') {
+      const col = document.createElement('div');
+      col.className = 'layout-col';
+      col.style.flex = node.flex || 1;
+      (node.children || []).forEach(child => col.appendChild(makeBlockEl(child)));
+      container.appendChild(col);
+    } else {
+      container.appendChild(makeBlockEl(node));
+    }
+  }
+  root.appendChild(container);
+}
+
+// ═══ BLOCK ACTIONS ═══
+function toggleMaximize(blockId) {
+  const el = document.getElementById(blockId);
+  if (!el) return;
+  if (state.maximizedBlock === blockId) {
+    el.classList.remove('maximized');
+    state.maximizedBlock = null;
+  } else {
+    if (state.maximizedBlock) document.getElementById(state.maximizedBlock)?.classList.remove('maximized');
+    el.classList.add('maximized');
+    state.maximizedBlock = blockId;
+  }
+}
+
+function findAndRemove(layout, blockId) {
+  for (let i = 0; i < layout.length; i++) {
+    if (layout[i].id === blockId) { layout.splice(i, 1); return true; }
+    if (layout[i].children && findAndRemove(layout[i].children, blockId)) {
+      if (layout[i].children.length === 0) layout.splice(i, 1);
+      return true;
+    }
+  }
+  return false;
+}
+
+function removeBlock(blockId) {
+  findAndRemove(state.layout, blockId);
+  buildLayout();
+}
+
+window.addBlock = function(type) {
+  const id = `b-${type}-${state.blockCounter++}`;
+  state.layout.push({ id, type, flex: 1 });
+  buildLayout();
+};
+
+function openTaskDetail(taskId) {
+  // Find existing task-detail block or create one
+  let found = null;
+  function search(nodes) { for (const n of nodes) { if (n.type === 'task-detail') { found = n; return; } if (n.children) search(n.children); } }
+  search(state.layout);
+  if (found) {
+    found.taskId = taskId;
+  } else {
+    const id = `b-td-${state.blockCounter++}`;
+    state.layout.push({ id, type: 'task-detail', flex: 1, taskId });
+  }
+  buildLayout();
 }
 
 // ═══ WALL CLOCK ═══
 function updateWallClock() {
   if (!state.wallClockStart) return;
-  const elapsed = Math.floor((Date.now() - state.wallClockStart) / 1000);
-  const m = Math.floor(elapsed / 60);
-  const s = elapsed % 60;
-  document.getElementById('wallClock').textContent = `⏱ ${m}:${String(s).padStart(2, '0')}`;
+  const s = Math.floor((Date.now() - state.wallClockStart) / 1000);
+  document.getElementById('wallClock').textContent = `⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
 }
 
 // ═══ INIT ═══
 loadMockData();
-renderAgents();
-renderTasks();
-renderRing();
-renderMessages();
+buildLayout();
 setInterval(updateWallClock, 1000);
 updateWallClock();
-
-// Auto-resize textarea
-const input = document.getElementById('chatInput');
-input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = input.scrollHeight + 'px'; });
-input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); /* Phase 2: sendMessage() */ } });
 </script>
 </body>
 </html>
