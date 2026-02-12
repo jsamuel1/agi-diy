@@ -149,6 +149,7 @@ if (typeof Symbol.asyncDispose === 'undefined') Symbol.asyncDispose = Symbol('Sy
 <script type="module">
 import { Agent, tool, z, AnthropicModel, OpenAIModel, BedrockModel, McpClient, StreamableHTTPClientTransport } from './strands.js';
 import { WebLLMBrowserModel } from './webllm.js';
+import './erc8004-discovery.js';
 
 // ═══ TASK TOOLS ═══
 let taskIdCounter = 100;
