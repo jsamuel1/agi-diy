@@ -115,5 +115,77 @@
         setTimeout(() => renewAndConnect().catch(e => console.warn('[AgentCoreRelay] Auto-connect failed:', e)), 1200);
     }
 
+    // ═══ Register settings tab ═══
+    if (M.settings) {
+        M.settings.registerTab('relay', 'AgentCore Relay', body => {
+            const cfg = getConfig() || {};
+            const arn = cfg.arn || localStorage.getItem('agentcore_arn') || '';
+            const region = cfg.region || (arn.match(/:([a-z0-9-]+):\d{12}:/)?.[1]) || 'us-east-1';
+            const cog = cfg.cognito || {};
+            const cogDomain = cog.domain || localStorage.getItem('cognito_domain') || '';
+            const cogClient = cog.clientId || localStorage.getItem('cognito_client_id') || '';
+            const idPool = cog.identityPoolId || localStorage.getItem('identity_pool_id') || '';
+            const provider = cog.providerName || localStorage.getItem('cognito_provider_name') || '';
+            const hasCreds = !!cfg.credentials?.accessKeyId;
+            body.innerHTML = `<div style="margin-bottom:12px;color:var(--text-dim)">SigV4 presigned WebSocket with auto-renewal</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                <label>Runtime ARN<input type="text" id="acArn" value="${arn}" placeholder="arn:aws:bedrock-agentcore:…:runtime/relay-…"></label>
+                <label>Region<input type="text" id="acRegion" value="${region}"></label>
+                <div style="margin-top:8px;color:var(--text-dim);font-size:11px">Cognito (browser login)</div>
+                <label>Domain<input type="text" id="acCogDomain" value="${cogDomain}" placeholder="auth.example.com"></label>
+                <label>Client ID<input type="text" id="acCogClient" value="${cogClient}"></label>
+                <label>Identity Pool ID<input type="text" id="acIdPool" value="${idPool}"></label>
+                <label>Provider Name<input type="text" id="acProvider" value="${provider}"></label>
+                <div style="margin-top:8px;color:var(--text-dim);font-size:11px">Or direct credentials</div>
+                <label>Access Key ID<input type="text" id="acAKID" value="${cfg.credentials?.accessKeyId||''}"></label>
+                <label>Secret Access Key<input type="text" id="acSAK" value="${cfg.credentials?.secretAccessKey||''}"></label>
+                <label>Session Token<input type="text" id="acST" value="${cfg.credentials?.sessionToken||''}"></label>
+                <div style="display:flex;gap:8px;margin-top:10px">
+                    ${cogDomain?'<button class="ms-btn primary" id="acCogLogin">Login via Cognito</button>':''}
+                    <button class="ms-btn success" id="acSave">Save & Connect</button>
+                    <button class="ms-btn danger" id="acClear">Clear</button>
+                </div>
+                <div class="ms-hint" style="margin-top:6px">${hasCreds?'✓ Credentials stored':'○ No credentials — login via Cognito or enter directly'}</div>
+                </div>`;
+            document.getElementById('acCogLogin')?.addEventListener('click', () => {
+                const d = document.getElementById('acCogDomain').value.trim();
+                const c = document.getElementById('acCogClient').value.trim();
+                if (!d||!c) return alert('Cognito Domain and Client ID required');
+                const redir = encodeURIComponent(location.origin + location.pathname);
+                location.href = `https://${d}/oauth2/authorize?client_id=${c}&response_type=token&scope=openid+email+profile&redirect_uri=${redir}`;
+            });
+            document.getElementById('acSave')?.addEventListener('click', async () => {
+                const arn = document.getElementById('acArn').value.trim();
+                const region = document.getElementById('acRegion').value.trim();
+                if (!arn||!region) return alert('ARN and Region required');
+                const cogDomain = document.getElementById('acCogDomain').value.trim();
+                const cogClient = document.getElementById('acCogClient').value.trim();
+                const idPool = document.getElementById('acIdPool').value.trim();
+                const provider = document.getElementById('acProvider').value.trim();
+                // Persist to legacy keys
+                localStorage.setItem('agentcore_arn', arn);
+                if (cogDomain) localStorage.setItem('cognito_domain', cogDomain);
+                if (cogClient) localStorage.setItem('cognito_client_id', cogClient);
+                if (idPool) localStorage.setItem('identity_pool_id', idPool);
+                if (provider) localStorage.setItem('cognito_provider_name', provider);
+                const ak = document.getElementById('acAKID').value.trim();
+                const sk = document.getElementById('acSAK').value.trim();
+                const st = document.getElementById('acST').value.trim();
+                const cognito = idPool ? { identityPoolId: idPool, providerName: provider, domain: cogDomain, clientId: cogClient } : undefined;
+                if (ak && sk) {
+                    try {
+                        await connectAgentCoreRelay({ arn, region, credentials: { accessKeyId: ak, secretAccessKey: sk, sessionToken: st||undefined }, cognito });
+                    } catch(e) { alert('Connection failed: ' + e.message); }
+                } else {
+                    saveConfig({ arn, region, cognito });
+                }
+                M.settings.open('relay');
+            });
+            document.getElementById('acClear')?.addEventListener('click', () => {
+                clearConfig(); M.setRelayReconnectProvider(null); M.settings.open('relay');
+            });
+        });
+    }
+
     console.log('[AgentCoreRelay] Plugin loaded');
 })();

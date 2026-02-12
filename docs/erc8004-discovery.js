@@ -194,5 +194,58 @@ if (M) {
             return agents;
         }
     };
+
+    // ═══ Register settings tabs ═══
+    if (M.settings) {
+        M.settings.registerTab('erc8004', 'ERC-8004', body => {
+            const owners = ownersMap;
+            let html = '<div style="margin-bottom:12px;color:var(--text-dim)">Trusted Owners — only agents from enabled owners are discovered</div>';
+            for (const [addr, o] of Object.entries(owners)) {
+                html += `<div class="ms-row">
+                    <input type="checkbox" ${o.enabled?'checked':''} data-addr="${addr}" class="erc-owner-toggle">
+                    <span style="font-size:11px;min-width:80px">${o.label||'Unknown'}</span>
+                    <span class="ms-addr" title="${addr}">${addr.slice(0,6)}…${addr.slice(-4)}</span>
+                    <span class="ms-hint">${(o.chains||[]).join(', ')}</span>
+                    ${o.source==='user'?`<button class="ms-btn danger" data-addr="${addr}" data-action="remove">✕</button>`:''}
+                </div>`;
+            }
+            html += `<div style="margin-top:12px;display:flex;gap:6px">
+                <input type="text" id="ercNewAddr" placeholder="0x… address" style="flex:2">
+                <input type="text" id="ercNewLabel" placeholder="Label" style="flex:1">
+                <input type="text" id="ercNewChains" placeholder="sepolia,base" style="flex:1">
+                <button class="ms-btn" id="ercAddBtn">Add</button>
+            </div>`;
+            body.innerHTML = html;
+            body.querySelectorAll('.erc-owner-toggle').forEach(cb => cb.onchange = () => {
+                M.erc8004.setOwnerEnabled(cb.dataset.addr, cb.checked);
+            });
+            body.querySelectorAll('[data-action="remove"]').forEach(btn => btn.onclick = () => {
+                M.erc8004.removeOwner(btn.dataset.addr); M.settings.open('erc8004');
+            });
+            document.getElementById('ercAddBtn')?.addEventListener('click', () => {
+                const addr = document.getElementById('ercNewAddr').value.trim();
+                const label = document.getElementById('ercNewLabel').value.trim() || 'Custom';
+                const chains = document.getElementById('ercNewChains').value.trim().split(',').map(s=>s.trim()).filter(Boolean);
+                if (!addr.startsWith('0x') || addr.length < 10) return alert('Invalid address');
+                M.erc8004.addOwner(addr, label, chains);
+                M.settings.open('erc8004');
+            });
+        });
+
+        M.settings.registerTab('ipfs', 'IPFS', body => {
+            const gw = ipfsGateway;
+            body.innerHTML = `<div style="margin-bottom:12px;color:var(--text-dim)">IPFS Gateway — required to fetch ipfs:// registration URIs</div>
+                <div style="display:flex;gap:6px">
+                    <input type="text" id="ipfsGw" value="${gw}" placeholder="https://ipfs.io/ipfs/ (leave empty to disable)">
+                    <button class="ms-btn" id="ipfsSaveBtn">Save</button>
+                </div>
+                <div class="ms-hint" style="margin-top:8px">${gw ? '✓ Enabled: '+gw : '○ Disabled — ipfs:// URIs will be skipped'}</div>`;
+            document.getElementById('ipfsSaveBtn')?.addEventListener('click', () => {
+                M.erc8004.setIpfsGateway(document.getElementById('ipfsGw').value.trim());
+                M.settings.open('ipfs');
+            });
+        });
+    }
+
     console.log(`[ERC8004] Plugin loaded — ${Object.keys(CHAINS).length} chains`);
 }
