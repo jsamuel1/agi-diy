@@ -23,6 +23,8 @@
     async function presignUrl(accessKeyId, secretAccessKey, sessionToken, region, arn, expires = 300) {
         const svc = 'bedrock-agentcore', host = `${svc}.${region}.amazonaws.com`;
         const path = `/runtimes/${_uri(arn)}/ws`, sid = crypto.randomUUID();
+        // SigV4 requires double-encoding the path in the canonical URI (non-S3 services)
+        const canonPath = '/' + path.slice(1).split('/').map(s => _uri(s)).join('/');
         const now = new Date(), ds = now.toISOString().replace(/[-:]/g, '').slice(0, 8);
         const amzDate = ds + 'T' + now.toISOString().replace(/[-:]/g, '').slice(9, 15) + 'Z';
         const cred = `${accessKeyId}/${ds}/${region}/${svc}/aws4_request`;
@@ -34,7 +36,7 @@
             ['X-Amzn-Bedrock-AgentCore-Runtime-Session-Id', sid],
         ].sort((a, b) => a[0] < b[0] ? -1 : 1);
         const qs = qp.map(([k, v]) => `${_uri(k)}=${_uri(v)}`).join('&');
-        const canonical = `GET\n${path}\n${qs}\nhost:${host}\n\nhost\nUNSIGNED-PAYLOAD`;
+        const canonical = `GET\n${canonPath}\n${qs}\nhost:${host}\n\nhost\nUNSIGNED-PAYLOAD`;
         const sts = `AWS4-HMAC-SHA256\n${amzDate}\n${ds}/${region}/${svc}/aws4_request\n${await _sha256hex(canonical)}`;
         let key = await _hmac('AWS4' + secretAccessKey, ds);
         for (const s of [region, svc, 'aws4_request']) key = await _hmac(key, s);
