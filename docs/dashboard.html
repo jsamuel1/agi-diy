@@ -331,7 +331,6 @@ async function runDelegatedAgent(agentId, taskId, instructions) {
 const ORCHESTRATOR_TOOLS = [...TASK_TOOLS, listAgentsTool, delegateTaskTool];
 
 function buildOrchestratorPrompt() {
-  const agents = [...state.agents.values()].map(a => `  - ${a.id}: ${a.role || a.model}`).join('\n');
   return `You are an orchestrator agent in a multi-agent mesh dashboard. Your job:
 1. When given a goal, decompose it into tasks using create_task (use parentId for sub-tasks)
 2. Delegate tasks to available agents with delegate_task — they run in parallel automatically
@@ -339,10 +338,16 @@ function buildOrchestratorPrompt() {
 4. Maximize parallelism: delegate multiple tasks at once to minimize wall-clock time
 5. Monitor progress with list_tasks and update_task
 
-Available agents:
-${agents}
-
 Be concise. Act immediately — create tasks and delegate them, don't just describe what you'd do.`;
+}
+
+function seedAgentList(agent) {
+  const agents = [...state.agents.values()].map(a => ({ id: a.id, model: a.model, role: a.role, status: a.status }));
+  agent.messages.push(
+    { role: 'user', content: [{ type: 'textBlock', text: 'list_agents' }] },
+    { role: 'assistant', content: [{ type: 'toolUse', toolUseId: 'seed-list', name: 'list_agents', input: {} }] },
+    { role: 'user', content: [{ type: 'toolResult', toolUseId: 'seed-list', content: [{ type: 'text', text: JSON.stringify(agents) }] }] }
+  );
 }
 
 function saveTasks() { try { localStorage.setItem('dashboard_tasks', JSON.stringify([...state.tasks.values()])); } catch(e) {} }
@@ -517,6 +522,7 @@ function ensureChatAgent() {
   try {
     const model = createModel(chatCfg.provider || 'bedrock', { modelId: chatCfg.modelId, maxTokens: 8192 });
     state.chatAgent = new Agent({ model, tools: ORCHESTRATOR_TOOLS, systemPrompt: buildOrchestratorPrompt(), printer: false });
+    seedAgentList(state.chatAgent);
     if (window.AgentMesh?.registerAgent) window.AgentMesh.registerAgent('chat', 'browser', { model: chatCfg.modelId });
     return true;
   } catch (e) { console.error('Failed to create chat agent:', e); return false; }
@@ -560,6 +566,7 @@ async function sendChatMessage(text, blockId) {
     const chatCfg = state.agents.get('chat');
     const model = createModel(chatCfg?.provider || 'bedrock', { modelId: chatCfg?.modelId, maxTokens: 8192 });
     const agent = new Agent({ model, tools: ORCHESTRATOR_TOOLS, systemPrompt: buildOrchestratorPrompt(), printer: false });
+    seedAgentList(agent);
     // Inject history
     for (const m of state.chatMessages.slice(-20)) {
       agent.messages.push({ role: m.role, content: [{ type: 'textBlock', text: m.content }] });
