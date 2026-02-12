@@ -77,6 +77,11 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 .msg.assistant { align-self: flex-start; background: var(--bg-card); border-bottom-left-radius: 3px; }
 .msg .msg-agent { font-size: 10px; font-weight: 600; margin-bottom: 3px; }
 .msg .msg-time { font-size: 9px; color: var(--text-muted); margin-top: 3px; text-align: right; }
+.msg.assistant .stream-text p { margin: 0 0 6px; } .msg.assistant .stream-text p:last-child { margin: 0; }
+.msg.assistant .stream-text pre { background: rgba(0,0,0,.3); padding: 6px 8px; border-radius: 4px; overflow-x: auto; font-size: 11px; margin: 4px 0; }
+.msg.assistant .stream-text code { background: rgba(0,0,0,.2); padding: 1px 4px; border-radius: 3px; font-size: 11px; }
+.msg.assistant .stream-text pre code { background: none; padding: 0; }
+.msg.assistant .stream-text ul, .msg.assistant .stream-text ol { margin: 4px 0; padding-left: 18px; }
 .input-area { padding: 8px 12px; border-top: 1px solid var(--border); display: flex; gap: 6px; }
 .input-area textarea { flex: 1; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); padding: 8px 10px; font-family: var(--font); font-size: 12px; resize: none; outline: none; min-height: 36px; max-height: 100px; }
 .input-area textarea:focus { border-color: var(--accent); }
@@ -152,6 +157,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 </div>
 <div class="wall-clock" id="wallClock"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="agent-mesh.js?v=2"></script>
 <script src="agent-mesh-settings.js?v=2"></script>
 <script src="agentcore-relay.js?v=2"></script>
@@ -600,7 +606,7 @@ async function sendChatMessage(text, blockId) {
       }
     }
 
-    streamDiv.querySelector('.stream-text').textContent = currentText;
+    streamDiv.querySelector('.stream-text').innerHTML = typeof marked !== 'undefined' ? marked.parse(currentText) : escapeHtml(currentText);
     streamDiv.insertAdjacentHTML('beforeend', `<div class="msg-time">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>`);
     state.chatMessages.push({ role: 'user', content: text }, { role: 'assistant', content: currentText });
 
