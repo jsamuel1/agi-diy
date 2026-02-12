@@ -34,6 +34,8 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
 .add-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 36px; background: var(--bg-card); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; gap: 8px; z-index: 50; }
 .add-btn { background: var(--bg-hover); border: 1px solid var(--border); color: var(--text-dim); font-size: 11px; padding: 4px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
 .add-btn:hover { color: var(--text); border-color: var(--accent); }
+.settings-btn { background: none; border: none; color: var(--text-dim); font-size: 20px; cursor: pointer; padding: 2px 8px; }
+.settings-btn:hover { color: var(--accent); }
 .wall-clock { font-size: 11px; color: var(--accent); font-variant-numeric: tabular-nums; position: fixed; bottom: 0; right: 12px; height: 36px; display: flex; align-items: center; z-index: 51; }
 
 /* ── Agent List ── */
@@ -140,13 +142,13 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
     <button class="add-btn" onclick="addBlock('task-detail')">+ Task Detail</button>
     <button class="add-btn" onclick="addBlock('mesh')">+ Mesh</button>
   </div>
-  <button class="add-btn" onclick="AgentMesh.settings?.open()" title="Settings">⚙</button>
+  <button class="settings-btn" onclick="AgentMesh.settings?.open()" title="Settings">⚙</button>
 </div>
 <div class="wall-clock" id="wallClock"></div>
 
-<script src="agent-mesh.js"></script>
-<script src="agent-mesh-settings.js"></script>
-<script src="agentcore-relay.js"></script>
+<script src="agent-mesh.js?v=2"></script>
+<script src="agent-mesh-settings.js?v=2"></script>
+<script src="agentcore-relay.js?v=2"></script>
 <script>
 if (typeof Symbol.dispose === 'undefined') Symbol.dispose = Symbol('Symbol.dispose');
 if (typeof Symbol.asyncDispose === 'undefined') Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
@@ -154,7 +156,7 @@ if (typeof Symbol.asyncDispose === 'undefined') Symbol.asyncDispose = Symbol('Sy
 <script type="module">
 import { Agent, tool, z, AnthropicModel, OpenAIModel, BedrockModel, McpClient, StreamableHTTPClientTransport } from './strands.js';
 import { WebLLMBrowserModel } from './webllm.js';
-import './erc8004-discovery.js';
+import './erc8004-discovery.js?v=2';
 
 // ═══ TASK TOOLS ═══
 let taskIdCounter = 100;
