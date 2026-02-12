@@ -261,6 +261,11 @@
         
         channel.postMessage(message);
         if (log) console.log('[AgentMesh] Broadcast:', type, payload);
+        
+        // Bridge to relay if connected
+        if (relayConnected && type !== 'ping' && type !== 'pong') {
+            sendRelay({ type, from: relayInstanceId, data: payload });
+        }
     }
     
     function subscribe(type, handler) {
@@ -1619,6 +1624,114 @@
     }
     
     // ═══════════════════════════════════════════════════════════════════════════
+    // WEBSOCKET RELAY
+    // ═══════════════════════════════════════════════════════════════════════════
+    
+    let relayWs = null;
+    let relayConnected = false;
+    let relayHeartbeat = null;
+    const relayInstanceId = localStorage.getItem('mesh_instance_id') || (() => {
+        const id = `agi-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`;
+        localStorage.setItem('mesh_instance_id', id);
+        return id;
+    })();
+    const remotePeers = new Map();
+
+    function connectRelay(url) {
+        if (relayWs) disconnectRelay();
+        try {
+            relayWs = new WebSocket(url);
+            relayWs.onopen = () => {
+                relayConnected = true;
+                console.log('[AgentMesh] 🌐 Relay connected:', url);
+                sendRelayPresence();
+                relayHeartbeat = setInterval(() => {
+                    if (!relayConnected) return;
+                    sendRelayPresence();
+                    const now = Date.now();
+                    for (const [id, peer] of remotePeers) {
+                        if (now - peer.lastSeen > 30000) remotePeers.delete(id);
+                    }
+                }, 10000);
+                localStorage.setItem('mesh_relay_url', url);
+                const handler = subscribers.get('relay-status');
+                if (handler) handler({ connected: true, url });
+            };
+            relayWs.onmessage = (e) => {
+                try {
+                    const msg = JSON.parse(e.data);
+                    if (msg.from === relayInstanceId) return;
+                    handleRelayMessage(msg);
+                } catch (err) { console.warn('[AgentMesh] Invalid relay message:', err); }
+            };
+            relayWs.onclose = () => {
+                relayConnected = false;
+                if (relayHeartbeat) { clearInterval(relayHeartbeat); relayHeartbeat = null; }
+                console.log('[AgentMesh] 🌐 Relay disconnected');
+                const handler = subscribers.get('relay-status');
+                if (handler) handler({ connected: false, url });
+            };
+            relayWs.onerror = (err) => console.error('[AgentMesh] Relay error:', err);
+        } catch (err) { console.error('[AgentMesh] Failed to connect relay:', err); }
+    }
+
+    function disconnectRelay() {
+        if (relayWs) { relayWs.close(); relayWs = null; }
+        relayConnected = false;
+        remotePeers.clear();
+        if (relayHeartbeat) { clearInterval(relayHeartbeat); relayHeartbeat = null; }
+        localStorage.removeItem('mesh_relay_url');
+    }
+
+    function sendRelay(msg) {
+        if (relayWs && relayConnected) relayWs.send(JSON.stringify(msg));
+    }
+
+    function sendRelayPresence() {
+        sendRelay({
+            type: 'presence',
+            from: relayInstanceId,
+            data: {
+                agents: [...registeredAgents.keys()],
+                hostname: location.hostname,
+                pageId: currentPage.id,
+                timestamp: Date.now()
+            }
+        });
+    }
+
+    function handleRelayMessage(msg) {
+        const { type, from, data } = msg;
+        if (type === 'presence' || type === 'heartbeat') {
+            remotePeers.set(from, { agents: data?.agents || [], hostname: data?.hostname, lastSeen: Date.now() });
+            // Register remote agents
+            if (data?.agents) {
+                for (const agentId of data.agents) {
+                    if (!remoteAgents.has(agentId)) {
+                        remoteAgents.set(agentId, { agentId, agentType: 'remote', peerId: from, status: 'idle' });
+                    }
+                }
+            }
+            const handler = subscribers.get('relay-peers');
+            if (handler) handler({ peers: [...remotePeers.values()] });
+            return;
+        }
+        // Bridge relay messages to local subscribers
+        const handler = subscribers.get(type);
+        if (handler) handler(data, { id: from, remote: true });
+        // Also bridge to BroadcastChannel for local tabs
+        if (type === 'invoke' || type === 'broadcast' || type === 'ring-update') {
+            broadcast(type, data, false);
+        }
+    }
+
+    // Auto-connect saved relay on init
+    function autoConnectRelay() {
+        const saved = localStorage.getItem('mesh_relay_url');
+        if (saved) setTimeout(() => connectRelay(saved), 1000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
     // PUBLIC API
     // ═══════════════════════════════════════════════════════════════════════════
     
@@ -1653,6 +1766,14 @@
         
         // Peers
         getPeers: () => [...connectedPeers.values()],
+        
+        // 🌐 WebSocket Relay
+        connectRelay,
+        disconnectRelay,
+        sendRelay,
+        get relayConnected() { return relayConnected; },
+        getRelayPeers: () => [...remotePeers.values()],
+        relayInstanceId,
         
         // 🤖 Agent Registration (track agents across tabs)
         registerAgent,
@@ -1710,7 +1831,8 @@
         
         initBroadcastChannel();
         initPostMessageBridge();
-        initSPANavigation(); // Initialize SPA-style navigation
+        initSPANavigation();
+        autoConnectRelay();
         
         // Inject nav after DOM ready + pages loaded
         const _initNav = () => _pagesReady.then(() => {
