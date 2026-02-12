@@ -1,12 +1,52 @@
 <!DOCTYPE html><html><head><meta charset="utf-8"><title>Authenticating…</title></head><body>
-<p>Authenticating…</p>
+<p id="s">Authenticating…</p>
 <script>
-const h = new URLSearchParams(location.hash.slice(1));
-const q = new URLSearchParams(location.search);
-const token = h.get('id_token');
-const access = h.get('access_token');
-if (token) localStorage.setItem('cognito_id_token', token);
-if (access) localStorage.setItem('cognito_access_token', access);
-const ret = q.get('state') || h.get('state') || './dashboard.html';
-location.replace(ret);
+(async () => {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const q = new URLSearchParams(location.search);
+  const idToken = h.get('id_token');
+  const ret = q.get('state') || h.get('state') || './dashboard.html';
+  if (!idToken) { document.getElementById('s').textContent = 'No token received'; return; }
+
+  localStorage.setItem('cognito_id_token', idToken);
+  if (h.get('access_token')) localStorage.setItem('cognito_access_token', h.get('access_token'));
+
+  // Exchange id_token for AWS credentials via Identity Pool
+  const poolId = localStorage.getItem('identity_pool_id');
+  const provider = localStorage.getItem('cognito_provider_name');
+  if (poolId && provider) {
+    document.getElementById('s').textContent = 'Exchanging credentials…';
+    try {
+      const region = poolId.split(':')[0];
+      const base = `https://cognito-identity.${region}.amazonaws.com/`;
+      const hdrs = { 'Content-Type': 'application/x-amz-json-1.1' };
+      const logins = { [provider]: idToken };
+      const { IdentityId } = await (await fetch(base, { method: 'POST',
+        headers: { ...hdrs, 'X-Amz-Target': 'AWSCognitoIdentityService.GetId' },
+        body: JSON.stringify({ IdentityPoolId: poolId, Logins: logins }) })).json();
+      if (IdentityId) {
+        const { Credentials } = await (await fetch(base, { method: 'POST',
+          headers: { ...hdrs, 'X-Amz-Target': 'AWSCognitoIdentityService.GetCredentialsForIdentity' },
+          body: JSON.stringify({ IdentityId, Logins: logins }) })).json();
+        if (Credentials) {
+          // Merge into existing relay config
+          const key = 'mesh_agentcore_config';
+          const cfg = JSON.parse(localStorage.getItem(key) || '{}');
+          cfg.idToken = idToken;
+          cfg.credentials = { accessKeyId: Credentials.AccessKeyId, secretAccessKey: Credentials.SecretKey,
+            sessionToken: Credentials.SessionToken, expiration: Credentials.Expiration };
+          if (!cfg.cognito) cfg.cognito = {};
+          cfg.cognito.identityPoolId = poolId;
+          cfg.cognito.providerName = provider;
+          const dom = localStorage.getItem('cognito_domain'); if (dom) cfg.cognito.domain = dom;
+          const cid = localStorage.getItem('cognito_client_id'); if (cid) cfg.cognito.clientId = cid;
+          if (!cfg.arn) { const a = localStorage.getItem('agentcore_arn'); if (a) cfg.arn = a; }
+          if (!cfg.region && cfg.arn) cfg.region = (cfg.arn.match(/:([a-z0-9-]+):\d{12}:/)||[])[1] || 'us-east-1';
+          localStorage.setItem(key, JSON.stringify(cfg));
+        }
+      }
+    } catch (e) { console.warn('Credential exchange failed:', e); }
+  }
+  location.replace(ret);
+})();
 </script></body></html>
