@@ -1647,135 +1647,30 @@
         // Local mesh (same-origin tabs)
         bus: new BroadcastChannel('agi-mesh'),
         
-        // Remote mesh (WebSocket relay)
-        ws: null,
-        wsConnected: false,
-        instanceId: localStorage.getItem('mesh_instance_id') || `agi-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6)}`,
-        remotePeers: new Map(), // instanceId -> { agents: [], lastSeen, hostname }
-        heartbeatInterval: null,
+        // Remote mesh (delegated to AgentMesh relay)
+        get wsConnected() { return window.AgentMesh?.relayConnected || false; },
+        get remotePeers() { return new Map(); }, // AgentMesh manages these now
         
         // Shared state
         pendingRequests: new Map(),
         messageLog: [],
         
         init() {
-            // Save instance ID
-            localStorage.setItem('mesh_instance_id', this.instanceId);
-            
             // Local mesh
             this.bus.onmessage = (e) => this.handleMessage(e.data, 'local');
             
-            // Auto-connect if relay URL saved
-            const savedRelay = localStorage.getItem('mesh_relay_url');
-            if (savedRelay) {
-                setTimeout(() => this.connectRelay(savedRelay), 1000);
+            // Subscribe to relay status for UI updates
+            if (window.AgentMesh) {
+                window.AgentMesh.subscribe('relay-status', (s) => this.updateWsStatus(s.connected));
+                window.AgentMesh.subscribe('relay-peers', () => this.updateRemotePeersUI());
             }
             
-            console.log(`🔗 Agent mesh initialized (instance: ${this.instanceId})`);
+            console.log(`🔗 Agent mesh initialized (instance: ${window.AgentMesh?.relayInstanceId || 'unknown'})`);
         },
         
-        // ─────────────────────────────────────────────────────────────────────────
-        // WebSocket Relay Connection
-        // ─────────────────────────────────────────────────────────────────────────
-        
-        connectRelay(url) {
-            if (this.ws) this.disconnectRelay();
-            
-            try {
-                this.ws = new WebSocket(url);
-                
-                this.ws.onopen = () => {
-                    this.wsConnected = true;
-                    console.log('🌐 WebSocket relay connected');
-                    this.updateWsStatus(true);
-                    
-                    // Send presence announcement
-                    this.sendRemote({
-                        type: 'presence',
-                        from: this.instanceId,
-                        data: {
-                            agents: [...state.agents.keys()],
-                            hostname: location.hostname,
-                            timestamp: Date.now()
-                        }
-                    });
-                    
-                    // Start heartbeat
-                    this.heartbeatInterval = setInterval(() => {
-                        if (this.wsConnected) {
-                            this.sendRemote({
-                                type: 'heartbeat',
-                                from: this.instanceId,
-                                data: { agents: [...state.agents.keys()], timestamp: Date.now() }
-                            });
-                            // Clean stale peers (no heartbeat in 30s)
-                            const now = Date.now();
-                            for (const [id, peer] of this.remotePeers) {
-                                if (now - peer.lastSeen > 30000) {
-                                    this.remotePeers.delete(id);
-                                }
-                            }
-                            this.updateRemotePeersUI();
-                        }
-                    }, 10000);
-                    
-                    localStorage.setItem('mesh_relay_url', url);
-                    showToast('Relay connected');
-                };
-                
-                this.ws.onmessage = (e) => {
-                    try {
-                        const msg = JSON.parse(e.data);
-                        if (msg.from !== this.instanceId) {
-                            this.handleMessage(msg, 'remote');
-                        }
-                    } catch (err) {
-                        console.warn('Invalid relay message:', err);
-                    }
-                };
-                
-                this.ws.onclose = () => {
-                    this.wsConnected = false;
-                    this.updateWsStatus(false);
-                    if (this.heartbeatInterval) {
-                        clearInterval(this.heartbeatInterval);
-                        this.heartbeatInterval = null;
-                    }
-                    console.log('🌐 WebSocket relay disconnected');
-                };
-                
-                this.ws.onerror = (err) => {
-                    console.error('WebSocket error:', err);
-                    showToast('Relay connection failed');
-                };
-                
-            } catch (err) {
-                console.error('Failed to connect relay:', err);
-                showToast('Invalid relay URL');
-            }
-        },
-        
-        disconnectRelay() {
-            if (this.ws) {
-                this.ws.close();
-                this.ws = null;
-            }
-            this.wsConnected = false;
-            this.remotePeers.clear();
-            if (this.heartbeatInterval) {
-                clearInterval(this.heartbeatInterval);
-                this.heartbeatInterval = null;
-            }
-            this.updateWsStatus(false);
-            this.updateRemotePeersUI();
-            showToast('Relay disconnected');
-        },
-        
-        sendRemote(msg) {
-            if (this.ws && this.wsConnected) {
-                this.ws.send(JSON.stringify(msg));
-            }
-        },
+        connectRelay(url) { window.AgentMesh?.connectRelay(url); },
+        disconnectRelay() { window.AgentMesh?.disconnectRelay(); },
+        sendRemote(msg) { window.AgentMesh?.sendRelay(msg); },
         
         updateWsStatus(connected) {
             const el = document.getElementById('wsStatus');
@@ -1789,22 +1684,13 @@
         updateRemotePeersUI() {
             const el = document.getElementById('remotePeersList');
             if (!el) return;
-            
-            if (this.remotePeers.size === 0) {
-                el.innerHTML = 'No remote peers connected';
-                return;
-            }
-            
-            const peerHtml = [...this.remotePeers.entries()].map(([id, peer]) => {
+            const peers = window.AgentMesh?.getRelayPeers() || [];
+            if (peers.length === 0) { el.innerHTML = 'No remote peers connected'; return; }
+            el.innerHTML = peers.map(peer => {
                 const agentCount = peer.agents?.length || 0;
                 const age = Math.round((Date.now() - peer.lastSeen) / 1000);
-                return `<div style="margin-bottom:4px;">
-                    <span style="color:#0f0">●</span> ${id.slice(0,12)}... 
-                    <span style="color:var(--text-tertiary)">(${agentCount} agents, ${age}s ago)</span>
-                </div>`;
+                return `<div style="margin-bottom:4px;"><span style="color:#0f0">●</span> ${peer.hostname || '?'} <span style="color:var(--text-tertiary)">(${agentCount} agents, ${age}s ago)</span></div>`;
             }).join('');
-            
-            el.innerHTML = peerHtml;
         },
         
         // ─────────────────────────────────────────────────────────────────────────
