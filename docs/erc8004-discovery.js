@@ -8,6 +8,9 @@ const keccak256 = data => KeccakHasher.unpadded().update(data).finalize().output
 const M = window.AgentMesh;
 if (!M) console.warn('[ERC8004] AgentMesh not found');
 
+// IPFS gateway — off by default, set via AgentMesh.erc8004.setIpfsGateway('https://ipfs.io/ipfs/')
+let ipfsGateway = localStorage.getItem('erc8004_ipfs_gateway') || '';
+
 // ═══ Contract addresses (CREATE2 vanity — same on all chains) ═══
 const MAINNET = { identity: '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432', reputation: '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63' };
 const TESTNET = { identity: '0x8004A818BFB912233c491871b3d84c89A494BD9e', reputation: '0x8004B663056A597Dffe9eCcC1965A193B7388713' };
@@ -85,14 +88,15 @@ export async function getAgent(chain, agentId) {
 
     const agent = { agentId, owner, uri, wallet, chain };
 
-    // Fetch registration file
+    // Fetch registration file (data: and https: auto; ipfs:// requires opt-in)
     if (uri) {
         try {
             if (uri.startsWith('data:')) {
                 agent.registration = JSON.parse(atob(uri.split(',')[1]));
-            } else {
-                const fetchUrl = uri.startsWith('ipfs://') ? 'https://ipfs.io/ipfs/' + uri.slice(7) : uri;
-                agent.registration = await (await fetch(fetchUrl)).json();
+            } else if (uri.startsWith('https://')) {
+                agent.registration = await (await fetch(uri)).json();
+            } else if (uri.startsWith('ipfs://') && ipfsGateway) {
+                agent.registration = await (await fetch(ipfsGateway + uri.slice(7))).json();
             }
         } catch {}
     }
@@ -152,6 +156,8 @@ if (M) {
     M.erc8004 = {
         chains: Object.keys(CHAINS), CHAINS,
         getAgent, discoverAgents, totalAgents, selector,
+        get ipfsGateway() { return ipfsGateway; },
+        setIpfsGateway(url) { ipfsGateway = url || ''; localStorage.setItem('erc8004_ipfs_gateway', ipfsGateway); },
         async syncChain(chain) {
             console.log(`[ERC8004] Discovering agents on ${chain}...`);
             const agents = await discoverAgents(chain);
