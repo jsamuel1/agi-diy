@@ -1092,7 +1092,7 @@
                             <option value="eu-west-1">eu-west-1</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" onclick="saveCredentials()">Save Credentials</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCredentials()">Save Credentials</button>
                     <hr style="border-color:rgba(255,255,255,0.1);margin:16px 0">
                     <div class="form-group">
                         <label class="form-label">OpenAI-Compatible Endpoint (Ollama, LM Studio, Groq, etc.)</label>
@@ -3921,18 +3921,13 @@ ${getRingContext()}`;
             state.credentials = data.credentials || state.credentials;
             state.ringBuffer = data.ringBuffer || [];
             
-            // 🔑 Merge with AgentMesh unified credentials
+            // 🔑 AgentMesh is the credential authority — always prefer its values
             if (window.AgentMesh?.getCredentials) {
-                const meshCreds = window.AgentMesh.getCredentials();
-                if (meshCreds.anthropic?.apiKey && !state.credentials.anthropic.apiKey) {
-                    state.credentials.anthropic.apiKey = meshCreds.anthropic.apiKey;
-                }
-                if (meshCreds.openai?.apiKey && !state.credentials.openai.apiKey) {
-                    state.credentials.openai.apiKey = meshCreds.openai.apiKey;
-                }
-                if (meshCreds.bedrock?.apiKey && !state.credentials.bedrock.apiKey) {
-                    state.credentials.bedrock.apiKey = meshCreds.bedrock.apiKey;
-                }
+                const mc = window.AgentMesh.getCredentials();
+                if (mc.anthropic?.apiKey) state.credentials.anthropic.apiKey = mc.anthropic.apiKey;
+                if (mc.openai?.apiKey) state.credentials.openai.apiKey = mc.openai.apiKey;
+                if (mc.bedrock?.apiKey) state.credentials.bedrock.apiKey = mc.bedrock.apiKey;
+                if (mc.bedrock?.region) state.credentials.bedrock.region = mc.bedrock.region;
             }
             
             for (const agentData of data.agents || []) {

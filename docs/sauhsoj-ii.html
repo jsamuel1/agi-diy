@@ -5482,13 +5482,14 @@ ${getRingContext()}`;
         for (const [id, data] of state.agents) {
             window.AgentMesh.registerAgent?.(id, 'strands', { model: data.config?.provider, status: data.status });
         }
-        // Pull credentials from mesh if we don't have them
+        // 🔑 AgentMesh is the credential authority — always prefer its values
         const mc = window.AgentMesh.getCredentials?.();
         if (mc) {
             let u = false;
-            if (mc.anthropic?.apiKey && !state.credentials.anthropic.apiKey) { state.credentials.anthropic.apiKey = mc.anthropic.apiKey; u = true; }
-            if (mc.openai?.apiKey && !state.credentials.openai.apiKey) { state.credentials.openai.apiKey = mc.openai.apiKey; u = true; }
-            if (mc.bedrock?.apiKey && !state.credentials.bedrock.apiKey) { state.credentials.bedrock.apiKey = mc.bedrock.apiKey; u = true; }
+            if (mc.anthropic?.apiKey) { state.credentials.anthropic.apiKey = mc.anthropic.apiKey; u = true; }
+            if (mc.openai?.apiKey) { state.credentials.openai.apiKey = mc.openai.apiKey; u = true; }
+            if (mc.bedrock?.apiKey) { state.credentials.bedrock.apiKey = mc.bedrock.apiKey; u = true; }
+            if (mc.bedrock?.region) { state.credentials.bedrock.region = mc.bedrock.region; u = true; }
             if (u) { saveState(); showToast('🔑 Loaded credentials from AgentMesh'); }
         }
     }, 600);
