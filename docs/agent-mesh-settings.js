@@ -71,6 +71,18 @@
 
     M.settings = { registerTab, open, close };
     
+    // ═══ Auth Required Handler ═══
+    M.subscribe?.('relay-auth-required', (data) => {
+        const { reason, relayId } = data;
+        const message = reason === 'credentials_expired' 
+            ? `AgentCore relay [${relayId}] credentials expired. Please re-authenticate.`
+            : `AgentCore relay [${relayId}] requires authentication.`;
+        
+        if (confirm(`${message}\n\nOpen settings to login?`)) {
+            M.settings.open('mesh');
+        }
+    });
+    
     // ═══ Built-in Mesh Tab ═══
     registerTab('mesh', 'Mesh Relays', body => {
         const config = M.getRelayConfig();
