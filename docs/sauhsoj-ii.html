@@ -15,6 +15,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>agi.diy — multi-agent</title>
@@ -3081,6 +3084,9 @@ Example - create a tool that gets weather:
         if (isActive && latestSandboxId) {
             const sb = getSandboxes()[latestSandboxId];
             if (sb) { bg.innerHTML = ''; const f = document.createElement('iframe'); f.sandbox = 'allow-scripts'; f.style.cssText = 'width:100%;height:100%;border:none;'; f.srcdoc = `<!DOCTYPE html><html><head><style>${sb.css||''}</style></head><body>${sb.html||''}<script>${sb.js||''}<\/script></body></html>`; bg.appendChild(f); }
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
         } else { bg.innerHTML = ''; }
     };
 
@@ -3095,6 +3101,9 @@ Example - create a tool that gets weather:
         iframe.sandbox = 'allow-scripts';
         iframe.style.cssText = 'width:100%;height:500px;border:none;border-radius:0 0 8px 8px;background:#fff;';
         iframe.srcdoc = `<!DOCTYPE html><html><head><style>${sandbox.css||''}</style></head><body>${sandbox.html||''}<script>${sandbox.js||''}<\/script></body></html>`;
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
         wrap.appendChild(iframe);
         return wrap;
     }
