@@ -263,7 +263,8 @@
         if (log) console.log('[AgentMesh] Broadcast:', type, payload);
         
         // Bridge to relay if connected
-        if (relayConnected && type !== 'ping' && type !== 'pong') {
+        const isRelayConnected = relayConnections.size > 0 && [...relayConnections.values()].some(c => c.connected);
+        if (isRelayConnected && type !== 'ping' && type !== 'pong') {
             sendRelay({ type, from: relayInstanceId, data: payload });
         }
     }
