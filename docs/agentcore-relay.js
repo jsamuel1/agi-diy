@@ -1,7 +1,7 @@
 // AgentCore Relay Plugin for AgentMesh
 // Adds SigV4 presigned WebSocket URLs with auto-renewal via Cognito credentials.
 // Load AFTER agent-mesh.js. Safe to omit if AgentCore relay is not needed.
-(function() {
+(async function() {
     'use strict';
     const STORE_KEY = 'mesh_agentcore_config';
     const M = window.AgentMesh;
@@ -10,41 +10,53 @@
     // Runtime credential cache (NOT persisted to localStorage)
     const credentialCache = new Map(); // Map<relayId, {accessKeyId, secretAccessKey, sessionToken, expiration}>
 
-    // ═══ SigV4 Presigning ═══
-    const _enc = new TextEncoder();
-    async function _hmac(key, data) {
-        const k = key instanceof ArrayBuffer ? key : _enc.encode(key);
-        const ck = await crypto.subtle.importKey('raw', k, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-        return crypto.subtle.sign('HMAC', ck, typeof data === 'string' ? _enc.encode(data) : data);
+    // ═══ Load AWS SDK v3 SignatureV4 ═══
+    let SignatureV4, Sha256;
+    try {
+        const [sigModule, sha256Module] = await Promise.all([
+            import('https://cdn.jsdelivr.net/npm/@aws-sdk/signature-v4@3/+esm'),
+            import('https://cdn.jsdelivr.net/npm/@aws-crypto/sha256-js@5/+esm')
+        ]);
+        SignatureV4 = sigModule.SignatureV4;
+        Sha256 = sha256Module.Sha256;
+    } catch (e) {
+        console.error('[AgentCoreRelay] Failed to load AWS SDK:', e);
+        return;
     }
-    async function _sha256hex(data) {
-        const buf = await crypto.subtle.digest('SHA-256', typeof data === 'string' ? _enc.encode(data) : data);
-        return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-    function _uri(str) { return encodeURIComponent(str).replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase()); }
 
+    // ═══ SigV4 Presigning using AWS SDK ═══
     async function presignUrl(accessKeyId, secretAccessKey, sessionToken, region, arn, expires = 300) {
-        const svc = 'bedrock-agentcore', host = `${svc}.${region}.amazonaws.com`;
-        const path = `/runtimes/${_uri(arn)}/ws`, sid = crypto.randomUUID();
-        // SigV4 requires double-encoding the path in the canonical URI (non-S3 services)
-        const canonPath = '/' + path.slice(1).split('/').map(s => _uri(s)).join('/');
-        const now = new Date(), ds = now.toISOString().replace(/[-:]/g, '').slice(0, 8);
-        const amzDate = ds + 'T' + now.toISOString().replace(/[-:]/g, '').slice(9, 15) + 'Z';
-        const cred = `${accessKeyId}/${ds}/${region}/${svc}/aws4_request`;
-        const qp = [
-            ['X-Amz-Algorithm', 'AWS4-HMAC-SHA256'], ['X-Amz-Credential', cred],
-            ['X-Amz-Date', amzDate], ['X-Amz-Expires', String(expires)],
-            ...(sessionToken ? [['X-Amz-Security-Token', sessionToken]] : []),
-            ['X-Amz-SignedHeaders', 'host'],
-            ['X-Amzn-Bedrock-AgentCore-Runtime-Session-Id', sid],
-        ].sort((a, b) => a[0] < b[0] ? -1 : 1);
-        const qs = qp.map(([k, v]) => `${_uri(k)}=${_uri(v)}`).join('&');
-        const canonical = `GET\n${canonPath}\n${qs}\nhost:${host}\n\nhost\nUNSIGNED-PAYLOAD`;
-        const sts = `AWS4-HMAC-SHA256\n${amzDate}\n${ds}/${region}/${svc}/aws4_request\n${await _sha256hex(canonical)}`;
-        let key = await _hmac('AWS4' + secretAccessKey, ds);
-        for (const s of [region, svc, 'aws4_request']) key = await _hmac(key, s);
-        const sig = [...new Uint8Array(await _hmac(key, sts))].map(b => b.toString(16).padStart(2, '0')).join('');
-        return `wss://${host}${path}?${qs}&X-Amz-Signature=${sig}`;
+        const signer = new SignatureV4({
+            service: 'bedrock-agentcore',
+            region,
+            credentials: { accessKeyId, secretAccessKey, sessionToken },
+            sha256: Sha256
+        });
+
+        const sid = crypto.randomUUID();
+        const host = `bedrock-agentcore.${region}.amazonaws.com`;
+        const path = `/runtimes/${encodeURIComponent(arn)}/ws`;
+
+        const request = {
+            method: 'GET',
+            protocol: 'wss:',
+            hostname: host,
+            path,
+            headers: {
+                host,
+                'X-Amzn-Bedrock-AgentCore-Runtime-Session-Id': sid
+            },
+            query: {}
+        };
+
+        const presigned = await signer.presign(request, { expiresIn: expires });
+        
+        // Build presigned URL
+        const queryString = Object.entries(presigned.query || {})
+            .map(([k, v]) => `${k}=${v}`)
+            .join('&');
+        
+        return `wss://${host}${path}?${queryString}`;
     }
 
     // ═══ Config persistence (NO credentials) ═══
@@ -182,7 +194,6 @@
                 );
             });
     }, 1200);
-
 
     console.log('[AgentCoreRelay] Plugin loaded');
 })();
