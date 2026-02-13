@@ -1709,6 +1709,15 @@
     
     let webllmModelInstance = null;
     
+    function detectProvider() {
+        const c = state.credentials;
+        if (c.bedrock?.apiKey) return 'bedrock';
+        if (c.anthropic?.apiKey) return 'anthropic';
+        if (c.openai?.apiKey) return 'openai';
+        if (c.openai_compatible?.baseUrl) return 'openai_compatible';
+        return 'webllm';
+    }
+
     function createModel(provider, customConfig = {}) {
         const creds = state.credentials[provider];
         const modelId = customConfig.modelId || creds?.model || DEFAULT_MODELS[provider];
@@ -3361,7 +3370,7 @@ Example - create a tool that gets weather:
         if (typeof idOrEvent === 'string' && config) {
             const id = idOrEvent;
             if (state.agents.has(id)) { console.warn('Agent ID exists:', id); return; }
-            const provider = config.provider || 'bedrock';
+            const provider = config.provider ? (state.credentials[config.provider]?.apiKey || config.provider === 'webllm' ? config.provider : detectProvider()) : detectProvider();
             const modelId = config.modelId || undefined;
             const systemPrompt = config.systemPrompt || 'You are a helpful AI assistant.';
             const maxTokens = config.maxTokens || DEFAULT_MAX_TOKENS;
@@ -3733,7 +3742,9 @@ ${getRingContext()}`;
         // The stored agentData.agent is just a reference/template
         let activeAgent;
         try {
-            const model = createModel(agentData.config.provider, { 
+            const p = agentData.config.provider;
+            const provider = (p && p !== 'webllm' && !state.credentials[p]?.apiKey) ? detectProvider() : (p || detectProvider());
+            const model = createModel(provider, { 
                 modelId: agentData.config.modelId,
                 maxTokens: agentData.config.maxTokens || DEFAULT_MAX_TOKENS,
                 additionalRequestFields: agentData.config.additionalRequestFields || null
@@ -5096,7 +5107,9 @@ ${getRingContext()}`;
             
             for (const agentData of data.agents || []) {
                 try {
-                    const model = createModel(agentData.config.provider, agentData.config);
+                    const p = agentData.config.provider;
+                    const provider = (p && p !== 'webllm' && !state.credentials[p]?.apiKey) ? detectProvider() : (p || detectProvider());
+                    const model = createModel(provider, agentData.config);
                     const allTools = [...TOOLS, ...buildCustomTools()];
                     var mcpClients = [];
                     var mcpToolNames = [];
@@ -5175,8 +5188,9 @@ ${getRingContext()}`;
             
             for (const agentData of data.agents || []) {
                 if (state.agents.has(agentData.id)) continue;
-                
-                const model = createModel(agentData.config.provider, agentData.config);
+                const p = agentData.config.provider;
+                const provider = (p && p !== 'webllm' && !state.credentials[p]?.apiKey) ? detectProvider() : (p || detectProvider());
+                const model = createModel(provider, agentData.config);
                 const agent = new Agent({
                     model,
                     tools: TOOLS,
