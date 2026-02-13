@@ -4,7 +4,7 @@ var define_process_env_default = {};
 // <define:process.stdout>
 var define_process_stdout_default = {};
 
-// ../../sdk-typescript/dist/src/types/media.js
+// ../../strands-agents/sdk-typescript/dist/src/types/media.js
 var MIME_TYPES = {
   // Images
   png: "image/png",
@@ -199,7 +199,7 @@ var DocumentBlock = class {
   }
 };
 
-// ../../sdk-typescript/dist/src/types/messages.js
+// ../../strands-agents/sdk-typescript/dist/src/types/messages.js
 var Message = class _Message {
   /**
    * Discriminator for message type.
@@ -434,7 +434,7 @@ function contentBlockFromData(data) {
   }
 }
 
-// ../../sdk-typescript/dist/src/errors.js
+// ../../strands-agents/sdk-typescript/dist/src/errors.js
 var ModelError = class extends Error {
   /**
    * Creates a new ModelError.
@@ -498,11 +498,23 @@ var ConcurrentInvocationError = class extends Error {
     this.name = "ConcurrentInvocationError";
   }
 };
+var ModelThrottledError = class extends ModelError {
+  /**
+   * Creates a new ModelThrottledError.
+   *
+   * @param message - Error message describing the throttling condition
+   * @param options - Optional error options including cause for error chaining
+   */
+  constructor(message, options) {
+    super(message, options);
+    this.name = "ModelThrottledError";
+  }
+};
 function normalizeError(error) {
   return error instanceof Error ? error : new Error(String(error));
 }
 
-// ../../sdk-typescript/dist/src/tools/tool.js
+// ../../strands-agents/sdk-typescript/dist/src/tools/tool.js
 var ToolStreamEvent = class {
   /**
    * Discriminator for tool stream events.
@@ -531,7 +543,7 @@ function createErrorResult(error, toolUseId) {
   });
 }
 
-// ../../sdk-typescript/dist/src/types/agent.js
+// ../../strands-agents/sdk-typescript/dist/src/types/agent.js
 var AgentResult = class {
   type = "agentResult";
   /**
@@ -575,7 +587,7 @@ var AgentResult = class {
   }
 };
 
-// ../../sdk-typescript/dist/src/types/json.js
+// ../../strands-agents/sdk-typescript/dist/src/types/json.js
 function deepCopy(value) {
   try {
     return JSON.parse(JSON.stringify(value));
@@ -622,7 +634,7 @@ function deepCopyWithValidation(value, contextPath = "value") {
   }
 }
 
-// ../../sdk-typescript/dist/src/tools/function-tool.js
+// ../../strands-agents/sdk-typescript/dist/src/tools/function-tool.js
 var FunctionTool = class extends Tool {
   /**
    * The unique name of the tool.
@@ -891,7 +903,7 @@ var ZodFirstPartyTypeKind = new Proxy({}, { get: (_, p) => p });
 var ZodIssueCode = new Proxy({}, { get: (_, p) => p });
 var ZodParsedType = new Proxy({}, { get: (_, p) => p });
 
-// ../../sdk-typescript/dist/src/tools/zod-tool.js
+// ../../strands-agents/sdk-typescript/dist/src/tools/zod-tool.js
 var ZodTool = class extends Tool {
   /**
    * Internal FunctionTool for delegating stream operations.
@@ -991,7 +1003,7 @@ function tool(config) {
   return new ZodTool(config);
 }
 
-// ../../sdk-typescript/dist/src/models/streaming.js
+// ../../strands-agents/sdk-typescript/dist/src/models/streaming.js
 var ModelMessageStartEvent = class {
   /**
    * Discriminator for message start events.
@@ -1096,7 +1108,7 @@ var ModelMetadataEvent = class {
   }
 };
 
-// ../../sdk-typescript/dist/src/models/model.js
+// ../../strands-agents/sdk-typescript/dist/src/models/model.js
 var Model = class {
   /**
    * Converts event data to event class representation
@@ -1270,7 +1282,7 @@ var Model = class {
   }
 };
 
-// ../../sdk-typescript/node_modules/@smithy/util-hex-encoding/dist-es/index.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/util-hex-encoding/dist-es/index.js
 var SHORT_TO_HEX = {};
 var HEX_TO_SHORT = {};
 for (let i = 0; i < 256; i++) {
@@ -1304,10 +1316,10 @@ function toHex(bytes) {
   return out;
 }
 
-// ../../sdk-typescript/node_modules/@smithy/util-utf8/dist-es/fromUtf8.browser.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/util-utf8/dist-es/fromUtf8.browser.js
 var fromUtf8 = (input) => new TextEncoder().encode(input);
 
-// ../../sdk-typescript/node_modules/@smithy/util-utf8/dist-es/toUint8Array.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/util-utf8/dist-es/toUint8Array.js
 var toUint8Array = (data) => {
   if (typeof data === "string") {
     return fromUtf8(data);
@@ -1318,7 +1330,7 @@ var toUint8Array = (data) => {
   return new Uint8Array(data);
 };
 
-// ../../sdk-typescript/node_modules/@smithy/util-utf8/dist-es/toUtf8.browser.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/util-utf8/dist-es/toUtf8.browser.js
 var toUtf8 = (input) => {
   if (typeof input === "string") {
     return input;
@@ -1329,7 +1341,7 @@ var toUtf8 = (input) => {
   return new TextDecoder("utf-8").decode(input);
 };
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/constants.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/constants.js
 var ALGORITHM_QUERY_PARAM = "X-Amz-Algorithm";
 var CREDENTIAL_QUERY_PARAM = "X-Amz-Credential";
 var AMZ_DATE_QUERY_PARAM = "X-Amz-Date";
@@ -1370,7 +1382,7 @@ var MAX_CACHE_SIZE = 50;
 var KEY_TYPE_IDENTIFIER = "aws4_request";
 var MAX_PRESIGNED_TTL = 60 * 60 * 24 * 7;
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/credentialDerivation.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/credentialDerivation.js
 var signingKeyCache = {};
 var cacheQueue = [];
 var createScope = (shortDate, region, service) => `${shortDate}/${region}/${service}/${KEY_TYPE_IDENTIFIER}`;
@@ -1396,7 +1408,7 @@ var hmac = (ctor, secret, data) => {
   return hash.digest();
 };
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/getCanonicalHeaders.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/getCanonicalHeaders.js
 var getCanonicalHeaders = ({ headers }, unsignableHeaders, signableHeaders) => {
   const canonical = {};
   for (const headerName of Object.keys(headers).sort()) {
@@ -1414,10 +1426,10 @@ var getCanonicalHeaders = ({ headers }, unsignableHeaders, signableHeaders) => {
   return canonical;
 };
 
-// ../../sdk-typescript/node_modules/@smithy/is-array-buffer/dist-es/index.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/is-array-buffer/dist-es/index.js
 var isArrayBuffer = (arg) => typeof ArrayBuffer === "function" && arg instanceof ArrayBuffer || Object.prototype.toString.call(arg) === "[object ArrayBuffer]";
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/getPayloadHash.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/getPayloadHash.js
 var getPayloadHash = async ({ headers, body }, hashConstructor) => {
   for (const headerName of Object.keys(headers)) {
     if (headerName.toLowerCase() === SHA256_HEADER) {
@@ -1434,7 +1446,7 @@ var getPayloadHash = async ({ headers, body }, hashConstructor) => {
   return UNSIGNED_PAYLOAD;
 };
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/HeaderFormatter.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/HeaderFormatter.js
 var HeaderFormatter = class {
   format(headers) {
     const chunks = [];
@@ -1560,7 +1572,7 @@ function negate(bytes) {
   }
 }
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/headerUtil.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/headerUtil.js
 var hasHeader = (soughtHeader, headers) => {
   soughtHeader = soughtHeader.toLowerCase();
   for (const headerName of Object.keys(headers)) {
@@ -1571,7 +1583,7 @@ var hasHeader = (soughtHeader, headers) => {
   return false;
 };
 
-// ../../sdk-typescript/node_modules/@smithy/protocol-http/dist-es/httpRequest.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/protocol-http/dist-es/httpRequest.js
 var HttpRequest = class _HttpRequest {
   method;
   protocol;
@@ -1628,7 +1640,7 @@ function cloneQuery(query) {
   }, {});
 }
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/moveHeadersToQuery.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/moveHeadersToQuery.js
 var moveHeadersToQuery = (request, options = {}) => {
   const { headers, query = {} } = HttpRequest.clone(request);
   for (const name of Object.keys(headers)) {
@@ -1645,7 +1657,7 @@ var moveHeadersToQuery = (request, options = {}) => {
   };
 };
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/prepareRequest.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/prepareRequest.js
 var prepareRequest = (request) => {
   request = HttpRequest.clone(request);
   for (const headerName of Object.keys(request.headers)) {
@@ -1656,7 +1668,7 @@ var prepareRequest = (request) => {
   return request;
 };
 
-// ../../sdk-typescript/node_modules/@smithy/util-middleware/dist-es/normalizeProvider.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/util-middleware/dist-es/normalizeProvider.js
 var normalizeProvider = (input) => {
   if (typeof input === "function")
     return input;
@@ -1664,11 +1676,11 @@ var normalizeProvider = (input) => {
   return () => promisified;
 };
 
-// ../../sdk-typescript/node_modules/@smithy/util-uri-escape/dist-es/escape-uri.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/util-uri-escape/dist-es/escape-uri.js
 var escapeUri = (uri) => encodeURIComponent(uri).replace(/[!'()*]/g, hexEncode);
 var hexEncode = (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`;
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/getCanonicalQuery.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/getCanonicalQuery.js
 var getCanonicalQuery = ({ query = {} }) => {
   const keys = [];
   const serialized = {};
@@ -1688,7 +1700,7 @@ var getCanonicalQuery = ({ query = {} }) => {
   return keys.sort().map((key) => serialized[key]).filter((serialized2) => serialized2).join("&");
 };
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/utilDate.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/utilDate.js
 var iso8601 = (time) => toDate(time).toISOString().replace(/\.\d{3}Z$/, "Z");
 var toDate = (time) => {
   if (typeof time === "number") {
@@ -1703,7 +1715,7 @@ var toDate = (time) => {
   return time;
 };
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/SignatureV4Base.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/SignatureV4Base.js
 var SignatureV4Base = class {
   service;
   regionProvider;
@@ -1775,7 +1787,7 @@ ${toHex(hashedRequest)}`;
   }
 };
 
-// ../../sdk-typescript/node_modules/@smithy/signature-v4/dist-es/SignatureV4.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/signature-v4/dist-es/SignatureV4.js
 var SignatureV4 = class extends SignatureV4Base {
   headerFormatter = new HeaderFormatter();
   constructor({ applyChecksum, credentials, region, service, sha256, uriEscapePath = true }) {
@@ -1894,7 +1906,7 @@ var SignatureV4 = class extends SignatureV4Base {
   }
 };
 
-// ../../sdk-typescript/node_modules/tslib/tslib.es6.mjs
+// ../../strands-agents/sdk-typescript/node_modules/tslib/tslib.es6.mjs
 function __awaiter(thisArg, _arguments, P, generator) {
   function adopt(value) {
     return value instanceof P ? value : new P(function(resolve) {
@@ -2003,7 +2015,7 @@ function __values(o) {
   throw new TypeError(s2 ? "Object is not iterable." : "Symbol.iterator is not defined.");
 }
 
-// ../../sdk-typescript/node_modules/@aws-crypto/sha256-js/build/module/constants.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/sha256-js/build/module/constants.js
 var BLOCK_SIZE = 64;
 var DIGEST_LENGTH = 32;
 var KEY = new Uint32Array([
@@ -2084,7 +2096,7 @@ var INIT = [
 ];
 var MAX_HASHABLE_LENGTH = Math.pow(2, 53) - 1;
 
-// ../../sdk-typescript/node_modules/@aws-crypto/sha256-js/build/module/RawSha256.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/sha256-js/build/module/RawSha256.js
 var RawSha256 = (
   /** @class */
   (function() {
@@ -2182,10 +2194,10 @@ var RawSha256 = (
   })()
 );
 
-// ../../sdk-typescript/node_modules/@aws-crypto/util/node_modules/@smithy/util-utf8/dist-es/fromUtf8.browser.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/util/node_modules/@smithy/util-utf8/dist-es/fromUtf8.browser.js
 var fromUtf82 = (input) => new TextEncoder().encode(input);
 
-// ../../sdk-typescript/node_modules/@aws-crypto/util/build/module/convertToBuffer.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/util/build/module/convertToBuffer.js
 var fromUtf83 = typeof Buffer !== "undefined" && Buffer.from ? function(input) {
   return Buffer.from(input, "utf8");
 } : fromUtf82;
@@ -2201,7 +2213,7 @@ function convertToBuffer(data) {
   return new Uint8Array(data);
 }
 
-// ../../sdk-typescript/node_modules/@aws-crypto/util/build/module/isEmptyData.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/util/build/module/isEmptyData.js
 function isEmptyData(data) {
   if (typeof data === "string") {
     return data.length === 0;
@@ -2209,7 +2221,7 @@ function isEmptyData(data) {
   return data.byteLength === 0;
 }
 
-// ../../sdk-typescript/node_modules/@aws-crypto/util/build/module/numToUint8.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/util/build/module/numToUint8.js
 function numToUint8(num) {
   return new Uint8Array([
     (num & 4278190080) >> 24,
@@ -2219,7 +2231,7 @@ function numToUint8(num) {
   ]);
 }
 
-// ../../sdk-typescript/node_modules/@aws-crypto/util/build/module/uint32ArrayFrom.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/util/build/module/uint32ArrayFrom.js
 function uint32ArrayFrom(a_lookUpTable2) {
   if (!Uint32Array.from) {
     var return_array = new Uint32Array(a_lookUpTable2.length);
@@ -2233,7 +2245,7 @@ function uint32ArrayFrom(a_lookUpTable2) {
   return Uint32Array.from(a_lookUpTable2);
 }
 
-// ../../sdk-typescript/node_modules/@aws-crypto/sha256-js/build/module/jsSha256.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/sha256-js/build/module/jsSha256.js
 var Sha256 = (
   /** @class */
   (function() {
@@ -2304,7 +2316,7 @@ function bufferFromSecret(secret) {
   return buffer;
 }
 
-// ../../sdk-typescript/node_modules/@aws-crypto/crc32/build/module/aws_crc32.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/crc32/build/module/aws_crc32.js
 var AwsCrc32 = (
   /** @class */
   (function() {
@@ -2330,7 +2342,7 @@ var AwsCrc32 = (
   })()
 );
 
-// ../../sdk-typescript/node_modules/@aws-crypto/crc32/build/module/index.js
+// ../../strands-agents/sdk-typescript/node_modules/@aws-crypto/crc32/build/module/index.js
 var Crc32 = (
   /** @class */
   (function() {
@@ -2621,7 +2633,7 @@ var a_lookUpTable = [
 ];
 var lookupTable = uint32ArrayFrom(a_lookUpTable);
 
-// ../../sdk-typescript/node_modules/@smithy/eventstream-codec/dist-es/Int64.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/eventstream-codec/dist-es/Int64.js
 var Int642 = class _Int64 {
   bytes;
   constructor(bytes) {
@@ -2666,7 +2678,7 @@ function negate2(bytes) {
   }
 }
 
-// ../../sdk-typescript/node_modules/@smithy/eventstream-codec/dist-es/HeaderMarshaller.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/eventstream-codec/dist-es/HeaderMarshaller.js
 var HeaderMarshaller = class {
   toUtf8;
   fromUtf8;
@@ -2850,7 +2862,7 @@ var TIMESTAMP_TAG = "timestamp";
 var UUID_TAG = "uuid";
 var UUID_PATTERN2 = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
 
-// ../../sdk-typescript/node_modules/@smithy/eventstream-codec/dist-es/splitMessage.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/eventstream-codec/dist-es/splitMessage.js
 var PRELUDE_MEMBER_LENGTH = 4;
 var PRELUDE_LENGTH = PRELUDE_MEMBER_LENGTH * 2;
 var CHECKSUM_LENGTH = 4;
@@ -2881,7 +2893,7 @@ function splitMessage({ byteLength, byteOffset, buffer }) {
   };
 }
 
-// ../../sdk-typescript/node_modules/@smithy/eventstream-codec/dist-es/EventStreamCodec.js
+// ../../strands-agents/sdk-typescript/node_modules/@smithy/eventstream-codec/dist-es/EventStreamCodec.js
 var EventStreamCodec = class {
   headerMarshaller;
   messageBuffer;
@@ -3039,7 +3051,7 @@ async function* parseEventStream(body) {
   }
 }
 
-// ../../sdk-typescript/dist/src/types/validation.js
+// ../../strands-agents/sdk-typescript/dist/src/types/validation.js
 function ensureDefined(value, fieldName) {
   if (value == null) {
     throw new Error(`Expected ${fieldName} to be defined, but got ${value}`);
@@ -3047,7 +3059,7 @@ function ensureDefined(value, fieldName) {
   return value;
 }
 
-// ../../sdk-typescript/dist/src/logging/logger.js
+// ../../strands-agents/sdk-typescript/dist/src/logging/logger.js
 var defaultLogger = {
   debug: () => {
   },
@@ -3058,7 +3070,7 @@ var defaultLogger = {
 };
 var logger = defaultLogger;
 
-// ../../sdk-typescript/dist/src/models/bedrock.js
+// ../../strands-agents/sdk-typescript/dist/src/models/bedrock.js
 var DEFAULT_BEDROCK_MODEL_ID = "global.anthropic.claude-sonnet-4-5-20250929-v1:0";
 var DEFAULT_BEDROCK_REGION = "us-west-2";
 var DEFAULT_BEDROCK_REGION_SUPPORTS_FIP = false;
@@ -3716,9 +3728,13 @@ var BedrockModel = class extends Model {
       case "internalServerException":
       case "modelStreamErrorException":
       case "serviceUnavailableException":
-      case "validationException":
-      case "throttlingException": {
+      case "validationException": {
         throw eventData;
+      }
+      case "throttlingException": {
+        const message = eventData.message ?? "Request was throttled by the model provider";
+        logger.debug(`throttled | error_message=<${message}>`);
+        throw new ModelThrottledError(message, { cause: eventData });
       }
       default:
         logger.warn(`event_type=<${eventType}> | unsupported bedrock event type`);
@@ -3789,7 +3805,7 @@ function applyDefaultRegion(config) {
   };
 }
 
-// ../../sdk-typescript/dist/src/hooks/events.js
+// ../../strands-agents/sdk-typescript/dist/src/hooks/events.js
 var HookEvent = class {
   /**
    * @internal
@@ -3798,6 +3814,14 @@ var HookEvent = class {
    */
   _shouldReverseCallbacks() {
     return false;
+  }
+};
+var InitializedEvent = class extends HookEvent {
+  type = "initializedEvent";
+  agent;
+  constructor(data) {
+    super();
+    this.agent = data.agent;
   }
 };
 var BeforeInvocationEvent = class extends HookEvent {
@@ -3933,7 +3957,7 @@ var AfterToolsEvent = class extends HookEvent {
   }
 };
 
-// ../../sdk-typescript/dist/src/hooks/registry.js
+// ../../strands-agents/sdk-typescript/dist/src/hooks/registry.js
 var HookRegistryImplementation = class {
   _callbacks;
   _currentProvider;
@@ -4029,7 +4053,7 @@ var HookRegistryImplementation = class {
   }
 };
 
-// ../../sdk-typescript/dist/src/conversation-manager/null-conversation-manager.js
+// ../../strands-agents/sdk-typescript/dist/src/conversation-manager/null-conversation-manager.js
 var NullConversationManager = class {
   /**
    * Registers callbacks with the hook registry.
@@ -4041,7 +4065,7 @@ var NullConversationManager = class {
   }
 };
 
-// ../../sdk-typescript/dist/src/conversation-manager/sliding-window-conversation-manager.js
+// ../../strands-agents/sdk-typescript/dist/src/conversation-manager/sliding-window-conversation-manager.js
 var SlidingWindowConversationManager = class {
   _windowSize;
   _shouldTruncateResults;
@@ -4362,7 +4386,7 @@ var ZodFirstPartyTypeKind3 = new Proxy({}, { get: (_, p) => p });
 var ZodIssueCode3 = new Proxy({}, { get: (_, p) => p });
 var ZodParsedType3 = new Proxy({}, { get: (_, p) => p });
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-compat.js
 function isZ4Schema(s2) {
   const schema3 = s2;
   return !!schema3._zod;
@@ -4486,12 +4510,12 @@ var CancelTaskRequestSchema = s;
 var CancelTaskResultSchema = s;
 var TaskStatusNotificationSchema = s;
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/interfaces.js
 function isTerminal(status) {
   return status === "completed" || status === "failed" || status === "cancelled";
 }
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/server/zod-json-schema-compat.js
 function getMethodLiteral(schema3) {
   const shape = getObjectShape(schema3);
   const methodSchema = shape?.method;
@@ -4512,7 +4536,7 @@ function parseWithCompat(schema3, data) {
   return result.data;
 }
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/protocol.js
 var DEFAULT_REQUEST_TIMEOUT_MSEC = 6e4;
 var Protocol = class {
   constructor(_options) {
@@ -5477,7 +5501,7 @@ var ajv_default = Ajv;
 // stubs/empty.js
 var empty_default = {};
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/validation/ajv-provider.js
 function createDefaultAjvInstance() {
   const ajv = new ajv_default({
     strict: false,
@@ -5543,7 +5567,7 @@ var AjvJsonSchemaValidator = class {
   }
 };
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/client.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/client.js
 var ExperimentalClientTasks = class {
   constructor(_client) {
     this._client = _client;
@@ -5697,7 +5721,7 @@ var ExperimentalClientTasks = class {
   }
 };
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/experimental/tasks/helpers.js
 function assertToolsCallTaskCapability(requests, method, entityName) {
   if (!requests) {
     throw new Error(`${entityName} does not support task creation (required for ${method})`);
@@ -5732,7 +5756,7 @@ function assertClientRequestTaskCapability(requests, method, entityName) {
   }
 }
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/client/index.js
 function applyElicitationDefaults(schema3, data) {
   if (!schema3 || data === null || typeof data !== "object")
     return;
@@ -6252,7 +6276,7 @@ var Client = class extends Protocol {
   }
 };
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/responseMessage.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/responseMessage.js
 async function takeResult(it) {
   for await (const o of it) {
     if (o.type === "result") {
@@ -6264,7 +6288,7 @@ async function takeResult(it) {
   throw new Error("No result in stream.");
 }
 
-// ../../sdk-typescript/dist/src/tools/mcp-tool.js
+// ../../strands-agents/sdk-typescript/dist/src/tools/mcp-tool.js
 var McpTool = class extends Tool {
   name;
   description;
@@ -6331,7 +6355,7 @@ var McpTool = class extends Tool {
   }
 };
 
-// ../../sdk-typescript/dist/src/mcp.js
+// ../../strands-agents/sdk-typescript/dist/src/mcp.js
 var McpClient = class {
   _clientName;
   _clientVersion;
@@ -6419,7 +6443,7 @@ var McpClient = class {
   }
 };
 
-// ../../sdk-typescript/dist/src/registry/registry.js
+// ../../strands-agents/sdk-typescript/dist/src/registry/registry.js
 var ItemNotFoundError = class extends Error {
   constructor(id) {
     super(`Item with id '${id}' not found`);
@@ -6688,7 +6712,7 @@ if (import.meta.vitest) {
   });
 }
 
-// ../../sdk-typescript/dist/src/registry/tool-registry.js
+// ../../strands-agents/sdk-typescript/dist/src/registry/tool-registry.js
 var ToolRegistry = class extends Registry {
   /**
    * Generates a unique identifier for a Tool.
@@ -6848,7 +6872,7 @@ if (import.meta.vitest) {
   });
 }
 
-// ../../sdk-typescript/dist/src/agent/state.js
+// ../../strands-agents/sdk-typescript/dist/src/agent/state.js
 var AgentState = class {
   _state;
   /**
@@ -6904,7 +6928,7 @@ var AgentState = class {
   }
 };
 
-// ../../sdk-typescript/dist/src/agent/printer.js
+// ../../strands-agents/sdk-typescript/dist/src/agent/printer.js
 function getDefaultAppender() {
   if (typeof process !== "undefined" && define_process_stdout_default?.write) {
     return (text) => define_process_stdout_default.write(text);
@@ -7030,7 +7054,7 @@ var AgentPrinter = class {
   }
 };
 
-// ../../sdk-typescript/dist/src/agent/agent.js
+// ../../strands-agents/sdk-typescript/dist/src/agent/agent.js
 var __addDisposableResource = function(env, value, async) {
   if (value !== null && value !== void 0) {
     if (typeof value !== "object" && typeof value !== "function") throw new TypeError("Object expected.");
@@ -7157,6 +7181,7 @@ var Agent = class {
       const tools = await client.listTools();
       this._toolRegistry.addAll(tools);
     }));
+    await this.hooks.invokeCallbacks(new InitializedEvent({ agent: this }));
     this._initialized = true;
   }
   /**
@@ -7517,7 +7542,212 @@ function flattenTools(toolList) {
   return { tools, mcpClients };
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/tslib.mjs
+// ../../strands-agents/sdk-typescript/dist/src/conversation-manager/summarizing-conversation-manager.js
+var DEFAULT_SUMMARIZATION_PROMPT = `You are a conversation summarizer. Provide a concise summary of the conversation history.
+
+Format Requirements:
+- You MUST create a structured and concise summary in bullet-point format.
+- You MUST NOT respond conversationally.
+- You MUST NOT address the user directly.
+- You MUST NOT comment on tool availability.
+
+Assumptions:
+- You MUST NOT assume tool executions failed unless otherwise stated.
+
+Task:
+Your task is to create a structured summary document:
+- It MUST contain bullet points with key topics and questions covered
+- It MUST contain bullet points for all significant tools executed and their results
+- It MUST contain bullet points for any code or technical information shared
+- It MUST contain a section of key insights gained
+- It MUST format the summary in the third person
+
+Example format:
+## Conversation Summary
+* Topic 1: Key information
+* Topic 2: Key information
+
+## Tools Executed
+* Tool X: Result Y`;
+var SummarizingConversationManager = class {
+  _summaryRatio;
+  _preserveRecentMessages;
+  _summarizationAgent;
+  _summarizationSystemPrompt;
+  _summaryMessage;
+  /**
+   * Initialize the summarizing conversation manager.
+   *
+   * @param config - Configuration options for the summarizing manager.
+   */
+  constructor(config) {
+    if (config?.summarizationAgent && config?.summarizationSystemPrompt) {
+      throw new Error("Cannot provide both summarizationAgent and summarizationSystemPrompt. Agents come with their own system prompt.");
+    }
+    this._summaryRatio = Math.max(0.1, Math.min(0.8, config?.summaryRatio ?? 0.3));
+    this._preserveRecentMessages = config?.preserveRecentMessages ?? 10;
+    if (config?.summarizationAgent !== void 0) {
+      this._summarizationAgent = config.summarizationAgent;
+    }
+    if (config?.summarizationSystemPrompt !== void 0) {
+      this._summarizationSystemPrompt = config.summarizationSystemPrompt;
+    }
+  }
+  /**
+   * Registers callbacks with the hook registry.
+   *
+   * Registers:
+   * - AfterModelCallEvent callback to handle context overflow and request retry
+   *
+   * @param registry - The hook registry to register callbacks with
+   */
+  registerCallbacks(registry) {
+    registry.addCallback(AfterModelCallEvent, async (event) => {
+      if (event.error instanceof ContextWindowOverflowError) {
+        await this.reduceContext(event.agent);
+        event.retry = true;
+      }
+    });
+  }
+  /**
+   * Reduce context using summarization.
+   *
+   * @param agent - The agent whose conversation history will be reduced.
+   *
+   * @throws ContextWindowOverflowError If the context cannot be summarized.
+   */
+  async reduceContext(agent) {
+    const messagesToSummarizeCount = this.calculateSummarizeCount(agent.messages.length);
+    if (messagesToSummarizeCount <= 0) {
+      throw new ContextWindowOverflowError("Cannot summarize: insufficient messages for summarization");
+    }
+    const adjustedCount = this.adjustSplitPointForToolPairs(agent.messages, messagesToSummarizeCount);
+    if (adjustedCount <= 0) {
+      throw new ContextWindowOverflowError("Cannot summarize: insufficient messages for summarization");
+    }
+    const messagesToSummarize = agent.messages.slice(0, adjustedCount);
+    const remainingMessages = agent.messages.slice(adjustedCount);
+    this._summaryMessage = await this.generateSummary(messagesToSummarize, agent);
+    agent.messages.splice(0, agent.messages.length, this._summaryMessage, ...remainingMessages);
+  }
+  /**
+   * Calculate how many messages to summarize.
+   *
+   * @param totalMessages - Total number of messages in conversation
+   * @returns Number of messages to summarize
+   */
+  calculateSummarizeCount(totalMessages) {
+    const count = Math.max(1, Math.floor(totalMessages * this._summaryRatio));
+    return Math.max(0, Math.min(count, totalMessages - this._preserveRecentMessages));
+  }
+  /**
+   * Adjust the split point to avoid breaking ToolUse/ToolResult pairs.
+   *
+   * @param messages - The full list of messages.
+   * @param splitPoint - The initially calculated split point.
+   * @returns The adjusted split point that doesn't break ToolUse/ToolResult pairs.
+   *
+   * @throws ContextWindowOverflowError If no valid split point can be found.
+   */
+  adjustSplitPointForToolPairs(messages, splitPoint) {
+    if (splitPoint > messages.length) {
+      throw new ContextWindowOverflowError("Split point exceeds message array length");
+    }
+    if (splitPoint === messages.length) {
+      return splitPoint;
+    }
+    while (splitPoint < messages.length) {
+      const message = messages[splitPoint];
+      if (!message) {
+        break;
+      }
+      const hasToolResult = message.content.some((block) => block.type === "toolResultBlock");
+      if (hasToolResult) {
+        splitPoint++;
+        continue;
+      }
+      const hasToolUse = message.content.some((block) => block.type === "toolUseBlock");
+      if (hasToolUse) {
+        const nextMessage = messages[splitPoint + 1];
+        const nextHasToolResult = nextMessage?.content.some((block) => block.type === "toolResultBlock");
+        if (!nextHasToolResult) {
+          splitPoint++;
+          continue;
+        }
+      }
+      break;
+    }
+    if (splitPoint >= messages.length) {
+      throw new ContextWindowOverflowError("Unable to trim conversation context!");
+    }
+    return splitPoint;
+  }
+  /**
+   * Generate a summary of the provided messages.
+   *
+   * @param messages - The messages to summarize.
+   * @param agent - The agent instance whose model will be used for summarization.
+   * @returns A message containing the conversation summary.
+   */
+  async generateSummary(messages, agent) {
+    if (this._summarizationAgent) {
+      return this.generateSummaryWithAgent(messages);
+    }
+    return this.generateSummaryWithModel(messages, agent);
+  }
+  /**
+   * Generate a summary using the dedicated summarization agent.
+   *
+   * @param messages - The messages to summarize.
+   * @returns A message containing the conversation summary.
+   */
+  async generateSummaryWithAgent(messages) {
+    const summarizationAgent = this._summarizationAgent;
+    const originalMessages = [...summarizationAgent.messages];
+    try {
+      summarizationAgent.messages.splice(0, summarizationAgent.messages.length, ...messages);
+      const result = await summarizationAgent.invoke("Please summarize this conversation.");
+      return new Message({
+        role: "user",
+        content: result.lastMessage.content
+      });
+    } finally {
+      summarizationAgent.messages.splice(0, summarizationAgent.messages.length, ...originalMessages);
+    }
+  }
+  /**
+   * Generate a summary by calling the agent's model directly.
+   *
+   * @param messages - The messages to summarize.
+   * @param agent - The parent agent whose model is used.
+   * @returns A message containing the conversation summary.
+   */
+  async generateSummaryWithModel(messages, agent) {
+    const systemPrompt = this._summarizationSystemPrompt ?? DEFAULT_SUMMARIZATION_PROMPT;
+    const summarizationMessages = [
+      ...messages,
+      new Message({
+        role: "user",
+        content: [new TextBlock("Please summarize this conversation.")]
+      })
+    ];
+    const streamOptions = {
+      systemPrompt
+    };
+    const streamGenerator = agent.model.streamAggregated(summarizationMessages, streamOptions);
+    let result = await streamGenerator.next();
+    while (!result.done) {
+      result = await streamGenerator.next();
+    }
+    const { message } = result.value;
+    return new Message({
+      role: "user",
+      content: message.content
+    });
+  }
+};
+
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/tslib.mjs
 function __classPrivateFieldSet(receiver, state, value, kind, f) {
   if (kind === "m")
     throw new TypeError("Private method is not writable");
@@ -7535,7 +7765,7 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
   return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/uuid.mjs
 var uuid4 = function() {
   const { crypto: crypto2 } = globalThis;
   if (crypto2?.randomUUID) {
@@ -7547,7 +7777,7 @@ var uuid4 = function() {
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/errors.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/errors.mjs
 function isAbortError(err) {
   return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
   ("name" in err && err.name === "AbortError" || // Expo fetch
@@ -7578,7 +7808,7 @@ var castToError = (err) => {
   return new Error(err);
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/core/error.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/core/error.mjs
 var AnthropicError = class extends Error {
 };
 var APIError = class _APIError extends AnthropicError {
@@ -7668,7 +7898,7 @@ var RateLimitError = class extends APIError {
 var InternalServerError = class extends APIError {
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/values.mjs
 var startsWithSchemeRegexp = /^[a-z][a-z0-9+.-]*:/i;
 var isAbsoluteURL = (url) => {
   return startsWithSchemeRegexp.test(url);
@@ -7708,13 +7938,13 @@ var safeJSON = (text) => {
   }
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/sleep.mjs
 var sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/version.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/version.mjs
 var VERSION = "0.71.2";
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/detect-platform.mjs
 var isRunningInBrowser = () => {
   return (
     // @ts-ignore
@@ -7848,7 +8078,7 @@ var getPlatformHeaders = () => {
   return _platformHeaders ?? (_platformHeaders = getPlatformProperties());
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/shims.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/shims.mjs
 function getDefaultFetch() {
   if (typeof fetch !== "undefined") {
     return fetch;
@@ -7920,7 +8150,7 @@ async function CancelReadableStream(stream) {
   await cancelPromise;
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/request-options.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/request-options.mjs
 var FallbackEncoder = ({ headers, body }) => {
   return {
     bodyHeaders: {
@@ -7930,7 +8160,7 @@ var FallbackEncoder = ({ headers, body }) => {
   };
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/bytes.mjs
 function concatBytes(buffers) {
   let length = 0;
   for (const buffer of buffers) {
@@ -7955,7 +8185,7 @@ function decodeUTF8(bytes) {
   return (decodeUTF8_ ?? (decoder = new globalThis.TextDecoder(), decodeUTF8_ = decoder.decode.bind(decoder)))(bytes);
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/decoders/line.mjs
 var _LineDecoder_buffer;
 var _LineDecoder_carriageReturnIndex;
 var LineDecoder = class {
@@ -8032,7 +8262,7 @@ function findDoubleNewlineIndex(buffer) {
   return -1;
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/log.mjs
 var levelNumbers = {
   off: 0,
   error: 200,
@@ -8105,7 +8335,7 @@ var formatRequestDetails = (details) => {
   return details;
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/core/streaming.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/core/streaming.mjs
 var _Stream_client;
 var Stream = class _Stream {
   constructor(iterator, controller, client) {
@@ -8354,7 +8584,7 @@ function partition(str2, delimiter) {
   return [str2, "", ""];
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/parse.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/parse.mjs
 async function defaultParseResponse(client, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
@@ -8400,7 +8630,7 @@ function addRequestID(value, response) {
   });
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/core/api-promise.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/core/api-promise.mjs
 var _APIPromise_client;
 var APIPromise = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse) {
@@ -8463,7 +8693,7 @@ var APIPromise = class _APIPromise extends Promise {
 };
 _APIPromise_client = /* @__PURE__ */ new WeakMap();
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/core/pagination.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/core/pagination.mjs
 var _AbstractPage_client;
 var AbstractPage = class {
   constructor(client, response, body, options) {
@@ -8565,7 +8795,7 @@ var Page = class extends AbstractPage {
   }
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/uploads.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/uploads.mjs
 var checkFileSupport = () => {
   if (typeof File === "undefined") {
     const { process: process2 } = globalThis;
@@ -8582,7 +8812,7 @@ function getName(value) {
 }
 var isAsyncIterable = (value) => value != null && typeof value === "object" && typeof value[Symbol.asyncIterator] === "function";
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/to-file.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/to-file.mjs
 var isBlobLike = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
 var isFileLike = (value) => value != null && typeof value === "object" && typeof value.name === "string" && typeof value.lastModified === "number" && isBlobLike(value);
 var isResponseLike = (value) => value != null && typeof value === "object" && typeof value.url === "string" && typeof value.blob === "function";
@@ -8638,28 +8868,28 @@ function propsForError(value) {
   return `; props: [${props.map((p) => `"${p}"`).join(", ")}]`;
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/resources/beta/beta.mjs
 var S2 = class {
   constructor() {
   }
 };
 var Beta = S2;
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/resources/completions.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/resources/completions.mjs
 var S3 = class {
   constructor() {
   }
 };
 var Completions = S3;
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/core/resource.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/core/resource.mjs
 var APIResource = class {
   constructor(client) {
     this._client = client;
   }
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/_vendor/partial-json-parser/parser.mjs
 var tokenize = (input) => {
   let current = 0;
   let tokens = [];
@@ -8879,7 +9109,7 @@ var generate = (tokens) => {
 };
 var partialParse = (input) => JSON.parse(generate(unstrip(strip(tokenize(input)))));
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/lib/MessageStream.mjs
 var _MessageStream_instances;
 var _MessageStream_currentMessageSnapshot;
 var _MessageStream_connectedPromise;
@@ -9461,7 +9691,7 @@ var MessageStream = class _MessageStream {
 function checkNever(x) {
 }
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/headers.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/headers.mjs
 var brand_privateNullableHeaders = /* @__PURE__ */ Symbol.for("brand.privateNullableHeaders");
 function* iterateHeaders(headers) {
   if (!headers)
@@ -9524,7 +9754,7 @@ var buildHeaders = (newHeaders) => {
   return { [brand_privateNullableHeaders]: true, values: targetHeaders, nulls: nullHeaders };
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/decoders/jsonl.mjs
 var JSONLDecoder = class _JSONLDecoder {
   constructor(iterator, controller) {
     this.iterator = iterator;
@@ -9556,7 +9786,7 @@ var JSONLDecoder = class _JSONLDecoder {
   }
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/path.mjs
 function encodeURIPath(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
@@ -9611,7 +9841,7 @@ ${underline}`);
 };
 var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/resources/messages/batches.mjs
 var Batches = class extends APIResource {
   /**
    * Send a batch of Message creation requests.
@@ -9752,7 +9982,7 @@ var Batches = class extends APIResource {
   }
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/constants.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/constants.mjs
 var MODEL_NONSTREAMING_TOKENS = {
   "claude-opus-4-20250514": 8192,
   "claude-opus-4-0": 8192,
@@ -9764,7 +9994,7 @@ var MODEL_NONSTREAMING_TOKENS = {
   "claude-opus-4-1@20250805": 8192
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/resources/messages/messages.mjs
 var Messages = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -9830,14 +10060,14 @@ var DEPRECATED_MODELS = {
 };
 Messages.Batches = Batches;
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/resources/models.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/resources/models.mjs
 var S4 = class {
   constructor() {
   }
 };
 var Models = S4;
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/internal/utils/env.mjs
 var readEnv = (env) => {
   if (typeof globalThis.process !== "undefined") {
     return globalThis.process.env?.[env]?.trim() ?? void 0;
@@ -9848,7 +10078,7 @@ var readEnv = (env) => {
   return void 0;
 };
 
-// ../../sdk-typescript/node_modules/@anthropic-ai/sdk/client.mjs
+// ../../strands-agents/sdk-typescript/node_modules/@anthropic-ai/sdk/client.mjs
 var _BaseAnthropic_instances;
 var _a;
 var _BaseAnthropic_encoder;
@@ -10317,7 +10547,7 @@ Anthropic.Messages = Messages;
 Anthropic.Models = Models;
 Anthropic.Beta = Beta;
 
-// ../../sdk-typescript/dist/src/models/anthropic.js
+// ../../strands-agents/sdk-typescript/dist/src/models/anthropic.js
 var DEFAULT_ANTHROPIC_MODEL_ID = "claude-sonnet-4-5-20250929";
 var CONTEXT_WINDOW_OVERFLOW_ERRORS = ["prompt is too long", "max_tokens exceeded", "input too long"];
 var TEXT_FILE_FORMATS = ["txt", "md", "markdown", "csv", "json", "xml", "html", "yml", "yaml", "js", "ts", "py"];
@@ -10470,6 +10700,12 @@ var AnthropicModel = class extends Model {
       const error = normalizeError(unknownError);
       if (CONTEXT_WINDOW_OVERFLOW_ERRORS.some((msg) => error.message.includes(msg))) {
         throw new ContextWindowOverflowError(error.message);
+      }
+      const err = unknownError;
+      if (err.status === 429) {
+        const message = error.message ?? "Request was throttled by the model provider";
+        logger.debug(`throttled | error_message=<${message}>`);
+        throw new ModelThrottledError(message, { cause: err });
       }
       throw error;
     }
@@ -10706,7 +10942,7 @@ var AnthropicModel = class extends Model {
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/tslib.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/tslib.mjs
 function __classPrivateFieldSet2(receiver, state, value, kind, f) {
   if (kind === "m")
     throw new TypeError("Private method is not writable");
@@ -10724,7 +10960,7 @@ function __classPrivateFieldGet2(receiver, state, kind, f) {
   return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 
-// ../../sdk-typescript/node_modules/openai/internal/utils/uuid.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/utils/uuid.mjs
 var uuid42 = function() {
   const { crypto: crypto2 } = globalThis;
   if (crypto2?.randomUUID) {
@@ -10736,7 +10972,7 @@ var uuid42 = function() {
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/errors.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/errors.mjs
 function isAbortError2(err) {
   return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
   ("name" in err && err.name === "AbortError" || // Expo fetch
@@ -10767,7 +11003,7 @@ var castToError2 = (err) => {
   return new Error(err);
 };
 
-// ../../sdk-typescript/node_modules/openai/core/error.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/core/error.mjs
 var OpenAIError = class extends Error {
 };
 var APIError2 = class _APIError extends OpenAIError {
@@ -10876,7 +11112,7 @@ var InvalidWebhookSignatureError = class extends Error {
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/utils/values.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/utils/values.mjs
 var startsWithSchemeRegexp2 = /^[a-z][a-z0-9+.-]*:/i;
 var isAbsoluteURL2 = (url) => {
   return startsWithSchemeRegexp2.test(url);
@@ -10916,13 +11152,13 @@ var safeJSON2 = (text) => {
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/utils/sleep.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/utils/sleep.mjs
 var sleep2 = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// ../../sdk-typescript/node_modules/openai/version.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/version.mjs
 var VERSION2 = "6.18.0";
 
-// ../../sdk-typescript/node_modules/openai/internal/detect-platform.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/detect-platform.mjs
 var isRunningInBrowser2 = () => {
   return (
     // @ts-ignore
@@ -11056,7 +11292,7 @@ var getPlatformHeaders2 = () => {
   return _platformHeaders2 ?? (_platformHeaders2 = getPlatformProperties2());
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/shims.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/shims.mjs
 function getDefaultFetch2() {
   if (typeof fetch !== "undefined") {
     return fetch;
@@ -11128,7 +11364,7 @@ async function CancelReadableStream2(stream) {
   await cancelPromise;
 }
 
-// ../../sdk-typescript/node_modules/openai/internal/request-options.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/request-options.mjs
 var FallbackEncoder2 = ({ headers, body }) => {
   return {
     bodyHeaders: {
@@ -11138,7 +11374,7 @@ var FallbackEncoder2 = ({ headers, body }) => {
   };
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/qs/formats.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/qs/formats.mjs
 var default_format = "RFC3986";
 var default_formatter = (v) => String(v);
 var formatters = {
@@ -11147,7 +11383,7 @@ var formatters = {
 };
 var RFC1738 = "RFC1738";
 
-// ../../sdk-typescript/node_modules/openai/internal/qs/utils.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/qs/utils.mjs
 var has = (obj, key) => (has = Object.hasOwn ?? Function.prototype.call.bind(Object.prototype.hasOwnProperty), has(obj, key));
 var hex_table = /* @__PURE__ */ (() => {
   const array = [];
@@ -11226,7 +11462,7 @@ function maybe_map(val, fn) {
   return fn(val);
 }
 
-// ../../sdk-typescript/node_modules/openai/internal/qs/stringify.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/qs/stringify.mjs
 var array_prefix_generators = {
   brackets(prefix) {
     return String(prefix) + "[]";
@@ -11504,7 +11740,7 @@ function stringify(object3, opts = {}) {
   return joined.length > 0 ? prefix + joined : "";
 }
 
-// ../../sdk-typescript/node_modules/openai/internal/utils/bytes.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/utils/bytes.mjs
 function concatBytes2(buffers) {
   let length = 0;
   for (const buffer of buffers) {
@@ -11529,7 +11765,7 @@ function decodeUTF82(bytes) {
   return (decodeUTF8_2 ?? (decoder = new globalThis.TextDecoder(), decodeUTF8_2 = decoder.decode.bind(decoder)))(bytes);
 }
 
-// ../../sdk-typescript/node_modules/openai/internal/decoders/line.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/decoders/line.mjs
 var _LineDecoder_buffer2;
 var _LineDecoder_carriageReturnIndex2;
 var LineDecoder2 = class {
@@ -11606,7 +11842,7 @@ function findDoubleNewlineIndex2(buffer) {
   return -1;
 }
 
-// ../../sdk-typescript/node_modules/openai/internal/utils/log.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/utils/log.mjs
 var levelNumbers2 = {
   off: 0,
   error: 200,
@@ -11679,7 +11915,7 @@ var formatRequestDetails2 = (details) => {
   return details;
 };
 
-// ../../sdk-typescript/node_modules/openai/core/streaming.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/core/streaming.mjs
 var _Stream_client2;
 var Stream2 = class _Stream {
   constructor(iterator, controller, client) {
@@ -11937,7 +12173,7 @@ function partition2(str2, delimiter) {
   return [str2, "", ""];
 }
 
-// ../../sdk-typescript/node_modules/openai/internal/parse.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/parse.mjs
 async function defaultParseResponse2(client, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
@@ -11987,7 +12223,7 @@ function addRequestID2(value, response) {
   });
 }
 
-// ../../sdk-typescript/node_modules/openai/core/api-promise.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/core/api-promise.mjs
 var _APIPromise_client2;
 var APIPromise2 = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse2) {
@@ -12050,7 +12286,7 @@ var APIPromise2 = class _APIPromise extends Promise {
 };
 _APIPromise_client2 = /* @__PURE__ */ new WeakMap();
 
-// ../../sdk-typescript/node_modules/openai/core/pagination.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/core/pagination.mjs
 var _AbstractPage_client2;
 var AbstractPage2 = class {
   constructor(client, response, body, options) {
@@ -12138,7 +12374,7 @@ var CursorPage = class extends AbstractPage2 {
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/uploads.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/uploads.mjs
 var checkFileSupport2 = () => {
   if (typeof File === "undefined") {
     const { process: process2 } = globalThis;
@@ -12155,7 +12391,7 @@ function getName2(value) {
 }
 var isAsyncIterable2 = (value) => value != null && typeof value === "object" && typeof value[Symbol.asyncIterator] === "function";
 
-// ../../sdk-typescript/node_modules/openai/internal/to-file.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/to-file.mjs
 var isBlobLike2 = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
 var isFileLike2 = (value) => value != null && typeof value === "object" && typeof value.name === "string" && typeof value.lastModified === "number" && isBlobLike2(value);
 var isResponseLike2 = (value) => value != null && typeof value === "object" && typeof value.url === "string" && typeof value.blob === "function";
@@ -12207,14 +12443,14 @@ function propsForError2(value) {
   return `; props: [${props.map((p) => `"${p}"`).join(", ")}]`;
 }
 
-// ../../sdk-typescript/node_modules/openai/core/resource.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/core/resource.mjs
 var APIResource2 = class {
   constructor(client) {
     this._client = client;
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/utils/path.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/utils/path.mjs
 function encodeURIPath2(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
@@ -12269,7 +12505,7 @@ ${underline}`);
 };
 var path2 = /* @__PURE__ */ createPathTagFunction2(encodeURIPath2);
 
-// ../../sdk-typescript/node_modules/openai/resources/chat/completions/messages.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/chat/completions/messages.mjs
 var Messages2 = class extends APIResource2 {
   /**
    * Get the messages in a stored chat completion. Only Chat Completions that have
@@ -12290,7 +12526,7 @@ var Messages2 = class extends APIResource2 {
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/lib/parser.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/parser.mjs
 function isChatCompletionFunctionTool(tool2) {
   return tool2 !== void 0 && "function" in tool2 && tool2.function !== void 0;
 }
@@ -12397,7 +12633,7 @@ function validateInputTools(tools) {
   }
 }
 
-// ../../sdk-typescript/node_modules/openai/lib/chatCompletionUtils.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/chatCompletionUtils.mjs
 var isAssistantMessage = (message) => {
   return message?.role === "assistant";
 };
@@ -12405,7 +12641,7 @@ var isToolMessage = (message) => {
   return message?.role === "tool";
 };
 
-// ../../sdk-typescript/node_modules/openai/lib/EventStream.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/EventStream.mjs
 var _EventStream_instances;
 var _EventStream_connectedPromise;
 var _EventStream_resolveConnectedPromise;
@@ -12594,12 +12830,12 @@ _EventStream_connectedPromise = /* @__PURE__ */ new WeakMap(), _EventStream_reso
   return this._emit("error", new OpenAIError(String(error)));
 };
 
-// ../../sdk-typescript/node_modules/openai/lib/RunnableFunction.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/RunnableFunction.mjs
 function isRunnableFunctionWithParse(fn) {
   return typeof fn.parse === "function";
 }
 
-// ../../sdk-typescript/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
 var _AbstractChatCompletionRunner_instances;
 var _AbstractChatCompletionRunner_getFinalContent;
 var _AbstractChatCompletionRunner_getFinalMessage;
@@ -12869,7 +13105,7 @@ _AbstractChatCompletionRunner_instances = /* @__PURE__ */ new WeakSet(), _Abstra
   return typeof rawContent === "string" ? rawContent : rawContent === void 0 ? "undefined" : JSON.stringify(rawContent);
 };
 
-// ../../sdk-typescript/node_modules/openai/lib/ChatCompletionRunner.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/ChatCompletionRunner.mjs
 var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompletionRunner {
   static runTools(client, params, options) {
     const runner = new _ChatCompletionRunner();
@@ -12888,7 +13124,7 @@ var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompl
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/_vendor/partial-json-parser/parser.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/_vendor/partial-json-parser/parser.mjs
 var STR = 1;
 var NUM = 2;
 var ARR = 4;
@@ -13100,7 +13336,7 @@ var _parseJSON = (jsonString, allow) => {
 };
 var partialParse2 = (input) => parseJSON(input, Allow.ALL ^ Allow.NUM);
 
-// ../../sdk-typescript/node_modules/openai/lib/ChatCompletionStream.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/ChatCompletionStream.mjs
 var _ChatCompletionStream_instances;
 var _ChatCompletionStream_params;
 var _ChatCompletionStream_choiceEventStates;
@@ -13580,7 +13816,7 @@ function assertIsEmpty(obj) {
 function assertNever(_x) {
 }
 
-// ../../sdk-typescript/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
 var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends ChatCompletionStream {
   static fromReadableStream(stream) {
     const runner = new _ChatCompletionStreamingRunner(null);
@@ -13601,7 +13837,7 @@ var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/resources/chat/completions/completions.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/chat/completions/completions.mjs
 var Completions2 = class extends APIResource2 {
   constructor() {
     super(...arguments);
@@ -13692,7 +13928,7 @@ var Completions2 = class extends APIResource2 {
 };
 Completions2.Messages = Messages2;
 
-// ../../sdk-typescript/node_modules/openai/resources/chat/chat.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/chat/chat.mjs
 var Chat = class extends APIResource2 {
   constructor() {
     super(...arguments);
@@ -13701,112 +13937,112 @@ var Chat = class extends APIResource2 {
 };
 Chat.Completions = Completions2;
 
-// ../../sdk-typescript/node_modules/openai/resources/audio/audio.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/audio/audio.mjs
 var S5 = class {
   constructor() {
   }
 };
 var Audio = S5;
 
-// ../../sdk-typescript/node_modules/openai/resources/batches.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/batches.mjs
 var S6 = class {
   constructor() {
   }
 };
 var Batches2 = S6;
 
-// ../../sdk-typescript/node_modules/openai/resources/beta/beta.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/beta/beta.mjs
 var S7 = class {
   constructor() {
   }
 };
 var Beta2 = S7;
 
-// ../../sdk-typescript/node_modules/openai/resources/completions.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/completions.mjs
 var S8 = class {
   constructor() {
   }
 };
 var Completions3 = S8;
 
-// ../../sdk-typescript/node_modules/openai/resources/containers/containers.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/containers/containers.mjs
 var S9 = class {
   constructor() {
   }
 };
 var Containers = S9;
 
-// ../../sdk-typescript/node_modules/openai/resources/conversations/conversations.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/conversations/conversations.mjs
 var S10 = class {
   constructor() {
   }
 };
 var Conversations = S10;
 
-// ../../sdk-typescript/node_modules/openai/resources/embeddings.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/embeddings.mjs
 var S11 = class {
   constructor() {
   }
 };
 var Embeddings = S11;
 
-// ../../sdk-typescript/node_modules/openai/resources/evals/evals.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/evals/evals.mjs
 var S12 = class {
   constructor() {
   }
 };
 var Evals = S12;
 
-// ../../sdk-typescript/node_modules/openai/resources/files.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/files.mjs
 var S13 = class {
   constructor() {
   }
 };
 var Files = S13;
 
-// ../../sdk-typescript/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
 var S14 = class {
   constructor() {
   }
 };
 var FineTuning = S14;
 
-// ../../sdk-typescript/node_modules/openai/resources/graders/graders.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/graders/graders.mjs
 var S15 = class {
   constructor() {
   }
 };
 var Graders = S15;
 
-// ../../sdk-typescript/node_modules/openai/resources/images.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/images.mjs
 var S16 = class {
   constructor() {
   }
 };
 var Images = S16;
 
-// ../../sdk-typescript/node_modules/openai/resources/models.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/models.mjs
 var S17 = class {
   constructor() {
   }
 };
 var Models2 = S17;
 
-// ../../sdk-typescript/node_modules/openai/resources/moderations.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/moderations.mjs
 var S18 = class {
   constructor() {
   }
 };
 var Moderations = S18;
 
-// ../../sdk-typescript/node_modules/openai/resources/realtime/realtime.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/realtime/realtime.mjs
 var S19 = class {
   constructor() {
   }
 };
 var Realtime = S19;
 
-// ../../sdk-typescript/node_modules/openai/lib/ResponsesParser.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/ResponsesParser.mjs
 function maybeParseResponse(response, params) {
   if (!params || !hasAutoParseableInput2(params)) {
     return {
@@ -13927,7 +14163,7 @@ function addOutputText(rsp) {
   rsp.output_text = texts.join("");
 }
 
-// ../../sdk-typescript/node_modules/openai/lib/responses/ResponseStream.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/lib/responses/ResponseStream.mjs
 var _ResponseStream_instances;
 var _ResponseStream_params;
 var _ResponseStream_currentResponseSnapshot;
@@ -14189,7 +14425,7 @@ function finalizeResponse(snapshot, params) {
   return maybeParseResponse(snapshot, params);
 }
 
-// ../../sdk-typescript/node_modules/openai/resources/responses/input-items.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/responses/input-items.mjs
 var InputItems = class extends APIResource2 {
   /**
    * Returns a list of input items for a given response.
@@ -14209,7 +14445,7 @@ var InputItems = class extends APIResource2 {
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/resources/responses/input-tokens.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/responses/input-tokens.mjs
 var InputTokens = class extends APIResource2 {
   /**
    * Get input token counts
@@ -14224,7 +14460,7 @@ var InputTokens = class extends APIResource2 {
   }
 };
 
-// ../../sdk-typescript/node_modules/openai/internal/headers.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/headers.mjs
 var brand_privateNullableHeaders2 = /* @__PURE__ */ Symbol("brand.privateNullableHeaders");
 function* iterateHeaders2(headers) {
   if (!headers)
@@ -14287,7 +14523,7 @@ var buildHeaders2 = (newHeaders) => {
   return { [brand_privateNullableHeaders2]: true, values: targetHeaders, nulls: nullHeaders };
 };
 
-// ../../sdk-typescript/node_modules/openai/resources/responses/responses.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/responses/responses.mjs
 var Responses = class extends APIResource2 {
   constructor() {
     super(...arguments);
@@ -14371,35 +14607,35 @@ var Responses = class extends APIResource2 {
 Responses.InputItems = InputItems;
 Responses.InputTokens = InputTokens;
 
-// ../../sdk-typescript/node_modules/openai/resources/uploads/uploads.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/uploads/uploads.mjs
 var S20 = class {
   constructor() {
   }
 };
 var Uploads = S20;
 
-// ../../sdk-typescript/node_modules/openai/resources/vector-stores/vector-stores.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/vector-stores/vector-stores.mjs
 var S21 = class {
   constructor() {
   }
 };
 var VectorStores = S21;
 
-// ../../sdk-typescript/node_modules/openai/resources/videos.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/videos.mjs
 var S22 = class {
   constructor() {
   }
 };
 var Videos = S22;
 
-// ../../sdk-typescript/node_modules/openai/resources/webhooks.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/resources/webhooks.mjs
 var S23 = class {
   constructor() {
   }
 };
 var Webhooks = S23;
 
-// ../../sdk-typescript/node_modules/openai/internal/utils/env.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/internal/utils/env.mjs
 var readEnv2 = (env) => {
   if (typeof globalThis.process !== "undefined") {
     return globalThis.process.env?.[env]?.trim() ?? void 0;
@@ -14410,7 +14646,7 @@ var readEnv2 = (env) => {
   return void 0;
 };
 
-// ../../sdk-typescript/node_modules/openai/client.mjs
+// ../../strands-agents/sdk-typescript/node_modules/openai/client.mjs
 var _OpenAI_instances;
 var _a2;
 var _OpenAI_encoder;
@@ -14888,7 +15124,7 @@ OpenAI.Evals = Evals;
 OpenAI.Containers = Containers;
 OpenAI.Videos = Videos;
 
-// ../../sdk-typescript/dist/src/models/openai.js
+// ../../strands-agents/sdk-typescript/dist/src/models/openai.js
 var DEFAULT_OPENAI_MODEL_ID = "gpt-4o";
 var OPENAI_CONTEXT_WINDOW_OVERFLOW_PATTERNS = [
   "maximum context length",
@@ -14896,6 +15132,7 @@ var OPENAI_CONTEXT_WINDOW_OVERFLOW_PATTERNS = [
   "too many tokens",
   "context length"
 ];
+var OPENAI_RATE_LIMIT_PATTERNS = ["rate_limit_exceeded", "rate limit", "too many requests"];
 var OpenAIModel = class extends Model {
   _config;
   _client;
@@ -15068,6 +15305,11 @@ var OpenAIModel = class extends Model {
       }
     } catch (error) {
       const err = error;
+      if (err.status === 429 || err.code === "rate_limit_exceeded" || OPENAI_RATE_LIMIT_PATTERNS.some((pattern) => err.message?.toLowerCase().includes(pattern))) {
+        const message = err.message ?? "Request was throttled by the model provider";
+        logger.debug(`throttled | error_message=<${message}>`);
+        throw new ModelThrottledError(message, { cause: err });
+      }
       if (OPENAI_CONTEXT_WINDOW_OVERFLOW_PATTERNS.some((pattern) => err.message?.toLowerCase().includes(pattern))) {
         throw new ContextWindowOverflowError(err.message);
       }
@@ -15483,7 +15725,7 @@ var OpenAIModel = class extends Model {
   }
 };
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/transport.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/transport.js
 function normalizeHeaders(headers) {
   if (!headers)
     return {};
@@ -15510,7 +15752,7 @@ function createFetchWithInit(baseFetch = fetch, baseInit) {
   };
 }
 
-// ../../sdk-typescript/node_modules/pkce-challenge/dist/index.browser.js
+// ../../strands-agents/sdk-typescript/node_modules/pkce-challenge/dist/index.browser.js
 var crypto;
 crypto = globalThis.crypto;
 async function getRandomValues(size) {
@@ -15551,7 +15793,7 @@ async function pkceChallenge(length) {
   };
 }
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/auth.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/auth.js
 var S24 = { parse: (v) => v, safeParse: (v) => ({ success: true, data: v }), optional: () => S24, or: () => S24, merge: () => S24, transform: () => S24, looseObject: () => S24, object: () => S24, string: () => S24, array: () => S24, boolean: () => S24, number: () => S24, literal: () => S24, superRefine: () => S24, refine: () => S24 };
 var OAuthProtectedResourceMetadataSchema = S24;
 var OAuthMetadataSchema = S24;
@@ -15560,7 +15802,7 @@ var OAuthTokensSchema = S24;
 var OAuthErrorResponseSchema = S24;
 var OAuthClientInformationFullSchema = S24;
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/auth-utils.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/shared/auth-utils.js
 function resourceUrlFromServerUrl(url) {
   const resourceURL = typeof url === "string" ? new URL(url) : new URL(url.href);
   resourceURL.hash = "";
@@ -15580,7 +15822,7 @@ function checkResourceAllowed({ requestedResource, configuredResource }) {
   return requestedPath.startsWith(configuredPath);
 }
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/server/auth/errors.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/server/auth/errors.js
 var OAuthError = class extends Error {
   constructor(message, errorUri) {
     super(message);
@@ -15675,7 +15917,7 @@ var OAUTH_ERRORS = {
   [InvalidTargetError.errorCode]: InvalidTargetError
 };
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/client/auth.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/client/auth.js
 var UnauthorizedError = class extends Error {
   constructor(message) {
     super(message ?? "Unauthorized");
@@ -16168,7 +16410,7 @@ async function registerClient(authorizationServerUrl, { metadata, clientMetadata
   return OAuthClientInformationFullSchema.parse(await response.json());
 }
 
-// ../../sdk-typescript/node_modules/eventsource-parser/dist/index.js
+// ../../strands-agents/sdk-typescript/node_modules/eventsource-parser/dist/index.js
 var ParseError = class extends Error {
   constructor(message, options) {
     super(message), this.name = "ParseError", this.type = options.type, this.field = options.field, this.value = options.value, this.line = options.line;
@@ -16271,7 +16513,7 @@ function splitLines(chunk) {
   return [lines, incompleteLine];
 }
 
-// ../../sdk-typescript/node_modules/eventsource-parser/dist/stream.js
+// ../../strands-agents/sdk-typescript/node_modules/eventsource-parser/dist/stream.js
 var EventSourceParserStream = class extends TransformStream {
   constructor({ onError, onRetry, onComment } = {}) {
     let parser;
@@ -16295,7 +16537,7 @@ var EventSourceParserStream = class extends TransformStream {
   }
 };
 
-// ../../sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/client/streamableHttp.js
+// ../../strands-agents/sdk-typescript/node_modules/@modelcontextprotocol/sdk/dist/esm/client/streamableHttp.js
 var DEFAULT_STREAMABLE_HTTP_RECONNECTION_OPTIONS = {
   initialReconnectionDelay: 1e3,
   maxReconnectionDelay: 3e4,
@@ -16709,6 +16951,7 @@ export {
   OpenAIModel,
   SlidingWindowConversationManager,
   StreamableHTTPClientTransport,
+  SummarizingConversationManager,
   TextBlock,
   Tool,
   ToolResultBlock,

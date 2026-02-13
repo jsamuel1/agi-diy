@@ -39,6 +39,7 @@ const ENTRY = `
   } from '${SDK_DIR}/dist/src/hooks/index.js';
   export { SlidingWindowConversationManager } from '${SDK_DIR}/dist/src/conversation-manager/sliding-window-conversation-manager.js';
   export { NullConversationManager } from '${SDK_DIR}/dist/src/conversation-manager/null-conversation-manager.js';
+  export { SummarizingConversationManager } from '${SDK_DIR}/dist/src/conversation-manager/summarizing-conversation-manager.js';
   export { McpClient } from '${SDK_DIR}/dist/src/mcp.js';
 
   // Model providers

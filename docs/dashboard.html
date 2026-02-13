@@ -170,9 +170,29 @@ if (typeof Symbol.dispose === 'undefined') Symbol.dispose = Symbol('Symbol.dispo
 if (typeof Symbol.asyncDispose === 'undefined') Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
 </script>
 <script type="module">
-import { Agent, tool, z, AnthropicModel, OpenAIModel, BedrockModel, McpClient, StreamableHTTPClientTransport } from './strands.js';
+import { Agent, tool, z, AnthropicModel, OpenAIModel, BedrockModel, McpClient, StreamableHTTPClientTransport, SlidingWindowConversationManager, NullConversationManager, SummarizingConversationManager } from './strands.js';
 import { WebLLMBrowserModel } from './webllm.js';
 import './erc8004-discovery.js?v=2';
+
+// ═══ CONVERSATION MANAGER FACTORY ═══
+function createConversationManager(config) {
+  const cmConfig = config || { type: 'sliding', windowSize: 40 };
+  
+  if (cmConfig.type === 'null') {
+    return new NullConversationManager();
+  } else if (cmConfig.type === 'summarizing') {
+    return new SummarizingConversationManager({
+      summaryRatio: cmConfig.summaryRatio || 0.3,
+      preserveRecentMessages: cmConfig.preserveRecentMessages || 10,
+      summarizationSystemPrompt: cmConfig.summarizationSystemPrompt
+    });
+  } else {
+    // Default: sliding window
+    return new SlidingWindowConversationManager({ 
+      windowSize: cmConfig.windowSize || 40 
+    });
+  }
+}
 
 // ═══ TASK TOOLS ═══
 let taskIdCounter = 100;
@@ -326,6 +346,7 @@ async function runDelegatedAgent(agentId, taskId, instructions) {
       tools: agentTools,
       systemPrompt: `You are agent "${agentId}". You are working on task "${task.title}" (ID: ${taskId}). Use update_task to report progress (add worklog entries) and mark complete when done. If the task needs sub-tasks, use create_task with parentId="${taskId}". Be thorough but concise.`,
       printer: false,
+      conversationManager: createConversationManager(agentData.conversationManager)
     });
 
     let result = '';
@@ -555,7 +576,13 @@ function ensureChatAgent() {
   if (!chatCfg) return false;
   try {
     const model = createModel(chatCfg.provider || detectProvider(), { modelId: chatCfg.modelId, maxTokens: 8192 });
-    state.chatAgent = new Agent({ model, tools: ORCHESTRATOR_TOOLS, systemPrompt: buildOrchestratorPrompt(), printer: false });
+    state.chatAgent = new Agent({ 
+      model, 
+      tools: ORCHESTRATOR_TOOLS, 
+      systemPrompt: buildOrchestratorPrompt(), 
+      printer: false, 
+      conversationManager: createConversationManager(chatCfg.conversationManager)
+    });
     seedAgentList(state.chatAgent);
     if (window.AgentMesh?.registerAgent) window.AgentMesh.registerAgent('chat', 'browser', { model: chatCfg.modelId });
     return true;
@@ -599,7 +626,13 @@ async function sendChatMessage(text, blockId) {
     // Fresh agent per message for parallelism
     const chatCfg = state.agents.get('chat');
     const model = createModel(chatCfg?.provider || detectProvider(), { modelId: chatCfg?.modelId, maxTokens: 8192 });
-    const agent = new Agent({ model, tools: ORCHESTRATOR_TOOLS, systemPrompt: buildOrchestratorPrompt(), printer: false });
+    const agent = new Agent({ 
+      model, 
+      tools: ORCHESTRATOR_TOOLS, 
+      systemPrompt: buildOrchestratorPrompt(), 
+      printer: false, 
+      conversationManager: createConversationManager(chatCfg?.conversationManager)
+    });
     seedAgentList(agent);
     // Inject history
     for (const m of state.chatMessages.slice(-20)) {

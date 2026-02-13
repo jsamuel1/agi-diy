@@ -1,9 +1,48 @@
 [
-  { "id": "chat", "model": "Bedrock · Nova 2 Lite", "provider": "bedrock", "modelId": "global.amazon.nova-2-lite-v1:0", "role": "Default chat agent. Friendly, concise, helpful." },
-  { "id": "orchestrator", "model": "Bedrock · Nova 2 Lite", "provider": "bedrock", "modelId": "global.amazon.nova-2-lite-v1:0", "role": "Orchestrator. Decomposes goals into tasks, spawns agents, delegates work." },
-  { "id": "researcher", "model": "Bedrock · Opus 4.6", "provider": "bedrock", "modelId": "global.anthropic.claude-opus-4-6-v1", "role": "Deep researcher. Thorough analysis, finds information, synthesizes findings." },
-  { "id": "coder", "model": "Bedrock · Opus 4.6", "provider": "bedrock", "modelId": "global.anthropic.claude-opus-4-6-v1", "role": "Expert coder. Writes, reviews, and debugs code." },
-  { "id": "reviewer", "model": "Bedrock · Sonnet 4.5", "provider": "bedrock", "modelId": "global.anthropic.claude-sonnet-4-5-20250929-v1:0", "role": "Code reviewer. Reviews work for quality, correctness, and completeness." },
+  { 
+    "id": "chat", 
+    "model": "Bedrock · Nova 2 Lite", 
+    "provider": "bedrock", 
+    "modelId": "global.amazon.nova-2-lite-v1:0", 
+    "role": "Default chat agent. Friendly, concise, helpful.",
+    "conversationManager": { "type": "sliding", "windowSize": 40 }
+  },
+  { 
+    "id": "orchestrator", 
+    "model": "Bedrock · Nova 2 Lite", 
+    "provider": "bedrock", 
+    "modelId": "global.amazon.nova-2-lite-v1:0", 
+    "role": "Orchestrator. Decomposes goals into tasks, spawns agents, delegates work.",
+    "conversationManager": { "type": "sliding", "windowSize": 40 }
+  },
+  { 
+    "id": "researcher", 
+    "model": "Bedrock · Opus 4.6", 
+    "provider": "bedrock", 
+    "modelId": "global.anthropic.claude-opus-4-6-v1", 
+    "role": "Deep researcher. Thorough analysis, finds information, synthesizes findings.",
+    "conversationManager": { 
+      "type": "summarizing", 
+      "summaryRatio": 0.3, 
+      "preserveRecentMessages": 10 
+    }
+  },
+  { 
+    "id": "coder", 
+    "model": "Bedrock · Opus 4.6", 
+    "provider": "bedrock", 
+    "modelId": "global.anthropic.claude-opus-4-6-v1", 
+    "role": "Expert coder. Writes, reviews, and debugs code.",
+    "conversationManager": { "type": "sliding", "windowSize": 40 }
+  },
+  { 
+    "id": "reviewer", 
+    "model": "Bedrock · Sonnet 4.5", 
+    "provider": "bedrock", 
+    "modelId": "global.anthropic.claude-sonnet-4-5-20250929-v1:0", 
+    "role": "Code reviewer. Reviews work for quality, correctness, and completeness.",
+    "conversationManager": { "type": "sliding", "windowSize": 40 }
+  },
   {
     "id": "github",
     "model": "Bedrock · Sonnet 4.5",
@@ -13,6 +52,7 @@
     "mcp": [
       { "url": "https://api.githubcopilot.com/mcp/", "tokenKey": "github.token" }
     ],
-    "tools": ["storage_get", "storage_set"]
+    "tools": ["storage_get", "storage_set"],
+    "conversationManager": { "type": "sliding", "windowSize": 40 }
   }
 ]
