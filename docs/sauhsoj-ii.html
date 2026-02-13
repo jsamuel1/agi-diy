@@ -1718,6 +1718,15 @@
         return 'webllm';
     }
 
+    function providerReady(provider) {
+        const caps = PROVIDER_CAPS[provider];
+        if (!caps) return false;
+        const c = state.credentials[provider];
+        if (caps.needsApiKey && !c?.apiKey) return false;
+        if (caps.needsBaseUrl && !c?.baseUrl) return false;
+        return true;
+    }
+
     function createModel(provider, customConfig = {}) {
         const creds = state.credentials[provider];
         const modelId = customConfig.modelId || creds?.model || DEFAULT_MODELS[provider];
@@ -1770,6 +1779,14 @@
     }
     
     // Default models per provider
+    const PROVIDER_CAPS = {
+        bedrock:             { needsApiKey: true,  needsBaseUrl: false, additionalFields: true  },
+        anthropic:           { needsApiKey: true,  needsBaseUrl: false, additionalFields: true  },
+        openai:              { needsApiKey: true,  needsBaseUrl: false, additionalFields: false },
+        openai_compatible:   { needsApiKey: false, needsBaseUrl: true,  additionalFields: false },
+        webllm:              { needsApiKey: false, needsBaseUrl: false, additionalFields: false },
+    };
+
     const DEFAULT_MODELS = {
         bedrock: 'global.anthropic.claude-opus-4-6-v1',
         anthropic: 'claude-opus-4-6',
@@ -3370,7 +3387,7 @@ Example - create a tool that gets weather:
         if (typeof idOrEvent === 'string' && config) {
             const id = idOrEvent;
             if (state.agents.has(id)) { console.warn('Agent ID exists:', id); return; }
-            const provider = config.provider ? (state.credentials[config.provider]?.apiKey || config.provider === 'webllm' ? config.provider : detectProvider()) : detectProvider();
+            const provider = config.provider && providerReady(config.provider) ? config.provider : detectProvider();
             const modelId = config.modelId || undefined;
             const systemPrompt = config.systemPrompt || 'You are a helpful AI assistant.';
             const maxTokens = config.maxTokens || DEFAULT_MAX_TOKENS;
@@ -3721,10 +3738,9 @@ ${getRingContext()}`;
         const agentData = state.agents.get(agentId);
         if (!agentData) return;
         
-        // Validate API key before attempting model call
-        const creds = state.credentials[agentData.config.provider];
-        if (!creds?.apiKey) {
-            addMessageToUI('error', `No API key configured for ${agentData.config.provider}. Open Settings to add one.`, agentId, agentData.color);
+        // Validate credentials before attempting model call
+        if (!providerReady(agentData.config.provider)) {
+            addMessageToUI('error', `No credentials configured for ${agentData.config.provider}. Open Settings to add them.`, agentId, agentData.color);
             return;
         }
         
@@ -3742,8 +3758,7 @@ ${getRingContext()}`;
         // The stored agentData.agent is just a reference/template
         let activeAgent;
         try {
-            const p = agentData.config.provider;
-            const provider = (p && p !== 'webllm' && !state.credentials[p]?.apiKey) ? detectProvider() : (p || detectProvider());
+            const provider = providerReady(agentData.config.provider) ? agentData.config.provider : detectProvider();
             const model = createModel(provider, { 
                 modelId: agentData.config.modelId,
                 maxTokens: agentData.config.maxTokens || DEFAULT_MAX_TOKENS,
@@ -4453,13 +4468,11 @@ ${getRingContext()}`;
         const additionalFieldsGroup = document.getElementById('spawnAdditionalFieldsGroup');
         const additionalFieldsInput = document.getElementById('spawnAdditionalFields');
         
-        if (provider === 'bedrock') {
+        if (PROVIDER_CAPS[provider]?.additionalFields) {
             additionalFieldsGroup.style.display = 'block';
-            if (!additionalFieldsInput.value.trim()) {
+            if (provider === 'bedrock' && !additionalFieldsInput.value.trim()) {
                 additionalFieldsInput.value = JSON.stringify(DEFAULT_BEDROCK_ADDITIONAL_FIELDS, null, 2);
             }
-        } else if (provider === 'anthropic') {
-            additionalFieldsGroup.style.display = 'block';
         } else {
             additionalFieldsGroup.style.display = 'none';
         }
@@ -4568,7 +4581,7 @@ ${getRingContext()}`;
         // Show/hide additional fields based on provider
         const provider = agentData.config.provider;
         document.getElementById('editAdditionalFieldsGroup').style.display = 
-            (provider === 'anthropic' || provider === 'bedrock') ? 'block' : 'none';
+            PROVIDER_CAPS[provider]?.additionalFields ? 'block' : 'none';
         
         // Render tools list
         renderEditToolsList(agentData.config.enabledTools || null);
@@ -4584,7 +4597,7 @@ ${getRingContext()}`;
         
         // Show/hide additional fields based on provider
         document.getElementById('editAdditionalFieldsGroup').style.display = 
-            (provider === 'anthropic' || provider === 'bedrock') ? 'block' : 'none';
+            PROVIDER_CAPS[provider]?.additionalFields ? 'block' : 'none';
     };
     
     function renderEditToolsList(enabledTools) {
@@ -5107,8 +5120,7 @@ ${getRingContext()}`;
             
             for (const agentData of data.agents || []) {
                 try {
-                    const p = agentData.config.provider;
-                    const provider = (p && p !== 'webllm' && !state.credentials[p]?.apiKey) ? detectProvider() : (p || detectProvider());
+                    const provider = providerReady(agentData.config.provider) ? agentData.config.provider : detectProvider();
                     const model = createModel(provider, agentData.config);
                     const allTools = [...TOOLS, ...buildCustomTools()];
                     var mcpClients = [];
@@ -5188,8 +5200,7 @@ ${getRingContext()}`;
             
             for (const agentData of data.agents || []) {
                 if (state.agents.has(agentData.id)) continue;
-                const p = agentData.config.provider;
-                const provider = (p && p !== 'webllm' && !state.credentials[p]?.apiKey) ? detectProvider() : (p || detectProvider());
+                const provider = providerReady(agentData.config.provider) ? agentData.config.provider : detectProvider();
                 const model = createModel(provider, agentData.config);
                 const agent = new Agent({
                     model,
