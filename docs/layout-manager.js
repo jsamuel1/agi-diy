@@ -33,7 +33,6 @@ export class LayoutManager {
         const handleType = isVerticalStack ? 'row' : 'col';
         parent.appendChild(this.createResizeHandle(handleType));
       }
-      }
       
       if (node.type === 'col' || node.type === 'row') {
         const container = document.createElement('div');
