@@ -910,12 +910,15 @@ setTimeout(populateMeshNav, 500); // after mesh-pages.json loads
 // Subscribe to relay events
 if (window.AgentMesh) {
   window.AgentMesh.subscribe?.('relay-connected', (payload) => {
+    console.log('[Dashboard] Relay connected:', payload);
     if (payload?.relayId) {
-      window.AgentMesh.sendRelay?.({ type: 'capabilities_request' }, payload.relayId);
+      console.log('[Dashboard] Sending capabilities_request to', payload.relayId);
+      window.AgentMesh.sendRelay({ type: 'capabilities_request' }, payload.relayId);
     }
   });
   
   window.AgentMesh.subscribe?.('relay-capabilities', (payload) => {
+    console.log('[Dashboard] Relay capabilities received:', payload);
     widgetRegistry.emit('relay-capabilities', payload);
   });
 }
