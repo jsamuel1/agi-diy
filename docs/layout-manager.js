@@ -92,9 +92,20 @@ export class LayoutManager {
     return handle;
   }
 
-  updateLayoutFlex(blockId, flex) {
-    const cfg = this.findBlockCfg(blockId);
+  updateLayoutFlex(nodeId, flex) {
+    const cfg = this.findNodeCfg(nodeId);
     if (cfg) cfg.flex = flex;
+  }
+
+  findNodeCfg(id, nodes = this.state.layout) {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if (n.children) {
+        const found = this.findNodeCfg(id, n.children);
+        if (found) return found;
+      }
+    }
+    return null;
   }
 
   makeBlockEl(cfg) {
