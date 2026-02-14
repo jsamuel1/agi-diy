@@ -48,6 +48,12 @@ export default new Widget({
         badge.style.color = a.status === 'processing' ? a.color : 'var(--text-muted)';
         badge.innerHTML = a.status === 'processing' ? '<span class="typing-dots"><span></span><span></span><span></span></span>' : a.status;
       });
+    } else if (type === 'new-agent' && payload) {
+      // Re-render all agent widgets to show new agent
+      document.querySelectorAll('.agent-list').forEach(list => {
+        const container = list.parentElement;
+        if (container) this.render(container);
+      });
     }
   }
 });

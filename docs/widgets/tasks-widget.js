@@ -71,5 +71,14 @@ export default new Widget({
       window.widgetRegistry.emit('tasks', { type: 'tasks' });
       saveTasks();
     }
+  },
+  
+  onEvent(type) {
+    if (type === 'tasks') {
+      document.querySelectorAll('.task-list').forEach(list => {
+        const container = list.parentElement;
+        if (container) this.render(container);
+      });
+    }
   }
 });

@@ -600,44 +600,20 @@ function initialMeshSync() {
 
 // ── Granular DOM Updates (no innerHTML replacement) ──
 function notify(type) {
-  document.querySelectorAll('.block').forEach(bl => {
-    const cfg = findBlockCfg(bl.id);
-    if (!cfg || (cfg.type !== type && !(type === 'tasks' && cfg.type === 'task-flow'))) return;
-    const body = bl.querySelector('.block-body');
-    widgetRegistry.render(cfg.type, body, cfg);
-  });
   widgetRegistry.emit(type, { type });
 }
 
-// Targeted updaters for individual elements
 function notifyAgentStatus(agentId) {
   widgetRegistry.emit('agent-status', { agentId });
 }
 
 function notifyNewAgent(agent) {
-  document.querySelectorAll('.agent-list').forEach(list => {
-    list.insertAdjacentHTML('beforeend', agentCardHTML(agent));
-  });
-  document.querySelectorAll('.block').forEach(bl => {
-    const cfg = findBlockCfg(bl.id);
-    if (cfg?.type === 'agents') bl.querySelector('.block-title').textContent = `Agents (${state.agents.size})`;
-  });
+  widgetRegistry.emit('new-agent', agent);
 }
 
 function notifyRingEntry(entry) {
   widgetRegistry.emit('ring-entry', entry);
-  const agent = state.agents.get(entry.agentId);
-  const color = agent?.color || '#888';
-  const time = new Date(entry.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  const html = `<div class="ring-entry" data-agent="${entry.agentId}" data-ts="${entry.ts}" style="border-left-color:${color}">
-    <div class="re-header"><span class="re-agent" style="color:${color}">${entry.agentId}</span><span class="re-time">${time}</span></div>
-    <div class="re-text">${(entry.content || '').slice(0,200)}</div>
-  </div>`;
-  document.querySelectorAll('.ring-entries').forEach(el => {
-    el.insertAdjacentHTML('afterbegin', html);
-    el.firstElementChild?.addEventListener('dblclick', () => openAgentChat(entry.agentId, entry.ts));
-    while (el.children.length > 20) el.lastElementChild.remove();
-  });
+}
   function findCfg(nodes) { for (const n of nodes) { if (n.type === 'agent-chat' && n.agentId === entry.agentId) { const el = document.querySelector(`#${n.id} .block-body`); if (el) widgetRegistry.render('agent-chat', el, n); } if (n.children) findCfg(n.children); } }
   findCfg(state.layout);
 }

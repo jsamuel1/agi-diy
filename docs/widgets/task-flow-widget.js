@@ -49,5 +49,17 @@ export default new Widget({
     roots.forEach(t => drawTask(t, 20, 0));
     
     container.innerHTML = `<div style="overflow:auto;padding:12px"><svg width="100%" height="${y+20}" style="min-width:600px">${svg.join('')}</svg></div>`;
+  },
+  
+  onEvent(type) {
+    if (type === 'tasks') {
+      document.querySelectorAll('.block').forEach(bl => {
+        const cfg = window.findBlockCfg?.(bl.id);
+        if (cfg?.type === 'task-flow') {
+          const body = bl.querySelector('.block-body');
+          if (body) this.render(body);
+        }
+      });
+    }
   }
 });
