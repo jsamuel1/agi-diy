@@ -79,6 +79,51 @@ async def reap_stale():
                 })
 
 
+async def discover_kiro_agents() -> list[dict]:
+    """Discover running kiro-cli ACP sessions on the system."""
+    try:
+        # Use ps to find kiro-cli acp processes
+        result = subprocess.run(
+            ["ps", "aux"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        discovered = []
+        for line in result.stdout.splitlines():
+            if "kiro-cli" in line and "acp" in line:
+                # Extract agent info from command line
+                parts = line.split()
+                pid = parts[1]
+                
+                # Parse command line for agent name and cwd
+                cmd_line = " ".join(parts[10:])
+                agent_name = "default"
+                cwd = None
+                
+                if "--agent" in cmd_line:
+                    idx = cmd_line.index("--agent")
+                    agent_name = cmd_line.split()[idx + 1] if idx + 1 < len(cmd_line.split()) else "default"
+                
+                if "--cwd" in cmd_line:
+                    idx = cmd_line.index("--cwd")
+                    cwd = cmd_line.split()[idx + 1] if idx + 1 < len(cmd_line.split()) else None
+                
+                discovered.append({
+                    "id": f"kiro-{pid}",
+                    "pid": pid,
+                    "agent": agent_name,
+                    "cwd": cwd,
+                    "discovered": True
+                })
+        
+        return discovered
+    except Exception as e:
+        print(f"[Relay] Error discovering kiro agents: {e}")
+        return []
+
+
 async def launch_kiro_agent(agent_id: str, config: dict) -> Optional[subprocess.Popen]:
     """Launch a kiro-cli acp session."""
     working_path = Path(config.get("workingPath", "~/src")).expanduser()
@@ -322,11 +367,16 @@ async def handle_message(ws: WebSocketServerProtocol, msg: dict, peer_id: Option
             ]
         })
         
+        # Discover running kiro-cli agents
+        discovered = await discover_kiro_agents()
+        all_agents = list(agents.keys()) + [a["id"] for a in discovered]
+        
         await ws.send(json.dumps({
             "type": "capabilities_response",
             "data": {
                 "agentCards": agent_cards,
-                "activeAgents": list(agents.keys())
+                "activeAgents": all_agents,
+                "discoveredAgents": discovered
             }
         }))
         return peer_id
