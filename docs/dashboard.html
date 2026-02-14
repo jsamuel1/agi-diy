@@ -900,14 +900,8 @@ function populateMeshNav() {
 }
 
 // ═══ INIT ═══
-loadCredentials();
-await loadDefaultAgents();
-loadTasks();
-layoutManager.loadLayout() || layoutManager.render();
-initialMeshSync();
-setTimeout(populateMeshNav, 500); // after mesh-pages.json loads
 
-// Subscribe to relay events
+// Subscribe to relay events BEFORE mesh sync
 if (window.AgentMesh) {
   window.AgentMesh.subscribe?.('relay-connected', (payload) => {
     console.log('[Dashboard] Relay connected:', payload);
@@ -922,6 +916,13 @@ if (window.AgentMesh) {
     widgetRegistry.emit('relay-capabilities', payload);
   });
 }
+
+loadCredentials();
+await loadDefaultAgents();
+loadTasks();
+layoutManager.loadLayout() || layoutManager.render();
+initialMeshSync();
+setTimeout(populateMeshNav, 500); // after mesh-pages.json loads
 
 // Discover on-chain agents (non-blocking)
 if (window.AgentMesh?.erc8004) {
