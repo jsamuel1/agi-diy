@@ -13,6 +13,7 @@ export default new Widget({
   meta: { icon: '📦', title: 'Available Agents' },
   
   render(container, config) {
+    this.container = container;
     const availableAgents = [];
     
     // 1. Get AgentCards from relay capabilities
@@ -275,7 +276,7 @@ export default new Widget({
   
   onEvent(type, payload) {
     if (type === 'relay-capabilities' || type === 'erc8004-discovered') {
-      this.requestRender();
+      if (this.container) this.render(this.container);
     }
   }
 });
