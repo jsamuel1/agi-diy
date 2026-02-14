@@ -13,9 +13,8 @@ export default new Widget({
         if (this.container) this.render(this.container);
       });
       
-      const self = this;
       window.standardEvents.on('agent-status-changed', (agent) => {
-        self.updateAgentStatus(agent);
+        this.updateAgentStatus(agent);
       });
     }
   },
