@@ -16,6 +16,7 @@ export default new Widget({
   meta: { icon: '🏃', title: 'Running Agents' },
   
   render(container, config) {
+    this.container = container;
     // Get running agents from both mesh state and dashboard state
     const meshAgents = window.S?.agents || new Map();
     const dashAgents = window.dashboardState?.agents || new Map();
@@ -144,7 +145,7 @@ export default new Widget({
   
   onEvent(type, payload) {
     if (['agent-status', 'agent-spawned', 'agent-terminated'].includes(type)) {
-      this.requestRender();
+      if (this.container) this.render(this.container);
     }
   }
 });
