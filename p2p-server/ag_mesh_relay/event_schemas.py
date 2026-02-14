@@ -6,6 +6,7 @@ Validates events against standardized schema
 EVENT_SCHEMAS = {
     # Agent Events
     "agent-discovered": {
+        "description": "A new agent has been discovered on the network",
         "required": ["id", "source"],
         "optional": ["name", "capabilities", "model", "metadata"],
         "types": {
@@ -19,6 +20,7 @@ EVENT_SCHEMAS = {
     },
     
     "agent-started": {
+        "description": "An agent has been spawned and is now running",
         "required": ["id", "agentType", "timestamp"],
         "optional": ["taskId"],
         "types": {
@@ -30,6 +32,7 @@ EVENT_SCHEMAS = {
     },
     
     "agent-status-changed": {
+        "description": "An agent's operational status has changed",
         "required": ["id", "status"],
         "optional": ["previousStatus", "reason"],
         "types": {
@@ -41,6 +44,7 @@ EVENT_SCHEMAS = {
     },
     
     "agent-stopped": {
+        "description": "An agent has terminated execution",
         "required": ["id", "reason", "timestamp"],
         "optional": ["result"],
         "types": {
@@ -53,6 +57,7 @@ EVENT_SCHEMAS = {
     
     # Capability Events
     "capabilities-discovered": {
+        "description": "New capabilities have been discovered from a source",
         "required": ["source", "sourceType"],
         "optional": ["agentCards", "tools", "resources", "metadata"],
         "types": {
@@ -67,6 +72,7 @@ EVENT_SCHEMAS = {
     
     # Task Events
     "task-created": {
+        "description": "A new task has been created",
         "required": ["id", "title", "createdBy", "timestamp"],
         "optional": ["description", "parentId", "assignedTo"],
         "types": {
@@ -81,6 +87,7 @@ EVENT_SCHEMAS = {
     },
     
     "task-status-changed": {
+        "description": "A task has transitioned to a new status",
         "required": ["id", "status", "changedBy"],
         "optional": ["previousStatus", "reason"],
         "types": {
@@ -94,6 +101,7 @@ EVENT_SCHEMAS = {
     
     # Communication Events
     "message-sent": {
+        "description": "A message has been sent between agents or users",
         "required": ["from", "to", "content", "timestamp"],
         "optional": ["conversationId"],
         "types": {
@@ -107,6 +115,7 @@ EVENT_SCHEMAS = {
     
     # Connection Events
     "connection-established": {
+        "description": "A network connection has been successfully established",
         "required": ["id", "type"],
         "optional": ["url", "metadata"],
         "types": {
@@ -118,6 +127,7 @@ EVENT_SCHEMAS = {
     },
     
     "connection-lost": {
+        "description": "A network connection has been lost or closed",
         "required": ["id", "type"],
         "optional": ["reason"],
         "types": {
@@ -129,6 +139,7 @@ EVENT_SCHEMAS = {
     
     # Relay Infrastructure Events
     "relay-connected": {
+        "description": "WebSocket connection to relay server established",
         "required": ["relayId"],
         "optional": ["url"],
         "types": {
@@ -138,6 +149,7 @@ EVENT_SCHEMAS = {
     },
     
     "relay-disconnected": {
+        "description": "WebSocket connection to relay server lost",
         "required": ["relayId"],
         "optional": [],
         "types": {
@@ -146,6 +158,7 @@ EVENT_SCHEMAS = {
     },
     
     "relay-log": {
+        "description": "Internal relay server log message for debugging",
         "required": ["time", "level", "relayId", "message"],
         "optional": ["data"],
         "types": {
@@ -158,6 +171,7 @@ EVENT_SCHEMAS = {
     },
     
     "relay-capabilities": {
+        "description": "Relay server announcing available agents and tools",
         "required": ["relayId"],
         "optional": ["agentCards", "activeAgents", "tools"],
         "types": {
@@ -169,6 +183,7 @@ EVENT_SCHEMAS = {
     },
     
     "presence": {
+        "description": "Peer heartbeat announcing availability and status",
         "required": ["from"],
         "optional": ["data", "timestamp"],
         "types": {
@@ -179,6 +194,7 @@ EVENT_SCHEMAS = {
     },
     
     "relay-config-updated": {
+        "description": "Relay server configuration has been updated",
         "required": [],
         "optional": ["config"],
         "types": {

@@ -12,6 +12,7 @@
 export const EventSchemas = {
   // ─── Agent Events ───
   'agent-discovered': {
+    description: 'A new agent has been discovered on the network',
     required: ['id', 'source'],
     optional: ['name', 'capabilities', 'model', 'metadata'],
     types: {
@@ -25,6 +26,7 @@ export const EventSchemas = {
   },
   
   'agent-started': {
+    description: 'An agent has been spawned and is now running',
     required: ['id', 'agentType', 'timestamp'],
     optional: ['taskId'],
     types: {
@@ -36,6 +38,7 @@ export const EventSchemas = {
   },
   
   'agent-status-changed': {
+    description: 'An agent\'s operational status has changed',
     required: ['id', 'status'],
     optional: ['previousStatus', 'reason'],
     types: {
@@ -47,6 +50,7 @@ export const EventSchemas = {
   },
   
   'agent-stopped': {
+    description: 'An agent has terminated execution',
     required: ['id', 'reason', 'timestamp'],
     optional: ['result'],
     types: {
@@ -59,6 +63,7 @@ export const EventSchemas = {
   
   // ─── Capability Events ───
   'capabilities-discovered': {
+    description: 'New capabilities have been discovered from a source',
     required: ['source', 'sourceType'],
     optional: ['agentCards', 'tools', 'resources', 'metadata'],
     types: {
@@ -72,6 +77,7 @@ export const EventSchemas = {
   },
   
   'capability-invoked': {
+    description: 'A capability (tool/agent/resource) has been invoked',
     required: ['capabilityId', 'capabilityType', 'invokedBy'],
     optional: ['input'],
     types: {
@@ -83,6 +89,7 @@ export const EventSchemas = {
   },
   
   'capability-result': {
+    description: 'A capability invocation has completed with a result',
     required: ['capabilityId', 'invocationId', 'success'],
     optional: ['result', 'error'],
     types: {
@@ -96,6 +103,7 @@ export const EventSchemas = {
   
   // ─── Task Events ───
   'task-created': {
+    description: 'A new task has been created',
     required: ['id', 'title', 'createdBy', 'timestamp'],
     optional: ['description', 'parentId', 'assignedTo'],
     types: {
@@ -110,6 +118,7 @@ export const EventSchemas = {
   },
   
   'task-updated': {
+    description: 'A task\'s properties have been modified',
     required: ['id', 'changes', 'updatedBy', 'timestamp'],
     optional: [],
     types: {
@@ -121,6 +130,7 @@ export const EventSchemas = {
   },
   
   'task-status-changed': {
+    description: 'A task has transitioned to a new status',
     required: ['id', 'status', 'changedBy'],
     optional: ['previousStatus', 'reason'],
     types: {
@@ -133,6 +143,7 @@ export const EventSchemas = {
   },
   
   'task-progress': {
+    description: 'Progress update on an ongoing task',
     required: ['id', 'reportedBy'],
     optional: ['progress', 'message'],
     types: {
@@ -145,6 +156,7 @@ export const EventSchemas = {
   
   // ─── Communication Events ───
   'message-sent': {
+    description: 'A message has been sent between agents or users',
     required: ['from', 'to', 'content', 'timestamp'],
     optional: ['conversationId'],
     types: {
@@ -157,6 +169,7 @@ export const EventSchemas = {
   },
   
   'message-received': {
+    description: 'A message has been received by an agent or user',
     required: ['from', 'to', 'content', 'timestamp'],
     optional: ['conversationId'],
     types: {
@@ -169,6 +182,7 @@ export const EventSchemas = {
   },
   
   'thinking-update': {
+    description: 'An agent is sharing its reasoning process',
     required: ['agentId', 'content'],
     optional: ['taskId', 'final'],
     types: {
@@ -181,6 +195,7 @@ export const EventSchemas = {
   
   // ─── Resource Events ───
   'resource-created': {
+    description: 'A new resource has been created',
     required: ['id', 'type', 'uri', 'createdBy'],
     optional: ['mimeType'],
     types: {
@@ -193,6 +208,7 @@ export const EventSchemas = {
   },
   
   'resource-updated': {
+    description: 'An existing resource has been modified',
     required: ['id', 'uri', 'updatedBy'],
     optional: ['changes'],
     types: {
@@ -204,6 +220,7 @@ export const EventSchemas = {
   },
   
   'resource-accessed': {
+    description: 'A resource has been read or accessed',
     required: ['id', 'uri', 'accessedBy'],
     optional: ['purpose'],
     types: {
@@ -216,6 +233,7 @@ export const EventSchemas = {
   
   // ─── Connection Events ───
   'connection-established': {
+    description: 'A network connection has been successfully established',
     required: ['id', 'type'],
     optional: ['url', 'metadata'],
     types: {
@@ -227,6 +245,7 @@ export const EventSchemas = {
   },
   
   'connection-lost': {
+    description: 'A network connection has been lost or closed',
     required: ['id', 'type'],
     optional: ['reason'],
     types: {
@@ -238,6 +257,7 @@ export const EventSchemas = {
   
   // ─── Relay Infrastructure Events ───
   'relay-connected': {
+    description: 'WebSocket connection to relay server established',
     required: ['relayId'],
     optional: ['url'],
     types: {
@@ -247,6 +267,7 @@ export const EventSchemas = {
   },
   
   'relay-disconnected': {
+    description: 'WebSocket connection to relay server lost',
     required: ['relayId'],
     optional: [],
     types: {
@@ -255,6 +276,7 @@ export const EventSchemas = {
   },
   
   'relay-log': {
+    description: 'Internal relay server log message for debugging',
     required: ['time', 'level', 'relayId', 'message'],
     optional: ['data'],
     types: {
@@ -267,6 +289,7 @@ export const EventSchemas = {
   },
   
   'relay-capabilities': {
+    description: 'Relay server announcing available agents and tools',
     required: ['relayId'],
     optional: ['agentCards', 'activeAgents', 'tools'],
     types: {
@@ -278,6 +301,7 @@ export const EventSchemas = {
   },
   
   'presence': {
+    description: 'Peer heartbeat announcing availability and status',
     required: ['from'],
     optional: ['data', 'timestamp'],
     types: {
@@ -288,31 +312,11 @@ export const EventSchemas = {
   },
   
   'relay-config-updated': {
+    description: 'Relay server configuration has been updated',
     required: [],
     optional: ['config'],
     types: {
       config: 'object'
-    }
-  }
-};
-
-// Legacy mapping removed - connection events now standard
-export const EventSchemas = EVENT_SCHEMAS;
-    types: {
-      id: 'string',
-      type: ['relay', 'mcp', 'websocket', 'peer'],
-      url: 'string',
-      metadata: 'object'
-    }
-  },
-  
-  'connection-lost': {
-    required: ['id', 'type'],
-    optional: ['reason'],
-    types: {
-      id: 'string',
-      type: ['relay', 'mcp', 'websocket', 'peer'],
-      reason: 'string'
     }
   }
 };
