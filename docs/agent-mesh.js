@@ -1742,7 +1742,9 @@
                     }, 3000);
                 }
             };
-            ws.onerror = (err) => logRelay('error', relayId, 'WebSocket error', err.message || 'Connection failed');
+            ws.onerror = (err) => {
+                logRelay('error', relayId, 'Connection failed', url);
+            };
         } catch (err) { logRelay('error', relayId, 'Failed to connect', err.message); }
     }
 
