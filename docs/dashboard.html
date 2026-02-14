@@ -748,6 +748,61 @@ function formatElapsed(start, end) {
 // ── Default Agents (loaded from agents.json) ──
 let DEFAULT_AGENTS = [];
 
+function startAgentInstance(agentId) {
+  const agent = state.agents.get(agentId);
+  if (!agent) return;
+  
+  agent.instances = (agent.instances || 0) + 1;
+  agent.status = 'idle';
+  notifyAgentStatus(agentId);
+  
+  // If agent has a schedule, set up interval
+  if (agent.schedule?.interval) {
+    const intervalId = setInterval(async () => {
+      const currentAgent = state.agents.get(agentId);
+      if (!currentAgent || currentAgent.instances === 0) {
+        clearInterval(intervalId);
+        return;
+      }
+      if (currentAgent.status === 'processing') return; // Skip if busy
+      
+      // Run scheduled prompt
+      currentAgent.status = 'processing';
+      notifyAgentStatus(agentId);
+      
+      try {
+        const model = createModel(currentAgent.provider || detectProvider(), { 
+          modelId: currentAgent.modelId, 
+          maxTokens: 4096 
+        });
+        const agentInstance = new Agent({
+          model,
+          tools: ORCHESTRATOR_TOOLS,
+          systemPrompt: currentAgent.role,
+          printer: false,
+          conversationManager: createConversationManager(currentAgent.conversationManager)
+        });
+        
+        let response = '';
+        for await (const event of agentInstance.stream(agent.schedule.prompt)) {
+          if (event?.type === 'modelContentBlockDeltaEvent' && event.delta?.type === 'textDelta') {
+            response += event.delta.text;
+          }
+        }
+        
+        if (!response.includes('[IDLE]')) {
+          console.log(`${agentId} scheduled run:`, response.slice(0, 200));
+        }
+      } catch (e) {
+        console.error(`${agentId} scheduled run error:`, e);
+      }
+      
+      currentAgent.status = 'idle';
+      notifyAgentStatus(agentId);
+    }, agent.schedule.interval);
+  }
+}
+
 async function loadDefaultAgents() {
   try {
     const resp = await fetch('./agents.json');
@@ -771,8 +826,9 @@ async function loadDefaultAgents() {
   state.agents.forEach((agent, id) => {
     const minInstances = agent.minInstances || 0;
     if (minInstances > 0 && (agent.instances || 0) < minInstances) {
-      // TODO: Create agent instances up to minInstances
-      console.log(`Agent ${id} needs ${minInstances} minimum instances`);
+      for (let i = 0; i < minInstances; i++) {
+        startAgentInstance(id);
+      }
     }
   });
   
