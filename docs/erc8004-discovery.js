@@ -128,19 +128,40 @@ export async function getAgent(chain, agentId) {
         if (w !== '0x0000000000000000000000000000000000000000') wallet = w;
     } catch {}
 
-    const agent = { agentId, owner, uri, wallet, chain };
+    const agent = { agentId, owner, uri, wallet, chain, fetchStatus: 'pending', fetchError: null };
 
     // Fetch registration file (data: and https: auto; ipfs:// requires opt-in)
     if (uri) {
         try {
             if (uri.startsWith('data:')) {
                 agent.registration = JSON.parse(atob(uri.split(',')[1]));
-            } else if (uri.startsWith('https://') && !isBlockedUrl(uri)) {
-                agent.registration = await (await fetch(uri)).json();
-            } else if (uri.startsWith('ipfs://') && ipfsGateway) {
-                agent.registration = await (await fetch(ipfsGateway + uri.slice(7))).json();
+                agent.fetchStatus = 'success';
+            } else if (uri.startsWith('https://')) {
+                if (isBlockedUrl(uri)) {
+                    agent.fetchStatus = 'blocked';
+                    agent.fetchError = 'Blocked domain or private IP';
+                } else {
+                    agent.registration = await (await fetch(uri)).json();
+                    agent.fetchStatus = 'success';
+                }
+            } else if (uri.startsWith('ipfs://')) {
+                if (ipfsGateway) {
+                    agent.registration = await (await fetch(ipfsGateway + uri.slice(7))).json();
+                    agent.fetchStatus = 'success';
+                } else {
+                    agent.fetchStatus = 'no-gateway';
+                    agent.fetchError = 'IPFS gateway not configured';
+                }
+            } else {
+                agent.fetchStatus = 'unsupported';
+                agent.fetchError = 'Unsupported URI scheme';
             }
-        } catch {}
+        } catch (e) {
+            agent.fetchStatus = 'error';
+            agent.fetchError = e.message.includes('CORS') ? 'CORS error' : e.message;
+        }
+    } else {
+        agent.fetchStatus = 'no-uri';
     }
     return agent;
 }
@@ -170,6 +191,12 @@ export async function discoverAgents(chain, maxAgents = 50) {
         const a = await getAgent(chain, aid);
         if (a && (!ownerSet || ownerSet.has(a.owner?.toLowerCase()))) agents.push(a);
     }
+    
+    // Store in AgentMesh for widget access
+    if (M?.erc8004) {
+        M.erc8004.discoveredAgents = agents;
+    }
+    
     return agents;
 }
 

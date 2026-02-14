@@ -8,6 +8,7 @@ import ringWidget from './ring-widget.js';
 import chatWidget from './chat-widget.js';
 import meshWidget from './mesh-widget.js';
 import agentChatWidget from './agent-chat-widget.js';
+import erc8004Widget from './erc8004-widget.js';
 
 const registry = new WidgetRegistry();
 
@@ -21,7 +22,8 @@ const registry = new WidgetRegistry();
   ringWidget,
   chatWidget,
   meshWidget,
-  agentChatWidget
+  agentChatWidget,
+  erc8004Widget
 ].forEach(w => registry.register(w));
 
 export default registry;
