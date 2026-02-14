@@ -99,7 +99,7 @@
             body: JSON.stringify({ IdentityId, Logins: { [providerName]: cfg.idToken } }) });
         if (!credsResp.ok) {
             const err = await credsResp.text();
-            console.error('GetCredentialsForIdentity failed:', credsResp.status, err);
+            logRelay('error', null, 'GetCredentialsForIdentity failed', `${credsResp.status}: ${err}`);
             return null;
         }
         const { Credentials } = await credsResp.json();
