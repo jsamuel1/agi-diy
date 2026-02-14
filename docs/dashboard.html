@@ -911,7 +911,7 @@ setTimeout(populateMeshNav, 500); // after mesh-pages.json loads
 if (window.AgentMesh) {
   window.AgentMesh.subscribe?.('relay-connected', (payload) => {
     if (payload?.relayId) {
-      window.AgentMesh.sendToRelay?.({ type: 'capabilities_request' }, payload.relayId);
+      window.AgentMesh.sendRelay?.({ type: 'capabilities_request' }, payload.relayId);
     }
   });
   
