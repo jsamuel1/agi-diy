@@ -7,6 +7,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>agi.diy — Mesh Dashboard</title>
+<link rel="stylesheet" href="widgets/agents-widgets.css">
 <style>
 #agent-mesh-nav { display: none !important; }
 :root {
@@ -463,7 +464,8 @@ const STATUS_LABEL = { pending:'Pending', 'in-progress':'In Progress', waiting:'
 
 const DEFAULT_LAYOUT = [
   { id:'col-left', type:'col', flex:1, children:[
-    { id:'b-agents', type:'agents', flex:1 },
+    { id:'b-running-agents', type:'running-agents', flex:1 },
+    { id:'b-available-agents', type:'available-agents', flex:1 },
     { id:'b-tasks', type:'tasks', flex:2 },
   ]},
   { id:'b-chat', type:'chat', flex:2 },
