@@ -17,7 +17,31 @@ export default new Widget({
   id: 'tasks',
   meta: { icon: '📋', title: 'Tasks' },
   
+  init(state) {
+    this.state = state;
+    
+    // Subscribe to standard events
+    if (window.standardEvents) {
+      window.standardEvents.on('task-created', (task) => {
+        if (this.container) this.render(this.container);
+      });
+      
+      window.standardEvents.on('task-updated', (task) => {
+        if (this.container) this.render(this.container);
+      });
+      
+      window.standardEvents.on('task-status-changed', (task) => {
+        if (this.container) this.render(this.container);
+      });
+      
+      window.standardEvents.on('task-progress', (task) => {
+        if (this.container) this.render(this.container);
+      });
+    }
+  },
+  
   render(container) {
+    this.container = container;
     const state = window.dashboardState;
     if (!state) return;
     
@@ -75,10 +99,7 @@ export default new Widget({
   
   onEvent(type) {
     if (type === 'tasks') {
-      document.querySelectorAll('.task-list').forEach(list => {
-        const container = list.parentElement;
-        if (container) this.render(container);
-      });
+      if (this.container) this.render(this.container);
     }
   }
 });

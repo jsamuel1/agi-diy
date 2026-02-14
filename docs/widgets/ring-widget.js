@@ -4,7 +4,33 @@ export default new Widget({
   id: 'ring',
   meta: { icon: '🔵', title: 'Ring Buffer' },
   
+  init(state) {
+    this.state = state;
+    
+    // Subscribe to standard events
+    if (window.standardEvents) {
+      window.standardEvents.on('message-sent', (msg) => {
+        this.handleMessage(msg);
+      });
+      
+      window.standardEvents.on('message-received', (msg) => {
+        this.handleMessage(msg);
+      });
+      
+      window.standardEvents.on('thinking-update', (update) => {
+        if (update.final && this.container) {
+          this.render(this.container);
+        }
+      });
+    }
+  },
+  
+  handleMessage(msg) {
+    if (this.container) this.render(this.container);
+  },
+  
   render(container) {
+    this.container = container;
     const state = window.dashboardState;
     if (!state) return;
     
