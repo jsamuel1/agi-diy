@@ -14,7 +14,22 @@ const BLOCKED_DOMAINS = ['example.com', 'example.org', 'localhost'];
 function isBlockedUrl(url) {
   try {
     const hostname = new URL(url).hostname;
-    return BLOCKED_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d));
+    
+    // Check blocked domains
+    if (BLOCKED_DOMAINS.some(d => hostname === d || hostname.endsWith('.' + d))) {
+      return true;
+    }
+    
+    // Check RFC1918 private IP ranges
+    const ipMatch = hostname.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+    if (ipMatch) {
+      const [, a, b, c, d] = ipMatch.map(Number);
+      if (a === 10 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)) {
+        return true;
+      }
+    }
+    
+    return false;
   } catch {
     return false;
   }
