@@ -37,7 +37,7 @@ export default new Widget({
   
   onEvent(type) {
     if (type === 'relay-status' || type === 'relay-peers') {
-      document.querySelectorAll('#b-mesh .block-body').forEach(el => this.render(el));
+      document.querySelectorAll('.block[id^="b-mesh"] .block-body').forEach(el => this.render(el));
     }
   }
 });
