@@ -47,6 +47,13 @@
       }
     } catch (e) { console.warn('Credential exchange failed:', e); }
   }
-  location.replace(ret);
+  
+  // Check if opened as popup
+  if (window.opener && !window.opener.closed) {
+    document.getElementById('s').textContent = 'Authentication complete. Closing...';
+    setTimeout(() => window.close(), 1000);
+  } else {
+    location.replace(ret);
+  }
 })();
 </script></body></html>

@@ -227,7 +227,7 @@
                     }
                 }, 4 * 60 * 1000); // Every 4 minutes
                 
-                // Reauth function with Amplify
+                // Reauth function with popup
                 window.reauthAgentCore = async () => {
                     const cfg = getConfig();
                     if (!cfg?.cognito) {
@@ -235,7 +235,34 @@
                         M.settings?.open('mesh');
                         return;
                     }
-                    await signInWithRedirect({ provider: 'Cognito' });
+                    
+                    const { domain, clientId } = cfg.cognito;
+                    if (!domain || !clientId) {
+                        alert('Cognito domain or client ID missing');
+                        return;
+                    }
+                    
+                    const redirectUri = encodeURIComponent(location.origin + '/cognitoauth.html');
+                    const state = encodeURIComponent(location.pathname);
+                    const authUrl = `https://${domain}/oauth2/authorize?client_id=${clientId}&response_type=token&scope=openid+profile&redirect_uri=${redirectUri}&state=${state}`;
+                    
+                    const popup = window.open(authUrl, 'AgentCore Auth', 'width=500,height=700');
+                    if (!popup) {
+                        alert('Popup blocked. Please allow popups for this site.');
+                        return;
+                    }
+                    
+                    // Poll for popup close
+                    const checkClosed = setInterval(() => {
+                        if (popup.closed) {
+                            clearInterval(checkClosed);
+                            // Reload relay connections
+                            setTimeout(() => {
+                                const relays = config.relays.filter(r => r.type === 'agentcore');
+                                relays.forEach(r => M.connectRelayById?.(r.id));
+                            }, 500);
+                        }
+                    }, 500);
                 };
             }
         } catch (e) {
