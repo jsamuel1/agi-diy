@@ -24,29 +24,20 @@ export class LayoutManager {
 
   renderNode(parent, nodes) {
     nodes.forEach((node, idx) => {
+      if (idx > 0 && parent.dataset.containerId) {
+        // Add resize handle between siblings in a container
+        const parentType = parent.classList.contains('layout-col') ? 'col' : 'row';
+        parent.appendChild(this.createResizeHandle(parentType));
+      }
+      
       if (node.type === 'col' || node.type === 'row') {
         const container = document.createElement('div');
         container.className = node.type === 'col' ? 'layout-col' : 'layout-row';
         container.style.flex = node.flex || 1;
+        container.id = node.id;
         container.dataset.containerId = node.id;
         
-        // Render children with resize handles between them
-        (node.children || []).forEach((child, childIdx) => {
-          if (childIdx > 0) {
-            container.appendChild(this.createResizeHandle(node.type));
-          }
-          if (child.type === 'col' || child.type === 'row') {
-            const subContainer = document.createElement('div');
-            subContainer.className = child.type === 'col' ? 'layout-col' : 'layout-row';
-            subContainer.style.flex = child.flex || 1;
-            subContainer.dataset.containerId = child.id;
-            this.renderNode(subContainer, child.children || []);
-            container.appendChild(subContainer);
-          } else {
-            container.appendChild(this.makeBlockEl(child));
-          }
-        });
-        
+        this.renderNode(container, node.children || []);
         parent.appendChild(container);
       } else {
         parent.appendChild(this.makeBlockEl(node));
