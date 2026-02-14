@@ -213,7 +213,13 @@
         <div class="st"><div class="st-v" id="cntCloud" style="color:var(--c-agentcore)">0</div><div class="st-l">cloud</div></div>
         <div class="st"><div class="st-v" id="cntZenoh" style="color:var(--c-zenoh)">0</div><div class="st-l">zenoh</div></div>
     </div>
+    
+    <div class="sec-hdr" style="margin-top:10px"><span class="sec-icon">🏃</span><span class="sec-title">Running</span></div>
     <div class="sb-scroll" id="agentsList"></div>
+    
+    <div class="sec-hdr"><span class="sec-icon">📦</span><span class="sec-title">Available</span><span class="sec-cnt" id="cntAvailable">0</span></div>
+    <div class="sb-scroll" id="availableAgentsList" style="max-height:200px"></div>
+    
     <div class="sb-spawn">
         <button class="spawn-btn" onclick="openSpawn('virtual')">+ virtual</button>
         <button class="spawn-btn" onclick="openSpawn('browser')">+ browser</button>
@@ -612,6 +618,15 @@ function handleRelayMsg(msg){
         case'browser_invoke':
             // Incoming invoke from CLI/zenoh — run our mesh agent
             handleBrowserInvoke(msg);break;
+        default:
+            // Check if AgentMesh handled it (e.g. capabilities_response)
+            if(window.AgentMesh){
+                // Trigger available agents update on capabilities
+                if(msg.type==='capabilities_response'){
+                    setTimeout(updateAvailableAgents,100);
+                }
+            }
+            break;
         case'error':toast(`Error: ${msg.error}`,'err');break;
     }
     updateUI();
@@ -1001,7 +1016,59 @@ function renderRing(){const el=E('ringBody');const entries=S.ring.slice(-30).rev
 // ═══════════════════════════════════════════════════════════════
 // UI RENDERING
 // ═══════════════════════════════════════════════════════════════
-function updateUI(){updateStatus();updateStats();updateAgentsList();updatePanels()}
+function updateUI(){updateStatus();updateStats();updateAgentsList();updateAvailableAgents();updatePanels()}
+
+function updateAvailableAgents(){
+    const el=E('availableAgentsList');
+    const available=[];
+    
+    // Get AgentCards from relay
+    if(window.AgentMesh?.getAvailableAgentCards){
+        const cards=window.AgentMesh.getAvailableAgentCards();
+        for(const card of cards){
+            available.push({id:card.name,name:card.name,desc:card.description,source:'relay',card});
+        }
+    }
+    
+    E('cntAvailable').textContent=available.length;
+    
+    if(!available.length){
+        el.innerHTML='<div style="padding:12px;text-align:center;color:var(--t3);font-size:9px">Connect relay to see available agents</div>';
+        return;
+    }
+    
+    let html='';
+    for(const a of available){
+        const skills=(a.card?.skills||[]).slice(0,2).map(s=>s.tags?.[0]||s.name).filter(Boolean);
+        html+=`<div class="ac" onclick="launchAvailableAgent('${a.id}','${a.source}')" style="cursor:pointer">
+            <div class="ac-hdr">
+                <span style="font-size:14px">🚀</span>
+                <div class="ac-info">
+                    <div class="ac-name">${esc(a.name)}</div>
+                    <div class="ac-meta">${esc(a.desc||'').slice(0,60)}${a.desc?.length>60?'...':''}</div>
+                    ${skills.length?`<div style="display:flex;gap:3px;margin-top:3px">${skills.map(s=>`<span style="font-size:7px;padding:1px 4px;background:rgba(0,122,255,.15);color:#007aff;border-radius:2px">${esc(s)}</span>`).join('')}</div>`:''}
+                </div>
+            </div>
+        </div>`;
+    }
+    el.innerHTML=html;
+}
+
+window.launchAvailableAgent=function(agentId,source){
+    if(source==='relay'){
+        const relays=window.AgentMesh?.getRelaysForAgent(agentId);
+        if(!relays||!relays.length){alert('No relay available');return}
+        const path=prompt('Working directory:','~/src');
+        if(!path)return;
+        window.AgentMesh.sendRelay({
+            type:'launch_agent',
+            agentType:agentId,
+            agentId:`${agentId}-${Date.now()}`,
+            config:{workingPath:path}
+        },relays[0].id);
+        toast(`Launching ${agentId}...`,'ok');
+    }
+};
 
 function updateStatus(){
     const d=E('statusDot'),t=E('statusTxt');
