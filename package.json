@@ -3,9 +3,17 @@
   "type": "module",
   "scripts": {
     "build": "node build-strands.mjs",
-    "build:analyze": "node build-strands.mjs --analyze"
+    "build:analyze": "node build-strands.mjs --analyze",
+    "build-harmony-app": "tar -cf app.tar -C docs ."
   },
   "devDependencies": {
     "esbuild": "^0.27.3"
-  }
+  },
+  "version": "1.0.0",
+  "harmony": {
+    "appName": "agentmeshstudio"
+  },
+  "displayName": "AgentMesh Studio",
+  "description": "Probably the coolest app you've used in a while",
+  "bindleId": "amzn1.bindle.resource.i56xf3t7cukzyu2xamya"
 }
