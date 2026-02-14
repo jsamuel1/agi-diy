@@ -132,11 +132,11 @@ async def handle_message(ws: WebSocketServerProtocol, msg: dict, peer_id: Option
         # Add kiro-cli agent card
         agent_cards.append({
             "name": "kiro-cli",
-            "description": "AWS Kiro CLI agent with file operations, code execution, and AWS integrations",
-            "url": "local://kiro-cli",
+            "description": "AWS Kiro CLI - Agentic AI development with spec-driven workflows, custom agents, and MCP integration",
+            "url": "https://kiro.dev/cli/",
             "provider": {
                 "organization": "AWS",
-                "url": "https://github.com/aws/kiro-cli"
+                "url": "https://kiro.dev"
             },
             "version": "1.0.0",
             "capabilities": {
@@ -148,36 +148,159 @@ async def handle_message(ws: WebSocketServerProtocol, msg: dict, peer_id: Option
                 "schemes": ["None"],
                 "credentials": None
             },
-            "defaultInputModes": ["text/plain", "application/json"],
+            "defaultInputModes": ["text/plain", "application/json", "image/png", "image/jpeg"],
             "defaultOutputModes": ["text/plain", "application/json", "text/markdown"],
             "skills": [
                 {
+                    "id": "spec-driven-development",
+                    "name": "Spec-Driven Development",
+                    "description": "Convert natural language to structured requirements (EARS notation), architectural designs, and implementation plans",
+                    "tags": ["specs", "requirements", "architecture", "planning"],
+                    "examples": ["Create spec for user authentication", "Design API architecture", "Generate implementation plan"]
+                },
+                {
                     "id": "file-operations",
                     "name": "File Operations",
-                    "description": "Read, write, search files and directories",
-                    "tags": ["filesystem", "io", "search"],
-                    "examples": ["Read package.json", "Search for TODO comments", "Create a new Python file"]
+                    "description": "Read, write, search files and directories with intelligent context management",
+                    "tags": ["filesystem", "io", "search", "code-intelligence"],
+                    "examples": ["Read package.json", "Search for TODO comments", "Find all references to function"]
                 },
                 {
                     "id": "code-execution",
                     "name": "Code Execution",
-                    "description": "Execute bash commands and scripts",
-                    "tags": ["bash", "shell", "execution"],
-                    "examples": ["Run npm install", "Execute Python script", "Check git status"]
+                    "description": "Execute bash commands, run tests, manage git workflows",
+                    "tags": ["bash", "shell", "execution", "git", "testing"],
+                    "examples": ["Run npm install", "Execute test suite", "Create git commit"]
                 },
                 {
                     "id": "aws-operations",
                     "name": "AWS Operations",
-                    "description": "Interact with AWS services via CLI",
-                    "tags": ["aws", "cloud", "infrastructure"],
-                    "examples": ["List S3 buckets", "Describe EC2 instances", "Deploy CloudFormation stack"]
+                    "description": "Interact with AWS services via CLI and SDKs",
+                    "tags": ["aws", "cloud", "infrastructure", "deployment"],
+                    "examples": ["List S3 buckets", "Deploy CloudFormation stack", "Query DynamoDB"]
+                },
+                {
+                    "id": "custom-agents",
+                    "name": "Custom Agents",
+                    "description": "Create task-specific agents with pre-defined permissions, context, and prompts",
+                    "tags": ["agents", "automation", "workflows"],
+                    "examples": ["Create testing agent", "Build deployment agent", "Configure code review agent"]
+                },
+                {
+                    "id": "mcp-integration",
+                    "name": "MCP Integration",
+                    "description": "Connect to external tools and services via Model Context Protocol",
+                    "tags": ["mcp", "integration", "tools", "apis"],
+                    "examples": ["Connect to database", "Integrate with Slack", "Access documentation"]
+                },
+                {
+                    "id": "agent-hooks",
+                    "name": "Agent Hooks",
+                    "description": "Automate workflows with event-triggered agents (file save, pre-commit, etc.)",
+                    "tags": ["hooks", "automation", "events"],
+                    "examples": ["Auto-generate docs on save", "Run tests pre-commit", "Format code on save"]
+                },
+                {
+                    "id": "steering",
+                    "name": "Agent Steering",
+                    "description": "Configure agent behavior with project-specific rules, conventions, and best practices",
+                    "tags": ["steering", "configuration", "standards"],
+                    "examples": ["Set coding standards", "Define project conventions", "Configure workflows"]
+                }
+            ]
+        })
+        
+        # Add Claude Code agent card
+        agent_cards.append({
+            "name": "claude-code",
+            "description": "Anthropic Claude Code - Agentic coding assistant with autonomous workflows, subagents, and checkpoints",
+            "url": "https://code.claude.com",
+            "provider": {
+                "organization": "Anthropic",
+                "url": "https://anthropic.com"
+            },
+            "version": "2.0.0",
+            "capabilities": {
+                "streaming": True,
+                "pushNotifications": False,
+                "stateTransitionHistory": True
+            },
+            "authentication": {
+                "schemes": ["Bearer"],
+                "credentials": None
+            },
+            "defaultInputModes": ["text/plain", "application/json", "image/png", "image/jpeg"],
+            "defaultOutputModes": ["text/plain", "application/json", "text/markdown"],
+            "skills": [
+                {
+                    "id": "agentic-loop",
+                    "name": "Agentic Loop",
+                    "description": "Autonomous gather-act-verify loop with adaptive planning and course correction",
+                    "tags": ["autonomous", "planning", "reasoning"],
+                    "examples": ["Fix failing tests", "Refactor authentication", "Debug production issue"]
+                },
+                {
+                    "id": "file-operations",
+                    "name": "File Operations",
+                    "description": "Read, edit, create, rename files with multi-file coordination",
+                    "tags": ["filesystem", "editing", "refactor"],
+                    "examples": ["Refactor across multiple files", "Reorganize project structure", "Update imports"]
+                },
+                {
+                    "id": "code-search",
+                    "name": "Code Search",
+                    "description": "Find files by pattern, search content with regex, explore codebases",
+                    "tags": ["search", "navigation", "discovery"],
+                    "examples": ["Find all API endpoints", "Search for security issues", "Locate configuration"]
+                },
+                {
+                    "id": "execution",
+                    "name": "Execution",
+                    "description": "Run shell commands, start servers, run tests, use git",
+                    "tags": ["bash", "shell", "git", "testing"],
+                    "examples": ["Run test suite", "Start dev server", "Create PR"]
+                },
+                {
+                    "id": "web-research",
+                    "name": "Web Research",
+                    "description": "Search the web, fetch documentation, look up error messages",
+                    "tags": ["web", "research", "documentation"],
+                    "examples": ["Look up API docs", "Research error message", "Find best practices"]
                 },
                 {
                     "id": "code-intelligence",
                     "name": "Code Intelligence",
-                    "description": "Semantic code search, navigation, and refactoring with LSP",
-                    "tags": ["lsp", "refactor", "navigation"],
-                    "examples": ["Find all references to function", "Rename symbol", "Go to definition"]
+                    "description": "Type checking, jump to definitions, find references with LSP integration",
+                    "tags": ["lsp", "types", "navigation"],
+                    "examples": ["Check type errors", "Find all usages", "Go to definition"]
+                },
+                {
+                    "id": "subagents",
+                    "name": "Subagents",
+                    "description": "Spawn specialized sub-agents for parallel tasks with isolated context",
+                    "tags": ["subagents", "parallel", "delegation"],
+                    "examples": ["Delegate testing to subagent", "Parallel feature development", "Background research"]
+                },
+                {
+                    "id": "checkpoints",
+                    "name": "Checkpoints",
+                    "description": "Snapshot and rewind file changes with undo/redo capabilities",
+                    "tags": ["safety", "undo", "versioning"],
+                    "examples": ["Rewind failed refactor", "Try different approach", "Undo changes"]
+                },
+                {
+                    "id": "skills",
+                    "name": "Skills",
+                    "description": "Reusable workflows loaded on-demand to manage context",
+                    "tags": ["skills", "workflows", "reusable"],
+                    "examples": ["Load testing workflow", "Apply code review checklist", "Run deployment steps"]
+                },
+                {
+                    "id": "mcp-integration",
+                    "name": "MCP Integration",
+                    "description": "Connect to external services via Model Context Protocol",
+                    "tags": ["mcp", "integration", "tools"],
+                    "examples": ["Connect to database", "Access APIs", "Integrate services"]
                 }
             ]
         })
