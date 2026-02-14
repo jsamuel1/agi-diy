@@ -342,17 +342,50 @@ export class LayoutManager {
     }
   }
 
-  loadLayout() {
+  loadLayout(name = null) {
     try {
-      const saved = localStorage.getItem('dashboard_layout');
+      const key = name ? `dashboard_layout_${name}` : 'dashboard_layout';
+      const saved = localStorage.getItem(key);
       if (saved) {
         this.state.layout = JSON.parse(saved);
+        this.render();
         return true;
       }
     } catch (e) {
       console.error('Failed to load layout:', e);
     }
     return false;
+  }
+
+  saveLayoutAs(name) {
+    try {
+      localStorage.setItem(`dashboard_layout_${name}`, JSON.stringify(this.state.layout));
+      const presets = this.getLayoutPresets();
+      if (!presets.includes(name)) {
+        presets.push(name);
+        localStorage.setItem('dashboard_layout_presets', JSON.stringify(presets));
+      }
+    } catch (e) {
+      console.error('Failed to save layout preset:', e);
+    }
+  }
+
+  getLayoutPresets() {
+    try {
+      return JSON.parse(localStorage.getItem('dashboard_layout_presets') || '[]');
+    } catch (e) {
+      return [];
+    }
+  }
+
+  deleteLayoutPreset(name) {
+    try {
+      localStorage.removeItem(`dashboard_layout_${name}`);
+      const presets = this.getLayoutPresets().filter(p => p !== name);
+      localStorage.setItem('dashboard_layout_presets', JSON.stringify(presets));
+    } catch (e) {
+      console.error('Failed to delete layout preset:', e);
+    }
   }
 
   resetLayout(defaultLayout) {

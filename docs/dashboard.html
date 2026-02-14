@@ -181,6 +181,7 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); heig
     <button class="add-btn" onclick="stopAllTasks()" style="background:var(--red);color:#fff" title="Stop all active tasks">⏹ Stop All</button>
     <button class="add-btn" onclick="clearDoneTasks()" title="Clear completed tasks">🗑️ Clear Done</button>
     <button class="add-btn" onclick="resetLayout()" title="Reset layout to default">🔄 Reset Layout</button>
+    <button class="add-btn" onclick="showLayoutMenu()" title="Save/Load layouts">💾 Layouts</button>
   </div>
   <button class="settings-btn" onclick="AgentMesh.settings?.open()" title="Settings">⚙</button>
 </div>
@@ -499,6 +500,54 @@ const layoutManager = new LayoutManager({
 });
 
 window.resetLayout = () => layoutManager.resetLayout(DEFAULT_LAYOUT);
+
+window.showLayoutMenu = () => {
+  const presets = layoutManager.getLayoutPresets();
+  const menu = `
+    <div style="padding:16px">
+      <h3>Layout Presets</h3>
+      <div style="margin:12px 0">
+        <input id="layout-name" placeholder="Layout name" style="padding:6px;width:200px">
+        <button onclick="saveCurrentLayout()" style="margin-left:8px">💾 Save Current</button>
+      </div>
+      <div style="margin-top:16px">
+        ${presets.length ? presets.map(name => `
+          <div style="display:flex;align-items:center;gap:8px;margin:8px 0">
+            <button onclick="loadLayoutPreset('${name}')" style="flex:1;text-align:left">${name}</button>
+            <button onclick="deleteLayoutPreset('${name}')" style="color:red">🗑️</button>
+          </div>
+        `).join('') : '<p style="color:var(--text-muted)">No saved layouts</p>'}
+      </div>
+    </div>
+  `;
+  
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000';
+  modal.innerHTML = `<div style="background:var(--bg);border-radius:8px;max-width:400px;width:90%">${menu}</div>`;
+  modal.onclick = (e) => e.target === modal && modal.remove();
+  document.body.appendChild(modal);
+};
+
+window.saveCurrentLayout = () => {
+  const name = document.getElementById('layout-name').value.trim();
+  if (!name) return alert('Enter a layout name');
+  layoutManager.saveLayoutAs(name);
+  document.querySelector('[onclick="showLayoutMenu()"]').click();
+  showLayoutMenu();
+};
+
+window.loadLayoutPreset = (name) => {
+  layoutManager.loadLayout(name);
+  document.querySelector('div[style*="position:fixed"]')?.remove();
+};
+
+window.deleteLayoutPreset = (name) => {
+  if (confirm(`Delete layout "${name}"?`)) {
+    layoutManager.deleteLayoutPreset(name);
+    showLayoutMenu();
+  }
+};
+
 
 // ── Credentials & Model Factory ──
 function loadCredentials() {
