@@ -85,6 +85,11 @@
         if (!idResp.ok) {
             const err = await idResp.text();
             console.error('GetId failed:', idResp.status, err);
+            if (err.includes('Token expired')) {
+                console.warn('Token expired, clearing token');
+                delete cfg.idToken;
+                saveConfig(cfg);
+            }
             return null;
         }
         const { IdentityId } = await idResp.json();
@@ -268,8 +273,11 @@
                             clearInterval(checkClosed);
                             // Reload relay connections
                             setTimeout(() => {
-                                const relays = config.relays.filter(r => r.type === 'agentcore');
-                                relays.forEach(r => M.connectRelayById?.(r.id));
+                                const config = M.getRelayConfig?.();
+                                if (config) {
+                                    const relays = config.relays.filter(r => r.type === 'agentcore');
+                                    relays.forEach(r => M.connectRelayById?.(r.id));
+                                }
                             }, 500);
                         }
                     }, 500);
