@@ -50,7 +50,6 @@ export default new Widget({
         ${logsSection}
       </div>
     </div>`;
-    </div>`;
     
     container.classList.add('mesh-widget');
     container._widget = this;
