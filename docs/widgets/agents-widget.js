@@ -10,7 +10,7 @@ export default new Widget({
     
     container.innerHTML = '<div class="agent-list">' + [...state.agents.values()].map(a => {
       const instances = a.instances || 0;
-      const maxInstances = a.maxInstances || 1;
+      const maxInstances = a.maxInstances || '∞';
       const tasks = [...state.tasks.values()].filter(t => t.agentId === a.id);
       const active = tasks.filter(t => t.status === 'in-progress').length;
       const done = tasks.filter(t => t.status === 'complete').length;

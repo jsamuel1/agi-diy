@@ -776,10 +776,27 @@ async function loadDefaultAgents() {
   } catch (e) { console.warn('Failed to load agents.json, using empty defaults:', e); }
   DEFAULT_AGENTS.forEach((a, i) => {
     if (!state.agents.has(a.id)) {
-      state.agents.set(a.id, { ...a, color: a.color || COLORS[i % COLORS.length], status: 'ready' });
+      state.agents.set(a.id, { 
+        ...a, 
+        color: a.color || COLORS[i % COLORS.length], 
+        status: 'ready',
+        instances: 0,
+        minInstances: a.minInstances || 0,
+        maxInstances: a.maxInstances || 1
+      });
     }
   });
   state.colorIndex = state.agents.size;
+  
+  // Start minimum instances for each agent
+  state.agents.forEach((agent, id) => {
+    const minInstances = agent.minInstances || 0;
+    if (minInstances > 0 && (agent.instances || 0) < minInstances) {
+      // TODO: Create agent instances up to minInstances
+      console.log(`Agent ${id} needs ${minInstances} minimum instances`);
+    }
+  });
+  
   // Register all agents with AgentMesh for cross-page discovery
   if (window.AgentMesh?.registerAgent) {
     state.agents.forEach((a, id) => window.AgentMesh.registerAgent(id, 'browser', { model: a.model }));

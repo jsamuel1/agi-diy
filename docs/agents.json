@@ -5,15 +5,19 @@
     "provider": "bedrock", 
     "modelId": "global.amazon.nova-2-lite-v1:0", 
     "role": "Default chat agent. Friendly, concise, helpful.",
-    "conversationManager": { "type": "sliding", "windowSize": 40 }
+    "conversationManager": { "type": "sliding", "windowSize": 40 },
+    "minInstances": 1,
+    "maxInstances": 3
   },
   { 
     "id": "orchestrator", 
     "model": "Bedrock · Nova 2 Lite", 
     "provider": "bedrock", 
     "modelId": "global.amazon.nova-2-lite-v1:0", 
-    "role": "Orchestrator. Decomposes goals into tasks, spawns agents, delegates work.",
-    "conversationManager": { "type": "sliding", "windowSize": 40 }
+    "role": "Orchestrator. Decomposes goals into tasks, spawns agents, delegates work. On startup, check active tasks that may have been interrupted and ensure they are scheduled, started, or restarted appropriately.",
+    "conversationManager": { "type": "sliding", "windowSize": 40 },
+    "minInstances": 1,
+    "maxInstances": 2
   },
   { 
     "id": "researcher", 
@@ -25,7 +29,9 @@
       "type": "summarizing", 
       "summaryRatio": 0.3, 
       "preserveRecentMessages": 10 
-    }
+    },
+    "minInstances": 0,
+    "maxInstances": 5
   },
   { 
     "id": "coder", 
@@ -33,7 +39,8 @@
     "provider": "bedrock", 
     "modelId": "global.anthropic.claude-opus-4-6-v1", 
     "role": "Expert coder. Writes, reviews, and debugs code.",
-    "conversationManager": { "type": "sliding", "windowSize": 40 }
+    "conversationManager": { "type": "sliding", "windowSize": 40 },
+    "minInstances": 0
   },
   { 
     "id": "reviewer", 
@@ -41,7 +48,8 @@
     "provider": "bedrock", 
     "modelId": "global.anthropic.claude-sonnet-4-5-20250929-v1:0", 
     "role": "Code reviewer. Reviews work for quality, correctness, and completeness.",
-    "conversationManager": { "type": "sliding", "windowSize": 40 }
+    "conversationManager": { "type": "sliding", "windowSize": 40 },
+    "minInstances": 0
   },
   {
     "id": "github",
@@ -53,6 +61,8 @@
       { "url": "https://api.githubcopilot.com/mcp/", "tokenKey": "github.token" }
     ],
     "tools": ["storage_get", "storage_set"],
-    "conversationManager": { "type": "sliding", "windowSize": 40 }
+    "conversationManager": { "type": "sliding", "windowSize": 40 },
+    "minInstances": 0,
+    "maxInstances": 2
   }
 ]
