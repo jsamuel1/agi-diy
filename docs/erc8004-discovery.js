@@ -167,22 +167,17 @@ export async function getAgent(chain, agentId) {
 }
 
 export async function discoverAgents(chain, maxAgents = 50) {
-    // Try event logs first (fast), fall back to sequential probe
+    // Get agent IDs from event logs
     const id = CHAINS[chain]?.identity;
     if (!id) throw new Error(`Unknown chain: ${chain}`);
 
-    let agentIds = [];
-    try {
-        const logs = await rpc(chain, 'eth_getLogs', [{ fromBlock: '0x0', toBlock: 'latest', address: id, topics: [REGISTERED_TOPIC] }]);
-        agentIds = [...new Set(logs.map(l => parseInt(l.topics[1], 16)))].slice(-maxAgents);
-    } catch {
-        // Fallback: sequential probe
-        let misses = 0;
-        for (let i = 0; agentIds.length < maxAgents && misses <= 5; i++) {
-            try { await ethCall(chain, id, SEL.ownerOf + encUint(i)); agentIds.push(i); misses = 0; }
-            catch { misses++; }
-        }
-    }
+    const logs = await rpc(chain, 'eth_getLogs', [{ 
+        fromBlock: '0x0', 
+        toBlock: 'latest', 
+        address: id, 
+        topics: [REGISTERED_TOPIC] 
+    }]);
+    const agentIds = [...new Set(logs.map(l => parseInt(l.topics[1], 16)))].slice(-maxAgents);
 
     const agents = [];
     const enabled = Object.keys(ownersMap).filter(a => ownersMap[a].enabled);

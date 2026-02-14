@@ -16,6 +16,7 @@ const ASSETS_TO_CACHE = [
   '/agent-mesh.js',
   '/agent-mesh-settings.js',
   '/agentcore-relay.js',
+  '/amplify-bundle.js',
   '/erc8004-discovery.js',
   '/manifest.json',
   'https://cdn.jsdelivr.net/npm/marked/marked.min.js',

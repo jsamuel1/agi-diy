@@ -10,9 +10,12 @@ export default new Widget({
     const connections = M?.getRelayConnections() || [];
     const connMap = new Map(connections.map(c => [c.id, c.connected]));
     const peers = M?.getRelayPeers() || [];
+    const logs = M?.getRelayLogs?.() || [];
     
     const enabledRelays = config.relays.filter(r => r.enabled);
     const connectedCount = enabledRelays.filter(r => connMap.get(r.id)).length;
+    
+    const showLogs = container._showLogs || false;
     
     const relayList = enabledRelays.map(r => {
       const connected = connMap.get(r.id);
@@ -25,21 +28,54 @@ export default new Widget({
       return `<div style="margin-bottom:4px;display:flex;align-items:center"><span style="color:${color}">${icon}</span> <span style="flex:1">${label}</span>${reauthBtn}</div>`;
     }).join('');
     
+    const logList = logs.slice(-20).reverse().map(l => {
+      const color = l.level === 'error' ? 'var(--red)' : l.level === 'warn' ? 'var(--orange)' : 'var(--text-dim)';
+      const time = new Date(l.time).toLocaleTimeString();
+      const relay = l.relayId ? '[' + l.relayId.slice(0,12) + ']' : '';
+      return '<div style="font-size:10px;margin-bottom:2px;color:' + color + '">' + time + ' ' + relay + ' ' + l.message + '</div>';
+    }).join('');
+    
+    const toggleBtn = showLogs ? '▼' : '▶';
+    const logsSection = showLogs ? '<div style="margin-top:8px;max-height:200px;overflow-y:auto;background:var(--bg-card);padding:6px;border-radius:4px">' + (logList || '<div style="color:var(--text-muted);font-size:10px">No logs</div>') + '</div>' : '';
+    
     container.innerHTML = `<div style="padding:12px;font-size:12px">
       <div style="margin-bottom:12px">
         <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Connected Relays (${connectedCount}/${enabledRelays.length})</div>
         ${relayList || '<div style="color:var(--text-muted)">No relays configured</div>'}
       </div>
       <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Remote Peers (${peers.length})</div>
-      <div>${peers.length ? peers.map(p => `<div style="margin-bottom:4px"><span style="color:var(--green)">●</span> ${p.hostname||'?'} <span style="color:var(--text-muted)">(${p.agents?.length||0} agents)</span></div>`).join('') : '<div style="color:var(--text-muted)">None</div>'}</div>
+      <div style="margin-bottom:12px">${peers.length ? peers.map(p => `<div style="margin-bottom:4px"><span style="color:var(--green)">●</span> ${p.hostname||'?'} <span style="color:var(--text-muted)">(${p.agents?.length||0} agents)</span></div>`).join('') : '<div style="color:var(--text-muted)">None</div>'}</div>
+      <div style="border-top:1px solid var(--border);padding-top:8px">
+        <button class="mesh-logs-toggle" style="background:none;border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:4px 8px;border-radius:4px;cursor:pointer;width:100%">${toggleBtn} Logs (${logs.length})</button>
+        ${logsSection}
+      </div>
     </div>`;
+    </div>`;
+    
+    container.classList.add('mesh-widget');
+    container._widget = this;
+    
+    // Attach toggle handler
+    const btn = container.querySelector('.mesh-logs-toggle');
+    if (btn) {
+      btn.onclick = () => this.toggleLogs();
+    }
     
     // Subscribe to updates
     if (M?.subscribe && !container._meshSubscribed) {
       const update = () => this.render(container);
       M.subscribe('relay-status', update);
       M.subscribe('relay-peers', update);
+      M.subscribe('relay-log', update);
       container._meshSubscribed = true;
+    }
+  },
+  
+  toggleLogs() {
+    const container = document.querySelector('.mesh-widget');
+    if (container) {
+      container._showLogs = !container._showLogs;
+      this.render(container);
     }
   }
 });

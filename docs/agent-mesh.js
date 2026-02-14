@@ -496,30 +496,22 @@
                                       window.state?.backendAgents?.size > 0 ||
                                       window.state?.agentcoreAgents?.size > 0;
                     
-                    // Prefer runAgent-style async function (returns Promise with full response)
-                    if (window.runUnifiedAgent && hasAgents) {
-                        window.runUnifiedAgent(prompt).then(result => {
-                            clearTimeout(timeout);
-                            resolve(result || 'Completed');
-                        }).catch(err => {
-                            clearTimeout(timeout);
-                            reject(err);
-                        });
-                        return;
+                    if (!hasAgents) {
+                        throw new Error('Unified agent not ready (no agents configured)');
                     }
                     
-                    // Fallback: fire-and-forget sendSingle
-                    if (window.sendSingle && hasAgents) {
-                        const input = document.getElementById('singleInput');
-                        if (input) {
-                            input.value = prompt;
-                            window.sendSingle();
-                            clearTimeout(timeout);
-                            resolve('Message sent to unified agent');
-                            return;
-                        }
+                    if (!window.runUnifiedAgent) {
+                        throw new Error('runUnifiedAgent function not available');
                     }
-                    throw new Error('Unified agent not ready (no agents configured)');
+                    
+                    window.runUnifiedAgent(prompt).then(result => {
+                        clearTimeout(timeout);
+                        resolve(result || 'Completed');
+                    }).catch(err => {
+                        clearTimeout(timeout);
+                        reject(err);
+                    });
+                    return;
                 }
                 
                 throw new Error('Unknown page type: ' + currentPage.id);
@@ -1634,7 +1626,7 @@
         try {
             const stored = localStorage.getItem(RELAY_CONFIG_KEY);
             if (stored) return JSON.parse(stored);
-        } catch (e) { console.error('[AgentMesh] Error loading relay config:', e); }
+        } catch (e) { logRelay('error', null, 'Error loading relay config', e.message); }
         return { relays: [] };
     }
     
@@ -1645,6 +1637,7 @@
             return true;
         } catch (e) {
             console.error('[AgentMesh] Error saving relay config:', e);
+            logRelay('error', null, 'Error saving relay config', e.message);
             return false;
         }
     }
@@ -1687,6 +1680,15 @@
         return id;
     })();
     const remotePeers = new Map();
+    
+    // Internal log buffer (max 100 entries)
+    const relayLogs = [];
+    function logRelay(level, relayId, message, data) {
+        const entry = { time: Date.now(), level, relayId, message, data };
+        relayLogs.push(entry);
+        if (relayLogs.length > 100) relayLogs.shift();
+        broadcast('relay-log', entry);
+    }
 
     function connectRelay(url, relayId) {
         if (!relayId) relayId = `temp-${Date.now()}`;
@@ -1698,7 +1700,7 @@
             
             ws.onopen = () => {
                 conn.connected = true;
-                console.log(`[AgentMesh] 🌐 Relay connected [${relayId}]:`, url);
+                logRelay('info', relayId, 'Connected', url);
                 sendRelayPresence(relayId);
                 conn.heartbeat = setInterval(() => {
                     if (!conn.connected) return;
@@ -1717,12 +1719,12 @@
                     const msg = JSON.parse(e.data);
                     if (msg.from === relayInstanceId) return;
                     handleRelayMessage(msg, relayId);
-                } catch (err) { console.warn(`[AgentMesh] Invalid relay message [${relayId}]:`, err); }
+                } catch (err) { logRelay('warn', relayId, 'Invalid message', err.message); }
             };
             ws.onclose = () => {
                 conn.connected = false;
                 if (conn.heartbeat) { clearInterval(conn.heartbeat); conn.heartbeat = null; }
-                console.log(`[AgentMesh] 🌐 Relay disconnected [${relayId}]`);
+                logRelay('info', relayId, 'Disconnected', null);
                 broadcast('relay-disconnected', { relayId });
                 const handler = subscribers.get('relay-status');
                 if (handler) handler({ connected: false, url, relayId });
@@ -1732,12 +1734,12 @@
                     conn.reconnectTimer = setTimeout(async () => {
                         conn.reconnectTimer = null;
                         console.log(`[AgentMesh] 🔄 Relay reconnect [${relayId}]...`);
-                        try { await provider(); } catch (e) { console.warn(`[AgentMesh] Reconnect failed [${relayId}]:`, e); }
+                        try { await provider(); } catch (e) { logRelay('warn', relayId, 'Reconnect failed', e.message); }
                     }, 3000);
                 }
             };
-            ws.onerror = (err) => console.error(`[AgentMesh] Relay error [${relayId}]:`, err);
-        } catch (err) { console.error(`[AgentMesh] Failed to connect relay [${relayId}]:`, err); }
+            ws.onerror = (err) => logRelay('error', relayId, 'WebSocket error', err.message || 'Connection failed');
+        } catch (err) { logRelay('error', relayId, 'Failed to connect', err.message); }
     }
 
     function disconnectRelayById(relayId) {
@@ -1945,6 +1947,8 @@
         get relayConnected() { return relayConnections.size > 0 && [...relayConnections.values()].some(c => c.connected); },
         getRelayPeers: () => [...remotePeers.values()],
         getRelayConnections: () => Array.from(relayConnections.entries()).map(([id, conn]) => ({ id, connected: conn.connected })),
+        getRelayLogs: () => [...relayLogs],
+        logRelay, // Expose for plugins
         relayInstanceId,
         
         // 🤖 Agent Registration (track agents across tabs)

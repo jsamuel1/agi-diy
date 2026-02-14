@@ -5,7 +5,11 @@
     'use strict';
     const STORE_KEY = 'mesh_agentcore_config';
     const M = window.AgentMesh;
-    if (!M) { console.warn('[AgentCoreRelay] AgentMesh not found — load agent-mesh.js first'); return; }
+    if (!M) { return; }
+    
+    function logRelay(level, relayId, message, data) {
+        if (M.logRelay) M.logRelay(level, relayId, message, data);
+    }
 
     // Runtime credential cache (NOT persisted to localStorage)
     const credentialCache = new Map(); // Map<relayId, {accessKeyId, secretAccessKey, sessionToken, expiration}>
@@ -20,7 +24,7 @@
         SignatureV4 = sigModule.SignatureV4;
         Sha256 = sha256Module.Sha256;
     } catch (e) {
-        console.error('[AgentCoreRelay] Failed to load AWS SDK:', e);
+        logRelay('error', null, 'Failed to load AWS SDK', e.message);
         return;
     }
 
@@ -103,7 +107,7 @@
             const cfg = getConfig();
             const fresh = await refreshCredentials(cfg);
             if (!fresh) {
-                console.warn(`[AgentCoreRelay] Refresh failed [${relayId}] — re-login required`);
+                logRelay('warn', relayId, 'Refresh failed — re-login required', null);
                 M.broadcast?.('relay-auth-required', { reason: 'credentials_expired', relayId });
                 return false;
             }
@@ -115,13 +119,13 @@
         if (!credentials) {
             const cfg = getConfig();
             if (!cfg?.idToken) {
-                console.warn(`[AgentCoreRelay] No idToken [${relayId}] — login required`);
+                logRelay('warn', relayId, 'No idToken — login required', null);
                 M.broadcast?.('relay-auth-required', { reason: 'no_token', relayId });
                 return false;
             }
             credentials = await refreshCredentials(cfg);
             if (!credentials) {
-                console.warn(`[AgentCoreRelay] Failed to vend credentials [${relayId}]`);
+                logRelay('warn', relayId, 'Failed to vend credentials', null);
                 return false;
             }
             credentialCache.set(relayId, credentials);
@@ -143,7 +147,7 @@
         if (!credentials || (credentials.expiration && new Date(credentials.expiration * 1000) < new Date())) {
             const cfg = getConfig();
             if (!cfg?.idToken) {
-                console.warn(`[AgentCoreRelay] No idToken for relay [${relayId}]`);
+                logRelay('warn', relayId, 'No idToken for relay', null);
                 return false;
             }
             credentials = await refreshCredentials(cfg);
@@ -181,34 +185,15 @@
         credentialCache.clear();
     };
 
-    // ═══ Reauth Function (set early, before Amplify) ═══
-    window.reauthAgentCore = async () => {
-        const cfg = getConfig();
-        if (!cfg?.cognito) {
-            alert('No Cognito configuration found. Please configure in Settings.');
-            M.settings?.open('mesh');
-            return;
-        }
-        
-        // Manual OAuth flow via cognitoauth.html callback page
-        const { domain, clientId } = cfg.cognito;
-        const callbackUri = window.location.origin + '/cognitoauth.html';
-        const returnTo = encodeURIComponent(window.location.pathname);
-        const redirectUri = encodeURIComponent(callbackUri);
-        const authUrl = `https://${domain}/oauth2/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}&state=${returnTo}&scope=openid+email+profile`;
-        window.location.href = authUrl;
-    };
-
-    // ═══ Amplify SDK Session Management (optional enhancement) ═══
+    // ═══ Amplify SDK Session Management ═══
     (async () => {
         try {
-            const amplifyModule = await import('https://cdn.jsdelivr.net/npm/@aws-amplify/auth@6/+esm');
-            const amplifyCore = await import('https://cdn.jsdelivr.net/npm/@aws-amplify/core@6/+esm');
+            const { Amplify, fetchAuthSession, signInWithRedirect } = await import('./amplify-bundle.js');
             
             // Configure Amplify with first AgentCore relay config
             const cfg = getConfig();
             if (cfg?.cognito) {
-                amplifyCore.Amplify.configure({
+                Amplify.configure({
                     Auth: {
                         Cognito: {
                             userPoolId: cfg.cognito.providerName.split('/')[1],
@@ -230,7 +215,7 @@
                 // Auto-refresh session
                 setInterval(async () => {
                     try {
-                        const session = await amplifyModule.fetchAuthSession();
+                        const session = await fetchAuthSession();
                         if (session.tokens?.idToken) {
                             const newCfg = getConfig();
                             newCfg.idToken = session.tokens.idToken.toString();
@@ -238,11 +223,11 @@
                             console.log('[AgentCoreRelay] Session refreshed');
                         }
                     } catch (e) {
-                        console.warn('[AgentCoreRelay] Session refresh failed:', e);
+                        logRelay('warn', null, 'Session refresh failed', e.message);
                     }
                 }, 4 * 60 * 1000); // Every 4 minutes
                 
-                // Enhance reauth function with Amplify
+                // Reauth function with Amplify
                 window.reauthAgentCore = async () => {
                     const cfg = getConfig();
                     if (!cfg?.cognito) {
@@ -250,20 +235,11 @@
                         M.settings?.open('mesh');
                         return;
                     }
-                    
-                    try {
-                        await amplifyModule.signInWithRedirect({ provider: 'Cognito' });
-                    } catch (e) {
-                        console.error('[AgentCoreRelay] Amplify signin failed, using manual OAuth:', e);
-                        const { domain, clientId } = cfg.cognito;
-                        const redirectUri = encodeURIComponent(window.location.origin + window.location.pathname);
-                        const authUrl = `https://${domain}/oauth2/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=openid+email+profile`;
-                        window.location.href = authUrl;
-                    }
+                    await signInWithRedirect({ provider: 'Cognito' });
                 };
             }
         } catch (e) {
-            console.warn('[AgentCoreRelay] Amplify SDK not available, using manual OAuth:', e);
+            logRelay('error', null, 'Failed to initialize Amplify SDK', e.message);
         }
     })();
 
@@ -275,9 +251,9 @@
         config.relays
             .filter(r => r.type === 'agentcore' && r.enabled && r.autoConnect)
             .forEach(relay => {
-                connectAgentCoreRelayById(relay.id).catch(e => 
-                    console.warn(`[AgentCoreRelay] Auto-connect failed [${relay.id}]:`, e)
-                );
+                connectAgentCoreRelayById(relay.id).catch(e => {
+                    logRelay('warn', relay.id, 'Auto-connect failed', e.message);
+                });
             });
     }, 1200);
 
