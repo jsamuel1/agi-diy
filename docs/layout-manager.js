@@ -15,7 +15,7 @@ export class LayoutManager {
   render() {
     this.rootEl.innerHTML = '';
     const container = document.createElement('div');
-    container.className = 'layout layout-row';
+    container.className = 'layout';
     container.style.height = 'calc(100vh - 36px)';
     container.dataset.containerId = 'root';
 
@@ -26,9 +26,13 @@ export class LayoutManager {
   renderNode(parent, nodes) {
     nodes.forEach((node, idx) => {
       if (idx > 0 && parent.dataset.containerId) {
-        // Add resize handle between siblings in a container
-        const parentType = parent.classList.contains('layout-col') ? 'col' : 'row';
-        parent.appendChild(this.createResizeHandle(parentType));
+        // Add resize handle between siblings
+        // If parent is vertical (layout-col), use horizontal handle (row)
+        // If parent is horizontal (layout or layout-row), use vertical handle (col)
+        const isVerticalStack = parent.classList.contains('layout-col');
+        const handleType = isVerticalStack ? 'row' : 'col';
+        parent.appendChild(this.createResizeHandle(handleType));
+      }
       }
       
       if (node.type === 'col' || node.type === 'row') {
