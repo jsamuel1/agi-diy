@@ -30,12 +30,23 @@ export class LayoutManager {
         container.style.flex = node.flex || 1;
         container.dataset.containerId = node.id;
         
-        this.renderNode(container, node.children || []);
+        // Render children with resize handles between them
+        (node.children || []).forEach((child, childIdx) => {
+          if (childIdx > 0) {
+            container.appendChild(this.createResizeHandle(node.type));
+          }
+          if (child.type === 'col' || child.type === 'row') {
+            const subContainer = document.createElement('div');
+            subContainer.className = child.type === 'col' ? 'layout-col' : 'layout-row';
+            subContainer.style.flex = child.flex || 1;
+            subContainer.dataset.containerId = child.id;
+            this.renderNode(subContainer, child.children || []);
+            container.appendChild(subContainer);
+          } else {
+            container.appendChild(this.makeBlockEl(child));
+          }
+        });
         
-        // Add resize handle after each child except last
-        if (idx < nodes.length - 1) {
-          parent.appendChild(this.createResizeHandle(node.type));
-        }
         parent.appendChild(container);
       } else {
         parent.appendChild(this.makeBlockEl(node));
