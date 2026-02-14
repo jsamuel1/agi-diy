@@ -57,7 +57,8 @@ export default new Widget({
     // Attach toggle handler
     const btn = container.querySelector('.mesh-logs-toggle');
     if (btn) {
-      btn.onclick = () => this.toggleLogs();
+      const widget = this;
+      btn.onclick = () => widget.toggleLogs();
     }
     
     // Subscribe to updates
