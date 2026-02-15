@@ -346,8 +346,6 @@ function seedAgentList(agent) {
   );
 }
 
-function saveTasks() { try { localStorage.setItem('dashboard_tasks', JSON.stringify([...state.tasks.values()])); } catch(e) {} }
-function loadTasks() { try { const d = JSON.parse(localStorage.getItem('dashboard_tasks')); if (d?.length) { state.tasks.clear(); d.forEach(t => state.tasks.set(t.id, t)); return true; } } catch(e) {} return false; }
 // ═══════════════════════════════════════════════════════════════
 // SECTION INDEX
 // STATE ............. Constants, mock data, layout config
