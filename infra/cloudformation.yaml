@@ -5,7 +5,7 @@ Parameters:
   BucketName:
     Type: String
     Description: S3 bucket name
-  
+
   HostedZoneId:
     Type: String
     Description: Route53 Hosted Zone ID
@@ -114,15 +114,15 @@ Outputs:
   CertificateArn:
     Value: !Ref Certificate
     Description: ACM certificate ARN
-  
+
   BucketName:
     Value: !Ref WebsiteBucket
     Description: S3 bucket name
-  
+
   CloudFrontURL:
     Value: !GetAtt CloudFrontDistribution.DomainName
     Description: CloudFront distribution domain
-  
+
   DistributionId:
     Value: !Ref CloudFrontDistribution
     Description: CloudFront distribution ID for cache invalidation

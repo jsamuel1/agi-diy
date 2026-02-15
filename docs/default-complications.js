@@ -2,8 +2,8 @@
  * Default complications for agi.diy Dashboard
  */
 
-export function registerDefaultComplications(registry, deps) {
-  const { state, layoutManager, widgetRegistry } = deps;
+export function registerDefaultComplications (registry, deps) {
+  const { state, layoutManager, widgetRegistry } = deps
 
   // ═══ STATUSBAR ═══
 
@@ -11,26 +11,26 @@ export function registerDefaultComplications(registry, deps) {
     id: 'mesh-nav',
     placement: ['statusbar'],
     render: (container) => {
-      container.id = 'meshNavSlot';
-      container.style.cssText = 'display:flex;align-items:center;gap:4px';
-      setTimeout(() => window.MeshNav?.populate('meshNavSlot'), 500);
+      container.id = 'meshNavSlot'
+      container.style.cssText = 'display:flex;align-items:center;gap:4px'
+      setTimeout(() => window.MeshNav?.populate('meshNavSlot'), 500)
     }
-  });
+  })
 
   registry.register({
     id: 'wall-clock',
     placement: ['statusbar'],
     render: (container) => {
-      container.className = 'wall-clock';
-      container.style.cssText = 'font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums;margin-left:auto';
-      container.textContent = '0:00';
+      container.className = 'wall-clock'
+      container.style.cssText = 'font-size:11px;color:var(--accent);font-variant-numeric:tabular-nums;margin-left:auto'
+      container.textContent = '0:00'
     },
     update: (el, { state }) => {
-      if (!state?.wallClockStart) return;
-      const s = Math.floor((Date.now() - state.wallClockStart) / 1000);
-      el.textContent = `⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+      if (!state?.wallClockStart) return
+      const s = Math.floor((Date.now() - state.wallClockStart) / 1000)
+      el.textContent = `⏱ ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
     }
-  });
+  })
 
   // ═══ SIDEBAR ═══
 
@@ -41,7 +41,7 @@ export function registerDefaultComplications(registry, deps) {
     label: 'Stop All',
     title: 'Stop all active tasks',
     action: () => window.stopAllTasks?.()
-  });
+  })
 
   registry.register({
     id: 'clear-done',
@@ -50,7 +50,7 @@ export function registerDefaultComplications(registry, deps) {
     label: 'Clear Done',
     title: 'Clear completed tasks',
     action: () => window.clearDoneTasks?.()
-  });
+  })
 
   registry.register({
     id: 'reset',
@@ -59,7 +59,7 @@ export function registerDefaultComplications(registry, deps) {
     label: 'Reset',
     title: 'Reset layout',
     action: () => layoutManager.resetLayout(window.DEFAULT_LAYOUT)
-  });
+  })
 
   registry.register({
     id: 'layouts',
@@ -68,7 +68,7 @@ export function registerDefaultComplications(registry, deps) {
     label: 'Layouts',
     title: 'Manage layouts',
     action: () => window.showLayoutMenu?.()
-  });
+  })
 
   registry.register({
     id: 'settings',
@@ -77,13 +77,13 @@ export function registerDefaultComplications(registry, deps) {
     label: 'Settings',
     title: 'Settings',
     action: () => window.AgentMesh?.settings?.open()
-  });
+  })
 
   // ═══ WIDGETS (dynamic) ═══
-  
+
   widgetRegistry.getAll?.().forEach(widget => {
-    if (widget.meta?.hideFromSidebar) return;
-    
+    if (widget.meta?.hideFromSidebar) return
+
     registry.register({
       id: `widget-${widget.type}`,
       placement: ['sidebar'],
@@ -91,6 +91,6 @@ export function registerDefaultComplications(registry, deps) {
       label: widget.meta?.title || widget.type,
       title: `Add ${widget.meta?.title || widget.type}`,
       action: () => layoutManager.openWidget(widget.type)
-    });
-  });
+    })
+  })
 }

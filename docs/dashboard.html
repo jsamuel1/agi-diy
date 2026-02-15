@@ -326,8 +326,6 @@ async function runDelegatedAgent(agentId, taskId, instructions) {
   notify('tasks'); saveTasks();
 }
 
-const ORCHESTRATOR_TOOLS = [...TASK_TOOLS, listAgentsTool, delegateTaskTool];
-
 function buildOrchestratorPrompt() {
   return `You are an orchestrator agent in a multi-agent mesh dashboard. Your job:
 1. When given a goal, decompose it into tasks using create_task (use parentId for sub-tasks)

@@ -7,10 +7,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>agi.diy</title>
-    
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
-    
+
     <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,29 +18,29 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#0a0a0a">
     <meta name="description" content="Build your own AGI. Strands Agent running entirely in your browser.">
-    
+
     <!-- iOS Icons -->
     <link rel="apple-touch-icon" href="icon-192.svg">
     <link rel="apple-touch-icon" sizes="152x152" href="icon-192.svg">
     <link rel="apple-touch-icon" sizes="180x180" href="icon-192.svg">
     <link rel="apple-touch-icon" sizes="167x167" href="icon-192.svg">
-    
+
     <!-- Splash screens for iOS -->
     <meta name="apple-mobile-web-app-title" content="agi.diy">
-    
+
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>◈</text></svg>">
-    
+
     <!-- Marked.js for Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
+
     <!-- Google Font for clean typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        
+
         :root {
             --bg: #0a0a0a;
             --bg-elevated: #111111;
@@ -53,7 +53,7 @@
             --accent: rgba(255,255,255,0.9);
             --divider: rgba(255,255,255,0.08);
         }
-        
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg);
@@ -134,7 +134,7 @@
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
         }
-        
+
         /* Map background container */
         #map-background {
             position: fixed !important;
@@ -156,9 +156,9 @@
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-        .app { 
-            display: flex; 
-            flex-direction: column; 
+        .app {
+            display: flex;
+            flex-direction: column;
             height: 100vh;
             max-width: 100%;
         }
@@ -183,13 +183,13 @@
             padding-top: calc(12px + env(safe-area-inset-top));
             min-width: 400px;
         }
-        
+
         .header-left {
             display: flex;
             align-items: center;
             gap: 16px;
         }
-        
+
         .header-right {
             display: flex;
             align-items: center;
@@ -206,7 +206,7 @@
         .brand-dot {
             color: var(--text-tertiary);
         }
-        
+
         .header-divider {
             width: 1px;
             height: 16px;
@@ -229,7 +229,7 @@
             align-items: center;
             gap: 4px;
         }
-        .header-btn:hover { 
+        .header-btn:hover {
             color: var(--text);
             background: var(--glass);
         }
@@ -260,9 +260,9 @@
             animation: messageIn 0.4s ease;
             position: relative;
         }
-        
-        @keyframes messageIn { 
-            from { opacity: 0; transform: translateY(12px); } 
+
+        @keyframes messageIn {
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -375,9 +375,9 @@
         .markdown-content h1 { font-size: 20px; }
         .markdown-content h2 { font-size: 17px; }
         .markdown-content h3 { font-size: 15px; }
-        
+
         .markdown-content p { margin: 12px 0; }
-        
+
         .markdown-content code {
             background: rgba(255,255,255,0.06);
             padding: 3px 7px;
@@ -394,12 +394,12 @@
             margin: 16px 0;
             border: 1px solid var(--glass-border);
         }
-        .markdown-content pre code { 
-            background: none; 
+        .markdown-content pre code {
+            background: none;
             padding: 0;
             color: var(--text-secondary);
         }
-        
+
         .markdown-content ul, .markdown-content ol {
             margin: 12px 0;
             padding-left: 24px;
@@ -408,7 +408,7 @@
             margin: 6px 0;
             color: var(--text-secondary);
         }
-        
+
         .markdown-content a {
             color: var(--text);
             text-decoration: underline;
@@ -439,7 +439,7 @@
             gap: 8px;
             pointer-events: auto; /* Re-enable clicks on actual input */
         }
-        
+
         .vision-controls {
             display: flex;
             gap: 8px;
@@ -466,8 +466,8 @@
             appearance: none;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
-        .input-field:focus { 
-            outline: none; 
+        .input-field:focus {
+            outline: none;
             border-color: rgba(255,255,255,0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.1);
         }
@@ -491,13 +491,13 @@
             justify-content: center;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
-        .send-btn:hover { 
+        .send-btn:hover {
             background: rgba(30, 30, 30, 0.9);
             color: var(--text);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
         }
-        .send-btn:disabled { 
-            opacity: 0.3; 
+        .send-btn:disabled {
+            opacity: 0.3;
             cursor: not-allowed;
         }
 
@@ -536,8 +536,8 @@
             align-items: center;
         }
 
-        .modal-title { 
-            font-size: 15px; 
+        .modal-title {
+            font-size: 15px;
             font-weight: 600;
             letter-spacing: -0.01em;
         }
@@ -556,8 +556,8 @@
             justify-content: center;
             transition: all 0.2s ease;
         }
-        .modal-close:hover { 
-            background: var(--glass); 
+        .modal-close:hover {
+            background: var(--glass);
             color: var(--text);
         }
 
@@ -590,13 +590,13 @@
             -webkit-appearance: none;
             appearance: none;
         }
-        .form-input:focus { 
-            outline: none; 
+        .form-input:focus {
+            outline: none;
             border-color: rgba(255,255,255,0.15);
         }
-        textarea.form-input { 
-            min-height: 120px; 
-            resize: vertical; 
+        textarea.form-input {
+            min-height: 120px;
+            resize: vertical;
             font-family: 'SF Mono', 'Fira Code', monospace;
             font-size: 16px; /* Keep 16px to prevent iOS zoom */
             line-height: 1.6;
@@ -614,16 +614,16 @@
             transition: all 0.2s ease;
             font-family: inherit;
         }
-        .btn:hover { 
+        .btn:hover {
             background: var(--glass-hover);
             color: var(--text);
         }
-        .btn-primary { 
-            background: var(--text); 
-            color: var(--bg); 
+        .btn-primary {
+            background: var(--text);
+            color: var(--bg);
             border-color: var(--text);
         }
-        .btn-primary:hover { 
+        .btn-primary:hover {
             background: rgba(255,255,255,0.85);
         }
 
@@ -660,11 +660,11 @@
             white-space: nowrap;
         }
         .tab:hover { color: var(--text-secondary); }
-        .tab.active { 
+        .tab.active {
             background: var(--bg);
             color: var(--text);
         }
-        
+
         @media (max-width: 640px) {
             .tabs {
                 margin-bottom: 20px;
@@ -726,8 +726,8 @@
             transition: all 0.3s ease;
             z-index: 300;
         }
-        .toast.show { 
-            transform: translateX(-50%) translateY(0); 
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
             opacity: 1;
         }
 
@@ -818,10 +818,10 @@
                 </div>
                 <!-- Input Row -->
                 <div style="display:flex;gap:12px;align-items:flex-end;width:100%;">
-                    <textarea 
-                        class="input-field" 
-                        id="inputField" 
-                        placeholder="Ask anything..." 
+                    <textarea
+                        class="input-field"
+                        id="inputField"
+                        placeholder="Ask anything..."
                         rows="1"
                         disabled
                     ></textarea>
@@ -865,7 +865,7 @@
                             <option value="webllm">WebLLM (Local)</option>
                         </select>
                     </div>
-                    
+
                     <div id="anthropicFields">
                         <div class="form-group">
                             <label class="form-label">API Key</label>
@@ -886,7 +886,7 @@
                             <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">Additional HTTP headers for API requests (optional)</div>
                         </div>
                     </div>
-                    
+
                     <div id="openaiFields" style="display:none;">
                         <div class="form-group">
                             <label class="form-label">API Key</label>
@@ -907,7 +907,7 @@
                             <div style="font-size:11px;color:var(--text-tertiary);margin-top:4px;">Additional HTTP headers for API requests (optional)</div>
                         </div>
                     </div>
-                    
+
                     <div id="bedrockFields" style="display:none;">
                         <div class="form-group">
                             <label class="form-label">API Key</label>
@@ -940,7 +940,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div id="compatFields" style="display:none;">
                         <div class="form-group">
                             <label class="form-label">Endpoint URL</label>
@@ -961,7 +961,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div id="webllmFields" style="display:none;">
                         <div class="form-group">
                             <label class="form-label">Local Model</label>
@@ -990,7 +990,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="btn-group">
                         <button class="btn btn-primary" id="saveCredentialsBtn">Save & Connect</button>
                         <button class="btn" id="testConnectionBtn">Test</button>
@@ -1005,7 +1005,7 @@
                             <br>Requires OAuth Client ID from Google Cloud Console.
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">OAuth Client ID</label>
                         <input type="text" class="form-input" id="googleClientId" placeholder="xxx.apps.googleusercontent.com">
@@ -1013,7 +1013,7 @@
                             Get from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--text-secondary);">Google Cloud Console</a> → Create OAuth 2.0 Client ID (Web application)
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">API Key (Optional)</label>
                         <input type="password" class="form-input" id="googleApiKey" placeholder="AIzaSy...">
@@ -1021,20 +1021,20 @@
                             For public APIs without OAuth. Create at Cloud Console → API Keys
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">OAuth Status</label>
                         <div id="googleAuthStatus" style="font-family:'SF Mono',monospace;font-size:12px;color:var(--text-secondary);background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;">
                             Not connected
                         </div>
                     </div>
-                    
+
                     <div class="btn-group">
                         <button class="btn btn-primary" id="saveGoogleConfigBtn">Save Config</button>
                         <button class="btn" id="googleAuthBtn">🔐 Authenticate</button>
                         <button class="btn" id="googleRevokeBtn">Revoke</button>
                     </div>
-                    
+
                     <div class="form-group" style="margin-top:24px;">
                         <label class="form-label">📋 Setup Instructions</label>
                         <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8;">
@@ -1087,7 +1087,7 @@
                             Enable context sources to automatically inject data into every agent turn.
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                             <input type="checkbox" id="contextActivity" style="width:18px;height:18px;">
@@ -1097,7 +1097,7 @@
                             Mouse position, typing, scrolling, idle time, focus state
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                             <input type="checkbox" id="contextGeolocation" style="width:18px;height:18px;">
@@ -1107,7 +1107,7 @@
                             GPS coordinates, altitude, speed (requires permission)
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                             <input type="checkbox" id="contextBluetooth" style="width:18px;height:18px;">
@@ -1117,7 +1117,7 @@
                             Nearby devices and AGI agents (requires Chrome/Edge + HTTPS)
                         </div>
                     </div>
-                    
+
                     <div class="form-group" style="margin-top:24px;">
                         <label class="form-label">Current Context Preview</label>
                         <div id="contextPreview" style="font-family:'SF Mono',monospace;font-size:11px;background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;max-height:200px;overflow-y:auto;color:var(--text-tertiary);white-space:pre-wrap;">
@@ -1125,7 +1125,7 @@
                         </div>
                         <button class="btn" id="refreshContextBtn" style="margin-top:8px;">Refresh Preview</button>
                     </div>
-                    
+
                     <div class="form-group" style="margin-top:24px;">
                         <label class="form-label">Custom Context</label>
                         <div style="display:flex;gap:8px;">
@@ -1142,11 +1142,11 @@
                     <div class="form-group">
                         <label class="form-label">🗺️ Map Background</label>
                         <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:16px;">
-                            Enable a full-screen Google Maps background with your live location. 
+                            Enable a full-screen Google Maps background with your live location.
                             Clean, transparent, minimal - the map is just ambiance while streaming.
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Google Maps API Key</label>
                         <input type="password" class="form-input" id="googleMapsApiKey" placeholder="AIzaSy...">
@@ -1154,7 +1154,7 @@
                             Get a free key at <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color:var(--text-secondary);">Google Cloud Console</a>
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Map ID (Optional - for Advanced Markers)</label>
                         <input type="text" class="form-input" id="googleMapsMapId" placeholder="e.g., 8e0a97af9386fef">
@@ -1162,14 +1162,14 @@
                             Create at <a href="https://console.cloud.google.com/google/maps-apis/studio/maps" target="_blank" style="color:var(--text-secondary);">Maps Studio</a> → enables custom markers with emoji/labels
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
                             <input type="checkbox" id="mapEnabled" style="width:18px;height:18px;">
                             <span style="color:var(--text);">Enable Map Background</span>
                         </label>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Map Style</label>
                         <select class="form-input" id="mapStyle">
@@ -1177,14 +1177,14 @@
                             <option value="ultra-minimal">Minimal</option>
                         </select>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">Current Location</label>
                         <div id="mapLocationDisplay" style="font-family:'SF Mono',monospace;font-size:12px;color:var(--text-secondary);background:rgba(0,0,0,0.3);padding:12px;border-radius:8px;">
                             Waiting for location...
                         </div>
                     </div>
-                    
+
                     <div class="btn-group">
                         <button class="btn btn-primary" id="saveMapSettingsBtn">Save & Apply</button>
                         <button class="btn" id="testMapBtn">Test Map</button>
@@ -1199,7 +1199,7 @@
                             All API keys and config are encrypted with your password.
                         </div>
                     </div>
-                    
+
                     <div class="form-group">
                         <label class="form-label">📤 Export Settings</label>
                         <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
@@ -1217,7 +1217,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="form-group" style="margin-top:24px;padding-top:24px;border-top:1px solid var(--divider);">
                         <label class="form-label">📥 Import Settings</label>
                         <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
@@ -1230,7 +1230,7 @@
                         </div>
                         <div id="importStatus" style="font-size:12px;margin-top:8px;display:none;"></div>
                     </div>
-                    
+
                     <div class="form-group" style="margin-top:24px;padding-top:24px;border-top:1px solid var(--divider);">
                         <label class="form-label">💬 Chat History</label>
                         <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px;">
@@ -1250,7 +1250,7 @@
                             <button class="btn" id="clearChatHistoryBtn" style="color:rgba(255,100,100,0.8);">🗑️ Clear History</button>
                         </div>
                     </div>
-                    
+
                     <div class="form-group" style="margin-top:24px;padding-top:24px;border-top:1px solid var(--divider);">
                         <label class="form-label">🔐 What's Exported</label>
                         <div style="font-size:12px;color:var(--text-tertiary);line-height:1.8;">
@@ -1284,20 +1284,20 @@
     <script type="module">
     // ═══════════════════════════════════════════════════════════════════════════
     // agi.diy — Build your own AGI
-    // 
+    //
     // Documentation available in console. Type agi.help() for reference.
-    // 
+    //
     // Architecture:
     // - Strands Agent SDK (browser bundle)
     // - Custom Anthropic model provider
     // - Browser-native tools (storage, fetch, eval, render)
     // - Full streaming support
-    // 
+    //
     // Source: https://github.com/strands-agents/sdk-typescript
     // ═══════════════════════════════════════════════════════════════════════════
 
-    import { 
-        Agent, 
+    import {
+        Agent,
         tool,
         Model,
         TextBlock,
@@ -1306,41 +1306,41 @@
         Message,
         z
     } from './strands.js';
-    
+
     // Expose Agent globally for ambient mode to create separate instances
     window.Agent = Agent;
-    
+
     // Expose tool and z for AgentMesh to create Strands-compatible tools
     window.tool = tool;
     window.z = z;
-    
+
     // Expose model classes for ambient mode to clone
     window.AnthropicBrowserModel = null; // Will be set after class definition
     window.OpenAIBrowserModel = null;
     window.BedrockBrowserModel = null;
-    
+
     import { WebLLMBrowserModel } from './webllm.js';
-    
-    import { 
-        VisionAgent, 
-        ScreenCapture, 
+
+    import {
+        VisionAgent,
+        ScreenCapture,
         AmbientMode,
         createImageBlock,
         resizeImageIfNeeded
     } from './vision.js';
-    
-    import { 
+
+    import {
         ContextInjector,
         BluetoothScanner
     } from './context-injector.js';
-    
+
     import {
         MapBackground,
         createMapControls
     } from './map.js';
-    
+
     import { googleAPI, DEFAULT_SCOPES } from './tools/google.js';
-    
+
     // Initialize global context injector
     const contextInjector = new ContextInjector();
     contextInjector.exposeToWindow();
@@ -1577,7 +1577,7 @@ Version: ${VERSION}`;
 
         async *stream(messages, options) {
             const { apiKey, modelId, maxTokens, temperature, customHeaders } = this._config;
-            
+
             if (!apiKey) {
                 throw new Error('API key not configured. Open settings to add your key.');
             }
@@ -1615,8 +1615,8 @@ Version: ${VERSION}`;
                             // Handle document blocks for Anthropic
                             if (block.source?.bytes) {
                                 const docBase64 = uint8ArrayToBase64(
-                                    block.source.bytes instanceof Uint8Array 
-                                        ? block.source.bytes 
+                                    block.source.bytes instanceof Uint8Array
+                                        ? block.source.bytes
                                         : new Uint8Array(block.source.bytes)
                                 );
                                 return {
@@ -1630,11 +1630,11 @@ Version: ${VERSION}`;
                             }
                             return { type: 'text', text: `[Document: ${block.name || 'unknown'}]` };
                         case 'toolUseBlock':
-                            return { 
-                                type: 'tool_use', 
-                                id: block.toolUseId, 
-                                name: block.name, 
-                                input: block.input 
+                            return {
+                                type: 'tool_use',
+                                id: block.toolUseId,
+                                name: block.name,
+                                input: block.input
                             };
                         case 'toolResultBlock':
                             const content = block.content.map(c => {
@@ -1642,8 +1642,8 @@ Version: ${VERSION}`;
                                 if (c.type === 'jsonBlock') return { type: 'text', text: JSON.stringify(c.json) };
                                 return { type: 'text', text: String(c) };
                             });
-                            return { 
-                                type: 'tool_result', 
+                            return {
+                                type: 'tool_result',
                                 tool_use_id: block.toolUseId,
                                 content: content
                             };
@@ -1717,16 +1717,16 @@ Version: ${VERSION}`;
 
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
-                        
+
                         const data = line.slice(6);
                         if (data === '[DONE]') continue;
 
                         try {
                             const event = JSON.parse(data);
-                            
+
                             if (event.type === 'message_start') {
                                 yield { type: 'modelMessageStartEvent', role: 'assistant' };
-                            } 
+                            }
                             else if (event.type === 'content_block_start') {
                                 if (event.content_block?.type === 'tool_use') {
                                     currentToolUseId = event.content_block.id;
@@ -1742,7 +1742,7 @@ Version: ${VERSION}`;
                                 } else {
                                     yield { type: 'modelContentBlockStartEvent' };
                                 }
-                            } 
+                            }
                             else if (event.type === 'content_block_delta') {
                                 if (event.delta?.type === 'text_delta') {
                                     yield {
@@ -1755,12 +1755,12 @@ Version: ${VERSION}`;
                                         delta: { type: 'toolUseInputDelta', input: event.delta.partial_json }
                                     };
                                 }
-                            } 
+                            }
                             else if (event.type === 'content_block_stop') {
                                 yield { type: 'modelContentBlockStopEvent' };
                                 currentToolUseId = '';
                                 currentToolName = '';
-                            } 
+                            }
                             else if (event.type === 'message_delta') {
                                 if (event.delta?.stop_reason) {
                                     let stopReason = 'endTurn';
@@ -1820,18 +1820,18 @@ Version: ${VERSION}`;
 
         async *stream(messages, options) {
             const { apiKey, modelId, maxTokens, temperature, customHeaders } = this._config;
-            
+
             if (!apiKey) {
                 throw new Error('OpenAI API key not configured. Open settings to add your key.');
             }
 
             // Format messages for OpenAI
             const openaiMessages = [];
-            
+
             // Add system prompt
             if (options?.systemPrompt) {
-                const systemText = typeof options.systemPrompt === 'string' 
-                    ? options.systemPrompt 
+                const systemText = typeof options.systemPrompt === 'string'
+                    ? options.systemPrompt
                     : options.systemPrompt.filter(b => b.type === 'textBlock').map(b => b.text).join('\n');
                 if (systemText) {
                     openaiMessages.push({ role: 'system', content: systemText });
@@ -1964,7 +1964,7 @@ Version: ${VERSION}`;
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            
+
             // Track state
             let messageStarted = false;
             let textBlockStarted = false;
@@ -1981,13 +1981,13 @@ Version: ${VERSION}`;
 
                     for (const line of lines) {
                         if (!line.startsWith('data: ')) continue;
-                        
+
                         const data = line.slice(6);
                         if (data === '[DONE]') continue;
 
                         try {
                             const chunk = JSON.parse(data);
-                            
+
                             if (!chunk.choices || chunk.choices.length === 0) {
                                 // Usage chunk
                                 if (chunk.usage) {
@@ -2118,12 +2118,12 @@ Version: ${VERSION}`;
                     const bytes = block.source?.bytes;
                     if (bytes) {
                         const base64 = uint8ArrayToBase64(bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes));
-                        return { 
-                            document: { 
-                                format: block.format || 'txt', 
-                                name: block.name || 'document', 
-                                source: { bytes: base64 } 
-                            } 
+                        return {
+                            document: {
+                                format: block.format || 'txt',
+                                name: block.name || 'document',
+                                source: { bytes: base64 }
+                            }
                         };
                     }
                     return null;
@@ -2169,7 +2169,7 @@ Version: ${VERSION}`;
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
                 body: JSON.stringify(requestBody)
             });
-            
+
             if (!response.ok) throw new Error(`Bedrock API error: ${response.status} - ${await response.text()}`);
 
             // Parse AWS event-stream binary format
@@ -2204,7 +2204,7 @@ Version: ${VERSION}`;
 
                         const payloadStart = 12 + headersLength;
                         const payloadEnd = totalLength - 4;
-                        
+
                         if (payloadEnd > payloadStart) {
                             try {
                                 const event = JSON.parse(decoder.decode(buffer.slice(payloadStart, payloadEnd)));
@@ -2219,7 +2219,7 @@ Version: ${VERSION}`;
                         buffer = buffer.slice(totalLength);
                     }
                 }
-                
+
                 // Ensure complete message structure
                 if (!hasMessageStart) yield { type: 'modelMessageStartEvent', role: 'assistant' };
                 if (!hasMessageStop) yield { type: 'modelMessageStopEvent', stopReason: 'endTurn' };
@@ -2236,7 +2236,7 @@ Version: ${VERSION}`;
                 yield { type: 'modelMessageStartEvent', role: chunk.role };
                 return;
             }
-            
+
             // contentBlockStart with toolUse: {contentBlockIndex: 0, start: {toolUse: {name, toolUseId}}}
             if (chunk.start !== undefined) {
                 const startEvent = { type: 'modelContentBlockStartEvent' };
@@ -2250,16 +2250,16 @@ Version: ${VERSION}`;
                 yield startEvent;
                 return;
             }
-            
+
             // contentBlockDelta: {contentBlockIndex: 0, delta: {text: '...'}, p: '...'}
             if (chunk.delta !== undefined) {
                 const blockIdx = chunk.contentBlockIndex ?? 0;
-                
+
                 // Emit contentBlockStart if this is a new block (text block without explicit start)
                 if (blockIdx > currentBlockIndex && !chunk.start) {
                     yield { type: 'modelContentBlockStartEvent' };
                 }
-                
+
                 const delta = chunk.delta;
                 // Text delta
                 if (delta?.text !== undefined) {
@@ -2284,20 +2284,20 @@ Version: ${VERSION}`;
                 }
                 return;
             }
-            
+
             // contentBlockStop: {contentBlockIndex: 0, p: '...'}
             if (chunk.contentBlockIndex !== undefined && !chunk.delta && !chunk.stopReason && !chunk.role && !chunk.start) {
                 yield { type: 'modelContentBlockStopEvent' };
                 return;
             }
-            
+
             // messageStop: {stopReason: 'end_turn', p: '...'}
             if (chunk.stopReason !== undefined) {
                 const stopReasonMap = { 'end_turn': 'endTurn', 'tool_use': 'toolUse', 'max_tokens': 'maxTokens', 'stop_sequence': 'stopSequence' };
                 yield { type: 'modelMessageStopEvent', stopReason: stopReasonMap[chunk.stopReason] || 'endTurn' };
                 return;
             }
-            
+
             // metadata: {usage: {...}, metrics: {...}, p: '...'}
             if (chunk.usage !== undefined) {
                 yield { type: 'modelMetadataEvent', usage: { inputTokens: chunk.usage.inputTokens || 0, outputTokens: chunk.usage.outputTokens || 0, totalTokens: (chunk.usage.inputTokens || 0) + (chunk.usage.outputTokens || 0) } };
@@ -2321,28 +2321,28 @@ Version: ${VERSION}`;
         callback: async (input) => {
             const container = document.createElement('div');
             container.className = 'dynamic-ui';
-            
+
             if (input.title) {
                 const title = document.createElement('div');
                 title.style.cssText = 'font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-tertiary);margin-bottom:16px;';
                 title.textContent = input.title;
                 container.appendChild(title);
             }
-            
+
             if (input.css) {
                 const style = document.createElement('style');
                 style.textContent = input.css;
                 container.appendChild(style);
             }
-            
+
             const content = document.createElement('div');
             content.innerHTML = input.html;
             container.appendChild(content);
-            
+
             const messagesInner = document.getElementById('messagesInner');
             messagesInner.appendChild(container);
             smartScroll();
-            
+
             if (input.script) {
                 try {
                     const fn = new Function(input.script);
@@ -2351,7 +2351,7 @@ Version: ${VERSION}`;
                     return { rendered: true, scriptError: e.message };
                 }
             }
-            
+
             return { rendered: true, title: input.title || 'component' };
         }
     });
@@ -2437,7 +2437,7 @@ Version: ${VERSION}`;
         }),
         callback: async (input) => {
             const action = input.action || 'replace';
-            
+
             if (input.section === 'system_prompt') {
                 const current = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT;
                 let newPrompt;
@@ -2452,7 +2452,7 @@ Version: ${VERSION}`;
                 window._agentNeedsReinit = true;
                 return { success: true, message: 'System prompt updated.' };
             }
-            
+
             return { error: `Unknown section: ${input.section}` };
         }
     });
@@ -2472,18 +2472,18 @@ Version: ${VERSION}`;
             if (!('Notification' in window)) {
                 return { error: 'Notifications not supported in this browser' };
             }
-            
+
             if (Notification.permission === 'denied') {
                 return { error: 'Notification permission denied. User must enable in browser settings.' };
             }
-            
+
             if (Notification.permission === 'default') {
                 const permission = await Notification.requestPermission();
                 if (permission !== 'granted') {
                     return { error: 'Notification permission not granted' };
                 }
             }
-            
+
             // Try service worker notification first (works in background)
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({
@@ -2496,7 +2496,7 @@ Version: ${VERSION}`;
                 });
                 return { success: true, method: 'service-worker', title: input.title };
             }
-            
+
             // Fallback to regular notification
             const notification = new Notification(input.title, {
                 body: input.body,
@@ -2504,13 +2504,13 @@ Version: ${VERSION}`;
                 tag: input.tag || 'agi-notification',
                 requireInteraction: input.requireInteraction || false
             });
-            
+
             notification.onclick = () => {
                 window.focus();
                 if (input.url) window.location.href = input.url;
                 notification.close();
             };
-            
+
             return { success: true, method: 'direct', title: input.title };
         }
     });
@@ -2529,7 +2529,7 @@ Version: ${VERSION}`;
             try {
                 const devices = await contextInjector.scanBluetooth();
                 const agiAgents = devices.filter(d => d.isAgiAgent);
-                
+
                 return {
                     success: true,
                     totalDevices: devices.length,
@@ -2578,7 +2578,7 @@ Version: ${VERSION}`;
                 timestamp: context.timestamp,
                 url: context.url
             };
-            
+
             if (input.includeActivity !== false && context.activity) {
                 result.activity = context.activity;
             }
@@ -2589,7 +2589,7 @@ Version: ${VERSION}`;
                 result.bluetooth = context.bluetooth;
             }
             result.custom = context.custom;
-            
+
             return result;
         }
     });
@@ -2616,11 +2616,11 @@ Version: ${VERSION}`;
         }),
         callback: async (input) => {
             contextInjector.enable(input.feature, input.enabled);
-            return { 
-                success: true, 
-                feature: input.feature, 
+            return {
+                success: true,
+                feature: input.feature,
                 enabled: input.enabled,
-                note: input.feature === 'geolocation' || input.feature === 'bluetooth' 
+                note: input.feature === 'geolocation' || input.feature === 'bluetooth'
                     ? 'May require user permission' : undefined
             };
         }
@@ -2645,17 +2645,17 @@ Version: ${VERSION}`;
             if (!mapBackground || !mapBackground.ready) {
                 return { error: 'Map not enabled. Enable it in settings → Map' };
             }
-            
+
             const result = mapBackground.addMarker(input.lat, input.lng, {
                 label: input.label,
                 emoji: input.emoji || '📍',
                 color: input.color || '#ff6b6b',
                 id: input.id
             });
-            
+
             if (result) {
-                return { 
-                    success: true, 
+                return {
+                    success: true,
                     markerId: result.id,
                     position: { lat: input.lat, lng: input.lng }
                 };
@@ -2674,7 +2674,7 @@ Version: ${VERSION}`;
             if (!mapBackground) {
                 return { error: 'Map not enabled' };
             }
-            
+
             const removed = mapBackground.removeMarker(input.id);
             return { success: removed, markerId: input.id };
         }
@@ -2688,7 +2688,7 @@ Version: ${VERSION}`;
             if (!mapBackground) {
                 return { error: 'Map not enabled' };
             }
-            
+
             mapBackground.clearMarkers();
             return { success: true, message: 'All markers cleared' };
         }
@@ -2702,7 +2702,7 @@ Version: ${VERSION}`;
             if (!mapBackground) {
                 return { error: 'Map not enabled' };
             }
-            
+
             const markers = mapBackground.getMarkerIds();
             return { markers, count: markers.length };
         }
@@ -2720,12 +2720,12 @@ Version: ${VERSION}`;
             if (!mapBackground || !mapBackground.ready) {
                 return { error: 'Map not enabled' };
             }
-            
+
             mapBackground.panTo(input.lat, input.lng, input.zoom);
-            return { 
-                success: true, 
+            return {
+                success: true,
                 position: { lat: input.lat, lng: input.lng },
-                zoom: input.zoom 
+                zoom: input.zoom
             };
         }
     });
@@ -2738,7 +2738,7 @@ Version: ${VERSION}`;
             if (!mapBackground) {
                 return { error: 'Map not enabled' };
             }
-            
+
             const pos = mapBackground.getPosition();
             if (pos) {
                 return {
@@ -2766,10 +2766,10 @@ Version: ${VERSION}`;
             if (!mapBackground || !mapBackground.ready) {
                 return { error: 'Map not enabled. Enable it in settings → Map' };
             }
-            
+
             const result = await mapBackground.flyToMarker(
-                input.markerId, 
-                input.zoom || null, 
+                input.markerId,
+                input.zoom || null,
                 input.duration || 2000
             );
             return result;
@@ -2789,15 +2789,15 @@ Version: ${VERSION}`;
             if (!mapBackground || !mapBackground.ready) {
                 return { error: 'Map not enabled' };
             }
-            
+
             await mapBackground.flyTo(
-                input.lat, 
-                input.lng, 
-                input.zoom || null, 
+                input.lat,
+                input.lng,
+                input.zoom || null,
                 input.duration || 2000
             );
-            return { 
-                success: true, 
+            return {
+                success: true,
                 position: { lat: input.lat, lng: input.lng },
                 message: `Flew to ${input.lat.toFixed(4)}, ${input.lng.toFixed(4)}`
             };
@@ -2816,7 +2816,7 @@ Version: ${VERSION}`;
             if (!mapBackground || !mapBackground.ready) {
                 return { error: 'Map not enabled' };
             }
-            
+
             const result = await mapBackground.tourMarkers(
                 input.markerIds,
                 input.pauseMs || 1500,
@@ -2836,7 +2836,7 @@ Version: ${VERSION}`;
             if (!mapBackground) {
                 return { error: 'Map not enabled' };
             }
-            
+
             const pos = mapBackground.getMarkerPosition(input.markerId);
             if (pos) {
                 return { markerId: input.markerId, ...pos };
@@ -2853,11 +2853,11 @@ Version: ${VERSION}`;
             if (!mapBackground) {
                 return { error: 'Map not enabled' };
             }
-            
+
             const markers = mapBackground.getAllMarkers();
-            return { 
-                markers, 
-                count: markers.length 
+            return {
+                markers,
+                count: markers.length
             };
         }
     });
@@ -2869,7 +2869,7 @@ Version: ${VERSION}`;
     const googleAuthTool = tool({
         name: 'google_auth',
         description: `Authenticate with Google OAuth 2.0. Opens a popup for Google sign-in.
-        
+
 After authentication, you can use the use_google tool to access Gmail, Drive, Calendar, YouTube, and 200+ other Google APIs.
 
 Setup required in settings → Google tab:
@@ -2883,13 +2883,13 @@ Setup required in settings → Google tab:
             try {
                 const config = googleAPI.getConfig();
                 if (!config?.clientId) {
-                    return { 
-                        error: 'Google OAuth not configured. Go to settings → Google tab to add your Client ID.' 
+                    return {
+                        error: 'Google OAuth not configured. Go to settings → Google tab to add your Client ID.'
                     };
                 }
 
                 const token = await googleAPI.getToken(input?.forceNew || false);
-                
+
                 // Get user info
                 let userInfo = null;
                 try {
@@ -2900,7 +2900,7 @@ Setup required in settings → Google tab:
 
                 return {
                     success: true,
-                    message: userInfo 
+                    message: userInfo
                         ? `✅ Authenticated as ${userInfo.email}\n\nYou can now use use_google to access Google APIs.`
                         : '✅ Authentication successful!\n\nYou can now use use_google to access Google APIs.',
                     email: userInfo?.email,
@@ -2967,12 +2967,12 @@ Examples:
                 if (!googleAPI.isAuthenticated()) {
                     const config = googleAPI.getConfig();
                     if (!config?.clientId) {
-                        return { 
-                            error: 'Google not configured. Go to settings → Google tab to set up OAuth.' 
+                        return {
+                            error: 'Google not configured. Go to settings → Google tab to set up OAuth.'
                         };
                     }
-                    return { 
-                        error: 'Not authenticated. Use google_auth tool first to sign in.' 
+                    return {
+                        error: 'Not authenticated. Use google_auth tool first to sign in.'
                     };
                 }
 
@@ -3030,7 +3030,7 @@ Example:
                 // Create MIME message
                 const boundary = '===boundary===';
                 let message = '';
-                
+
                 message += `From: ${senderEmail}\r\n`;
                 message += `To: ${input.to}\r\n`;
                 if (input.cc?.length) message += `Cc: ${input.cc.join(', ')}\r\n`;
@@ -3145,7 +3145,7 @@ Example:
     const createToolTool = tool({
         name: 'create_tool',
         description: `Create a new tool that will be available to the agent. The tool persists across sessions.
-        
+
 IMPORTANT: The 'code' parameter should be the BODY of an async function that receives 'input' as parameter.
 Return a result object. You have access to: fetch, localStorage, document, console, etc.
 
@@ -3212,8 +3212,8 @@ Example - create a tool that gets weather:
                     agent.tools.push(newTool);
                 }
 
-                return { 
-                    success: true, 
+                return {
+                    success: true,
                     message: `Tool '${input.name}' created and ready to use immediately!`,
                     tool: input.name
                 };
@@ -3263,7 +3263,7 @@ Example - create a tool that gets weather:
         }),
         callback: async (input) => {
             const customTools = loadCustomTools();
-            
+
             if (!customTools[input.name]) {
                 return { error: `Tool '${input.name}' not found in custom tools` };
             }
@@ -3272,8 +3272,8 @@ Example - create a tool that gets weather:
             saveCustomTools(customTools);
             window._agentNeedsReinit = true;
 
-            return { 
-                success: true, 
+            return {
+                success: true,
                 message: `Tool '${input.name}' deleted. Change takes effect on next message.`
             };
         }
@@ -3466,26 +3466,26 @@ Example - create a tool that gets weather:
     async function initializeAgent() {
         const provider = localStorage.getItem('provider') || 'anthropic';
         const systemPrompt = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT;
-        
+
         // 🔑 Load credentials from AgentMesh unified storage if available
         let meshCreds = null;
         if (window.AgentMesh?.getCredentials) {
             meshCreds = window.AgentMesh.getCredentials();
         }
-        
+
         let model;
-        
+
         if (provider === 'anthropic') {
             const apiKey = meshCreds?.anthropic?.apiKey || localStorage.getItem('anthropic_api_key');
             const modelId = localStorage.getItem('anthropic_model') || 'claude-haiku-4-5';
             const maxTokensStr = localStorage.getItem('anthropic_max_tokens');
             const headersStr = localStorage.getItem('anthropic_headers');
-            
+
             if (!apiKey) {
                 setStatus('no key');
                 return false;
             }
-            
+
             const maxTokens = maxTokensStr ? parseInt(maxTokensStr) : 8096;
             let customHeaders = {};
             try {
@@ -3493,19 +3493,19 @@ Example - create a tool that gets weather:
             } catch (e) {
                 console.warn('Invalid custom headers JSON:', e);
             }
-            
+
             model = new AnthropicBrowserModel({ apiKey, modelId, maxTokens, customHeaders });
         } else if (provider === 'openai') {
             const apiKey = localStorage.getItem('openai_api_key');
             const modelId = localStorage.getItem('openai_model') || 'gpt-5-nano-2025-08-07';
             const maxTokensStr = localStorage.getItem('openai_max_tokens');
             const headersStr = localStorage.getItem('openai_headers');
-            
+
             if (!apiKey) {
                 setStatus('no key');
                 return false;
             }
-            
+
             const maxTokens = maxTokensStr ? parseInt(maxTokensStr) : 8096;
             let customHeaders = {};
             try {
@@ -3513,7 +3513,7 @@ Example - create a tool that gets weather:
             } catch (e) {
                 console.warn('Invalid custom headers JSON:', e);
             }
-            
+
             model = new OpenAIBrowserModel({ apiKey, modelId, maxTokens, customHeaders });
         } else if (provider === 'bedrock') {
             const apiKey = meshCreds?.bedrock?.apiKey || localStorage.getItem('bedrock_api_key');
@@ -3521,12 +3521,12 @@ Example - create a tool that gets weather:
             const modelId = localStorage.getItem('bedrock_model') || 'global.anthropic.claude-opus-4-6-v1';
             const maxTokensStr = localStorage.getItem('bedrock_max_tokens');
             const additionalFieldsStr = localStorage.getItem('bedrock_additional_fields');
-            
+
             if (!apiKey) {
                 setStatus('no key');
                 return false;
             }
-            
+
             const maxTokens = maxTokensStr ? parseInt(maxTokensStr) : 8096;
             let additionalRequestFields = null;
             try {
@@ -3534,7 +3534,7 @@ Example - create a tool that gets weather:
             } catch (e) {
                 console.warn('Invalid additional fields JSON:', e);
             }
-            
+
             model = new BedrockBrowserModel({ apiKey, region, modelId, maxTokens, additionalRequestFields });
         } else if (provider === 'openai_compatible') {
             const baseURL = localStorage.getItem('compat_base_url') || '';
@@ -3544,19 +3544,19 @@ Example - create a tool that gets weather:
             model = new OpenAIBrowserModel({ apiKey, modelId, maxTokens: 4096, baseURL });
         } else if (provider === 'webllm') {
             const modelId = localStorage.getItem('webllm_model') || 'Qwen2.5-3B-Instruct-q4f16_1-MLC';
-            
+
             // Check WebGPU support
             if (!navigator.gpu) {
                 setStatus('no WebGPU');
                 addMessage('error', 'WebGPU not supported. Try Chrome 113+ or Edge 113+.');
                 return false;
             }
-            
+
             // Show progress UI
             const progressEl = document.getElementById('webllmProgress');
             const progressText = document.getElementById('webllmProgressText');
             const progressBar = document.getElementById('webllmProgressBar');
-            
+
             // Reuse existing model if same modelId
             if (webllmModelInstance && webllmModelInstance.getConfig().modelId === modelId && webllmModelInstance._loaded) {
                 model = webllmModelInstance;
@@ -3564,7 +3564,7 @@ Example - create a tool that gets weather:
             } else {
                 progressEl.style.display = 'block';
                 setStatus('loading model...');
-                
+
                 try {
                     model = new WebLLMBrowserModel({
                         modelId,
@@ -3575,7 +3575,7 @@ Example - create a tool that gets weather:
                             setStatus(`loading ${percent}%`);
                         }
                     });
-                    
+
                     await model.load();
                     webllmModelInstance = model;
                     progressEl.style.display = 'none';
@@ -3591,17 +3591,17 @@ Example - create a tool that gets weather:
             setStatus('unsupported');
             return false;
         }
-        
+
         try {
             // Build custom tools from localStorage
             const customTools = buildCustomTools();
-            
+
             // Filter out disabled tools
             const disabledTools = JSON.parse(localStorage.getItem('agi_disabled_tools') || '[]');
             const enabledBuiltinTools = BROWSER_TOOLS.filter(t => !disabledTools.includes(t.name));
-            
+
             const allTools = [...enabledBuiltinTools, ...customTools];
-            
+
             if (customTools.length > 0) {
                 console.log(`✅ Loaded ${customTools.length} custom tool(s):`, customTools.map(t => t.name));
             }
@@ -3615,7 +3615,7 @@ Example - create a tool that gets weather:
                 systemPrompt,
                 printer: false
             });
-            
+
             // 🤖 Register with AgentMesh for cross-tab visibility
             if (window.AgentMesh?.registerAgent) {
                 window.AgentMesh.registerAgent('agi', 'browser', {
@@ -3624,10 +3624,10 @@ Example - create a tool that gets weather:
                     status: 'idle'
                 });
             }
-            
+
             // Wrap with VisionAgent for image/screen/ambient support
             visionAgent = new VisionAgent(agent);
-            
+
             // Initialize ambient mode if not already
             if (!visionAgent.ambientMode) {
                 visionAgent.enableAmbientMode({
@@ -3641,7 +3641,7 @@ Example - create a tool that gets weather:
                     onThinking: (mode, iter) => {
                         const status = document.querySelector('.ambient-status');
                         if (status) status.textContent = `${mode} ${iter}...`;
-                        
+
                         // Add ambient message block to UI
                         addAmbientMessage(mode, iter);
                     },
@@ -3660,7 +3660,7 @@ Example - create a tool that gets weather:
                     onResult: (text, iter) => {
                         const status = document.querySelector('.ambient-status');
                         if (status) status.textContent = `Done (${iter})`;
-                        
+
                         // Finalize the ambient message
                         finalizeAmbientMessage(text, iter);
                     },
@@ -3672,7 +3672,7 @@ Example - create a tool that gets weather:
                     }
                 });
             }
-            
+
             setStatus('ready');
             window._agentNeedsReinit = false;
             console.log('✅ Agent initialized successfully');
@@ -3707,16 +3707,16 @@ Example - create a tool that gets weather:
         const allDocs = [...pendingDocs];
         pendingImages = []; // Clear pending
         pendingDocs = []; // Clear pending
-        
+
         // Show message with file count if any (and thumbnails)
         const fileParts = [];
         if (allImages.length > 0) fileParts.push(`📷 ${allImages.length} image${allImages.length > 1 ? 's' : ''}`);
         if (allDocs.length > 0) fileParts.push(`📄 ${allDocs.length} doc${allDocs.length > 1 ? 's' : ''}`);
-        const msgText = fileParts.length > 0 
+        const msgText = fileParts.length > 0
             ? `${userMessage} [${fileParts.join(', ')}]`
             : userMessage;
         addMessage('user', msgText, allImages);
-        
+
         // Inject ambient result if available
         let finalMessage = userMessage;
         if (visionAgent?.ambientMode) {
@@ -3726,13 +3726,13 @@ Example - create a tool that gets weather:
                 finalMessage = `${ambientResult}\n\n[New user query]:\n${userMessage}`;
             }
         }
-        
+
         // 🧠 Inject dynamic context from context injector
         const contextStr = contextInjector.getContextString();
         if (contextStr) {
             finalMessage = `${contextStr}\n\n---\n\n${finalMessage}`;
         }
-        
+
         // 🔗 Inject AgentMesh ring context (what other agents are working on)
         if (window.AgentMesh?.getRingContextForAgent) {
             const ringContext = window.AgentMesh.getRingContextForAgent('agi', 5);
@@ -3740,7 +3740,7 @@ Example - create a tool that gets weather:
                 finalMessage = `${ringContext}\n\n---\n\n${finalMessage}`;
             }
         }
-        
+
         // 🌐 Inject AgentMesh peer context (connected tabs/agents)
         if (window.AgentMesh?.getPeerContext) {
             const peerContext = window.AgentMesh.getPeerContext();
@@ -3748,30 +3748,30 @@ Example - create a tool that gets weather:
                 finalMessage = `${peerContext}\n\n---\n\n${finalMessage}`;
             }
         }
-        
+
         setStatus('thinking...');
-        
+
         // 🤖 Update AgentMesh status
         if (window.AgentMesh?.updateAgentStatus) {
             window.AgentMesh.updateAgentStatus('agi', 'running');
         }
-        
+
         addThinking();
 
         try {
             let currentText = '';
-            
+
             // Build content blocks
             let input;
             if (allImages.length > 0 || allDocs.length > 0) {
                 // Multi-modal input with images/documents - create proper Message
                 const contentBlocks = [];
-                
+
                 // Add text first
                 if (finalMessage) {
                     contentBlocks.push(new TextBlock(finalMessage));
                 }
-                
+
                 // Add images
                 for (const file of allImages) {
                     try {
@@ -3783,7 +3783,7 @@ Example - create a tool that gets weather:
                         console.error('Failed to process image:', err);
                     }
                 }
-                
+
                 // Add documents
                 for (const file of allDocs) {
                     try {
@@ -3806,17 +3806,17 @@ Example - create a tool that gets weather:
                         console.error('Failed to process document:', err);
                     }
                 }
-                
+
                 // Wrap in Message for the agent
                 input = [new Message({ role: 'user', content: contentBlocks })];
                 console.log(`📎 Sending ${allImages.length} images + ${allDocs.length} documents with message`);
             } else {
                 input = finalMessage;
             }
-            
+
             for await (const event of agent.stream(input)) {
                 if (!event || !event.type) continue;
-                
+
                 switch (event.type) {
                     case 'modelContentBlockDeltaEvent':
                         if (event.delta?.type === 'textDelta') {
@@ -3824,56 +3824,56 @@ Example - create a tool that gets weather:
                             updateStreaming(currentText);
                         }
                         break;
-                    
+
                     case 'modelContentBlockStartEvent':
                         if (event.start?.type === 'toolUseStart') {
                             setStatus(event.start?.name || 'tool');
                         }
                         break;
-                    
+
                     case 'beforeToolCallEvent':
                         addToolCall(event.toolUse?.name, event.toolUse?.input, 'running');
                         break;
-                    
+
                     case 'afterToolCallEvent':
                         updateToolStatus(event.toolUse?.name, event.result?.status || 'success');
                         break;
                 }
             }
-            
+
             removeThinking();
             if (currentText) {
                 finalizeStreaming(currentText);
             }
-            
+
             // Record interaction for ambient mode
             if (visionAgent?.ambientMode) {
                 visionAgent.ambientMode.recordInteraction(userMessage, currentText);
             }
-            
+
             // Add to AgentMesh shared ring context
             if (window.AgentMesh?.addToRingContext && currentText) {
                 window.AgentMesh.addToRingContext('agi', 'browser', currentText);
             }
-            
+
             setStatus('ready');
-            
+
             // 🤖 Update AgentMesh status back to idle
             if (window.AgentMesh?.updateAgentStatus) {
                 window.AgentMesh.updateAgentStatus('agi', 'idle');
             }
-            
+
         } catch (e) {
             console.error('Error:', e);
             removeThinking();
             addMessage('error', e.message);
             setStatus('ready');
-            
+
             // 🤖 Update AgentMesh status back to idle on error
             if (window.AgentMesh?.updateAgentStatus) {
                 window.AgentMesh.updateAgentStatus('agi', 'idle');
             }
-            
+
             // Mark main agent as not busy on error
             if (visionAgent?.ambientMode) {
                 visionAgent.ambientMode.setMainAgentBusy(false);
@@ -3886,15 +3886,15 @@ Example - create a tool that gets weather:
     // ═══════════════════════════════════════════════════════════════════════════
 
     let streamingEl = null;
-    
+
     // Smart scroll - only auto-scroll if user is near bottom
     function smartScroll() {
         const container = document.getElementById('chatContainer');
         if (!container) return;
-        
+
         const threshold = 150; // pixels from bottom to consider "at bottom"
         const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
-        
+
         if (isNearBottom) {
             container.scrollTop = container.scrollHeight;
         }
@@ -3904,25 +3904,25 @@ Example - create a tool that gets weather:
         const inner = document.getElementById('messagesInner');
         const msg = document.createElement('div');
         msg.className = `message ${role}`;
-        
+
         if (role !== 'system') {
             const roleLabel = document.createElement('div');
             roleLabel.className = 'message-role';
             roleLabel.textContent = role === 'user' ? 'you' : role === 'assistant' ? 'agi' : role;
             msg.appendChild(roleLabel);
         }
-        
+
         const contentEl = document.createElement('div');
         contentEl.className = 'message-content';
-        
+
         if (role === 'user') {
             contentEl.textContent = content;
-            
+
             // Add image thumbnails for user messages
             if (images && images.length > 0) {
                 const imgStrip = document.createElement('div');
                 imgStrip.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;';
-                
+
                 images.forEach(file => {
                     const img = document.createElement('img');
                     img.src = URL.createObjectURL(file);
@@ -3930,13 +3930,13 @@ Example - create a tool that gets weather:
                     img.title = file.name;
                     imgStrip.appendChild(img);
                 });
-                
+
                 contentEl.appendChild(imgStrip);
             }
         } else {
             contentEl.innerHTML = `<div class="markdown-content">${marked.parse(content)}</div>`;
         }
-        
+
         msg.appendChild(contentEl);
         inner.appendChild(msg);
         smartScroll();
@@ -3944,24 +3944,24 @@ Example - create a tool that gets weather:
 
     function updateStreaming(text) {
         const inner = document.getElementById('messagesInner');
-        
+
         if (!streamingEl) {
             removeThinking();
             streamingEl = document.createElement('div');
             streamingEl.className = 'message assistant';
-            
+
             const roleLabel = document.createElement('div');
             roleLabel.className = 'message-role';
             roleLabel.textContent = 'agi';
             streamingEl.appendChild(roleLabel);
-            
+
             const contentEl = document.createElement('div');
             contentEl.className = 'message-content';
             streamingEl.appendChild(contentEl);
-            
+
             inner.appendChild(streamingEl);
         }
-        
+
         streamingEl.querySelector('.message-content').innerHTML = `<div class="markdown-content">${marked.parse(text)}</div>`;
         smartScroll();
     }
@@ -4009,20 +4009,20 @@ Example - create a tool that gets weather:
     function addThinking() {
         const inner = document.getElementById('messagesInner');
         if (inner.querySelector('.thinking-indicator')) return;
-        
+
         const thinking = document.createElement('div');
         thinking.className = 'message assistant thinking-indicator';
-        
+
         const roleLabel = document.createElement('div');
         roleLabel.className = 'message-role';
         roleLabel.textContent = 'agi';
         thinking.appendChild(roleLabel);
-        
+
         const content = document.createElement('div');
         content.className = 'message-content';
         content.innerHTML = `<div class="thinking"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>`;
         thinking.appendChild(content);
-        
+
         inner.appendChild(thinking);
         smartScroll();
     }
@@ -4044,34 +4044,34 @@ Example - create a tool that gets weather:
 
     function addAmbientMessage(mode, iter) {
         const inner = document.getElementById('messagesInner');
-        
+
         // Remove any existing ambient streaming element
         if (ambientStreamingEl) {
             ambientStreamingEl = null;
         }
-        
+
         // Create ambient message container
         ambientStreamingEl = document.createElement('div');
         ambientStreamingEl.className = 'message assistant ambient-message';
         ambientStreamingEl.style.cssText = 'border-left: 3px solid rgba(147,112,219,0.5); padding-left: 16px; opacity: 0.9;';
-        
+
         const roleLabel = document.createElement('div');
         roleLabel.className = 'message-role';
         roleLabel.innerHTML = `🌙 ${mode} <span style="color:var(--text-tertiary);font-size:10px;">(${iter})</span>`;
         ambientStreamingEl.appendChild(roleLabel);
-        
+
         const contentEl = document.createElement('div');
         contentEl.className = 'message-content ambient-content';
         contentEl.innerHTML = '<div class="thinking"><div class="thinking-dot"></div><div class="thinking-dot"></div><div class="thinking-dot"></div></div>';
         ambientStreamingEl.appendChild(contentEl);
-        
+
         inner.appendChild(ambientStreamingEl);
         smartScroll();
     }
 
     function updateAmbientStreaming(text) {
         if (!ambientStreamingEl) return;
-        
+
         const contentEl = ambientStreamingEl.querySelector('.ambient-content');
         if (contentEl) {
             contentEl.innerHTML = `<div class="markdown-content">${marked.parse(text)}</div>`;
@@ -4081,7 +4081,7 @@ Example - create a tool that gets weather:
 
     function addAmbientToolCall(toolName, input) {
         if (!ambientStreamingEl) return;
-        
+
         const toolBlock = document.createElement('div');
         toolBlock.className = 'tool-block ambient-tool';
         toolBlock.id = `ambient-tool-${toolName}-${Date.now()}`;
@@ -4095,14 +4095,14 @@ Example - create a tool that gets weather:
                 <div class="tool-input">${JSON.stringify(input, null, 2)}</div>
             </details>
         `;
-        
+
         ambientStreamingEl.appendChild(toolBlock);
         smartScroll();
     }
 
     function updateAmbientToolStatus(toolName, status) {
         if (!ambientStreamingEl) return;
-        
+
         const blocks = ambientStreamingEl.querySelectorAll('.ambient-tool');
         for (let i = blocks.length - 1; i >= 0; i--) {
             const block = blocks[i];
@@ -4116,21 +4116,21 @@ Example - create a tool that gets weather:
 
     function finalizeAmbientMessage(text, iter) {
         if (!ambientStreamingEl) return;
-        
+
         const contentEl = ambientStreamingEl.querySelector('.ambient-content');
         if (contentEl) {
             contentEl.innerHTML = `<div class="markdown-content">${marked.parse(text)}</div>`;
         }
-        
+
         // Add a subtle "stored" indicator
         const storedIndicator = document.createElement('div');
         storedIndicator.style.cssText = 'font-size:11px;color:var(--text-tertiary);margin-top:12px;font-style:italic;';
         storedIndicator.textContent = `💾 Stored - will be injected into your next message`;
         ambientStreamingEl.appendChild(storedIndicator);
-        
+
         // Reset for next iteration
         ambientStreamingEl = null;
-        
+
         smartScroll();
     }
 
@@ -4138,9 +4138,9 @@ Example - create a tool that gets weather:
         const ambientStatus = document.getElementById('ambientStatus');
         const ambientBtn = document.getElementById('ambientBtn');
         const autoBtn = document.getElementById('autoBtn');
-        
+
         if (!ambientStatus) return;
-        
+
         // Update status text based on state
         switch (state) {
             case 'idle':
@@ -4173,7 +4173,7 @@ Example - create a tool that gets weather:
             default:
                 ambientStatus.textContent = state;
         }
-        
+
         // Update button visual state
         if (ambientBtn) {
             const isActive = ['idle', 'cooldown', 'ready', 'running'].includes(state);
@@ -4208,13 +4208,13 @@ Example - create a tool that gets weather:
         const input = document.getElementById('inputField');
         const text = input.value.trim();
         if (!text || isStreaming) return;
-        
+
         input.value = '';
         input.style.height = 'auto';
-        
+
         isStreaming = true;
         document.getElementById('sendBtn').disabled = true;
-        
+
         try {
             await runAgent(text);
         } finally {
@@ -4253,7 +4253,7 @@ Example - create a tool that gets weather:
         document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
         event.target.classList.add('active');
         document.getElementById(`tab-${tabName}`).classList.add('active');
-        
+
         // Update PWA status when tools tab is shown
         if (tabName === 'tools') {
             const pwaStatus = document.getElementById('pwaStatus');
@@ -4261,7 +4261,7 @@ Example - create a tool that gets weather:
                 const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
                 const hasServiceWorker = 'serviceWorker' in navigator;
                 const notifPermission = 'Notification' in window ? Notification.permission : 'unsupported';
-                
+
                 pwaStatus.innerHTML = `
                     <strong>Installed:</strong> ${isStandalone ? '✅ Yes' : '❌ No (add to home screen)'}<br>
                     <strong>Service Worker:</strong> ${hasServiceWorker ? '✅ Supported' : '❌ Not supported'}<br>
@@ -4284,7 +4284,7 @@ Example - create a tool that gets weather:
     window.saveCredentials = async function() {
         const provider = document.getElementById('provider').value;
         localStorage.setItem('provider', provider);
-        
+
         if (provider === 'anthropic') {
             const apiKey = document.getElementById('anthropicApiKey').value;
             localStorage.setItem('anthropic_api_key', apiKey);
@@ -4317,7 +4317,7 @@ Example - create a tool that gets weather:
         } else if (provider === 'webllm') {
             localStorage.setItem('webllm_model', document.getElementById('webllmModel').value);
         }
-        
+
         window._agentNeedsReinit = true;
         const success = await initializeAgent();
         if (success) {
@@ -4346,7 +4346,7 @@ Example - create a tool that gets weather:
             localStorage.setItem('bedrock_max_tokens', document.getElementById('bedrockMaxTokens').value || '');
             localStorage.setItem('bedrock_additional_fields', document.getElementById('bedrockAdditionalFields').value || '');
         }
-        
+
         setStatus('testing...');
         window._agentNeedsReinit = true;
         const success = await initializeAgent();
@@ -4354,7 +4354,7 @@ Example - create a tool that gets weather:
             showToast('failed');
             return;
         }
-        
+
         // Actually test the connection with a simple request
         try {
             const testMessages = [{ role: 'user', content: [{ type: 'textBlock', text: 'Hi' }] }];
@@ -4386,7 +4386,7 @@ Example - create a tool that gets weather:
             try {
                 swRegistration = await navigator.serviceWorker.register('/sw.js');
                 console.log('✅ Service Worker registered:', swRegistration.scope);
-                
+
                 // Listen for updates
                 swRegistration.addEventListener('updatefound', () => {
                     const newWorker = swRegistration.installing;
@@ -4396,7 +4396,7 @@ Example - create a tool that gets weather:
                         }
                     });
                 });
-                
+
                 return true;
             } catch (error) {
                 console.error('❌ Service Worker registration failed:', error);
@@ -4411,17 +4411,17 @@ Example - create a tool that gets weather:
             showToast('Notifications not supported');
             return false;
         }
-        
+
         if (Notification.permission === 'granted') {
             showToast('Notifications enabled');
             return true;
         }
-        
+
         if (Notification.permission === 'denied') {
             showToast('Notifications blocked. Enable in browser settings.');
             return false;
         }
-        
+
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             showToast('Notifications enabled!');
@@ -4449,7 +4449,7 @@ Example - create a tool that gets weather:
     function initVisionControls() {
         const container = document.getElementById('visionControls');
         if (!container) return;
-        
+
         container.innerHTML = `
             <style>
                 .vision-btn {
@@ -4542,19 +4542,19 @@ Example - create a tool that gets weather:
                     display: none;
                 }
             </style>
-            
+
             <!-- Image Upload -->
             <input type="file" id="imageInput" accept="image/*" multiple style="display:none">
             <button class="vision-btn" id="imageBtn" title="Add images (📷)">📷</button>
-            
+
             <!-- Document Upload -->
             <input type="file" id="docInput" accept=".pdf,.csv,.doc,.docx,.xls,.xlsx,.html,.txt,.md" multiple style="display:none">
             <button class="vision-btn" id="docBtn" title="Add documents (📄)">📄</button>
-            
+
             <!-- File Previews -->
             <div class="file-preview-strip" id="filePreview"></div>
             <span class="clear-files" id="clearFiles" style="display:none">✕</span>
-            
+
             <!-- Screen Capture -->
             <button class="vision-btn" id="screenBtn" title="Screen watch (🖥️)">🖥️</button>
             <select class="screen-interval" id="screenInterval">
@@ -4562,7 +4562,7 @@ Example - create a tool that gets weather:
                 <option value="10000">10s</option>
                 <option value="30000">30s</option>
             </select>
-            
+
             <!-- Ambient Mode -->
             <button class="vision-btn" id="ambientBtn" title="Ambient mode (🌙)">🌙</button>
             <button class="vision-btn" id="autoBtn" title="Autonomous mode (🚀)">🚀</button>
@@ -4570,7 +4570,7 @@ Example - create a tool that gets weather:
             <button class="vision-btn" id="mapToggleBtn" title="Toggle map background (🗺️)">🗺️</button>
             <span class="ambient-status" id="ambientStatus"></span>
         `;
-        
+
         // Image & Document upload handlers
         const imageInput = document.getElementById('imageInput');
         const imageBtn = document.getElementById('imageBtn');
@@ -4626,12 +4626,12 @@ Example - create a tool that gets weather:
                 filePreview.appendChild(span);
             });
         }
-        
+
         // Screen capture handlers
         const screenBtn = document.getElementById('screenBtn');
         const screenInterval = document.getElementById('screenInterval');
         let isScreenWatching = false;
-        
+
         screenBtn.addEventListener('click', async () => {
             if (isScreenWatching) {
                 // Stop
@@ -4648,13 +4648,13 @@ Example - create a tool that gets weather:
                 // Start
                 screenCapture = new ScreenCapture();
                 const started = await screenCapture.start();
-                
+
                 if (started) {
                     screenBtn.classList.add('recording');
                     screenBtn.textContent = '⏹️';
                     screenInterval.style.display = 'inline';
                     isScreenWatching = true;
-                    
+
                     const interval = parseInt(screenInterval.value);
                     screenCapture.startInterval(interval, async (frame) => {
                         console.log('📸 Screen captured');
@@ -4667,14 +4667,14 @@ Example - create a tool that gets weather:
                         updateImagePreview();
                         showToast('📸 Screen captured');
                     });
-                    
+
                     showToast('Screen watch started');
                 } else {
                     showToast('Screen capture failed');
                 }
             }
         });
-        
+
         screenInterval.addEventListener('change', () => {
             if (isScreenWatching && screenCapture) {
                 screenCapture.stopInterval();
@@ -4687,17 +4687,17 @@ Example - create a tool that gets weather:
                 });
             }
         });
-        
+
         // Ambient mode handlers
         const ambientBtn = document.getElementById('ambientBtn');
         const autoBtn = document.getElementById('autoBtn');
         const ambientStatus = document.getElementById('ambientStatus');
-        
+
         ambientBtn.addEventListener('click', async () => {
             if (!visionAgent?.ambientMode) return;
-            
+
             const ambient = visionAgent.ambientMode;
-            
+
             if (ambient.running && !ambient.autonomous) {
                 // Stop ambient mode
                 ambient.stop();
@@ -4710,18 +4710,18 @@ Example - create a tool that gets weather:
                     ambientBtn.classList.add('active');
                     autoBtn.classList.remove('active');
                     ambientStatus.textContent = '🌙 thinking...';
-                    
+
                     // Start background ambient watching for future idle triggers
                     ambient.start(false);
                 }
             }
         });
-        
+
         autoBtn.addEventListener('click', async () => {
             if (!visionAgent?.ambientMode) return;
-            
+
             const ambient = visionAgent.ambientMode;
-            
+
             if (ambient.autonomous) {
                 // Stop autonomous mode
                 ambient.stop();
@@ -4735,23 +4735,23 @@ Example - create a tool that gets weather:
                     autoBtn.classList.add('active');
                     ambientBtn.classList.remove('active');
                     ambientStatus.textContent = '🚀 working...';
-                    
+
                     // Start autonomous background mode
                     ambient.start(true);
                 }
             }
         });
-        
+
         // Bluetooth scan handler
         const bluetoothBtn = document.getElementById('bluetoothBtn');
         bluetoothBtn?.addEventListener('click', async () => {
             bluetoothBtn.classList.add('active');
             ambientStatus.textContent = '📡 scanning...';
-            
+
             try {
                 const devices = await contextInjector.scanBluetooth();
                 const agiAgents = devices.filter(d => d.isAgiAgent);
-                
+
                 if (devices.length === 0) {
                     ambientStatus.textContent = '📡 no devices';
                     showToast('No Bluetooth devices found');
@@ -4762,13 +4762,13 @@ Example - create a tool that gets weather:
                     ambientStatus.textContent = `📡 ${devices.length} devices`;
                     showToast(`Found ${devices.length} device(s)`);
                 }
-                
+
                 // Auto-send to agent to process the scan results
                 if (devices.length > 0) {
-                    const deviceList = devices.map(d => 
+                    const deviceList = devices.map(d =>
                         `${d.name || 'Unknown'} (${d.id.slice(0, 8)}...) ${d.isAgiAgent ? '🤖 AGI Agent' : ''}`
                     ).join('\n');
-                    
+
                     await runAgent(`I just scanned for Bluetooth devices. Here's what I found:\n\n${deviceList}\n\nWhat can you tell me about these devices?`);
                 }
             } catch (e) {
@@ -4778,13 +4778,13 @@ Example - create a tool that gets weather:
                 bluetoothBtn.classList.remove('active');
             }
         });
-        
+
         // Map toggle handler
         const mapToggleBtn = document.getElementById('mapToggleBtn');
         mapToggleBtn?.addEventListener('click', async () => {
             const isEnabled = localStorage.getItem('map_enabled') === 'true';
             const apiKey = localStorage.getItem('google_maps_api_key');
-            
+
             if (!apiKey) {
                 showToast('Set API key in settings → Map');
                 window.openSettings();
@@ -4794,21 +4794,21 @@ Example - create a tool that gets weather:
                 }, 100);
                 return;
             }
-            
+
             // Toggle map
             localStorage.setItem('map_enabled', (!isEnabled).toString());
             await initMapBackground();
-            
+
             mapToggleBtn.classList.toggle('active', !isEnabled);
             showToast(!isEnabled ? 'Map enabled' : 'Map disabled');
         });
-        
+
         // Update map button state on load
         setTimeout(() => {
             const isEnabled = localStorage.getItem('map_enabled') === 'true';
             mapToggleBtn?.classList.toggle('active', isEnabled);
         }, 100);
-        
+
         console.log('🔮 Vision controls initialized');
     }
 
@@ -4818,10 +4818,10 @@ Example - create a tool that gets weather:
 
     async function init() {
         setStatus('loading...');
-        
+
         // Register service worker first
         await registerServiceWorker();
-        
+
         // 🔑 Use AgentMesh unified credentials (auto-migrates old keys)
         if (window.AgentMesh?.getCredentials) {
             const creds = window.AgentMesh.getCredentials();
@@ -4829,7 +4829,7 @@ Example - create a tool that gets weather:
             if (creds.openai?.apiKey) localStorage.setItem('openai_api_key', creds.openai.apiKey);
             if (creds.bedrock?.apiKey) localStorage.setItem('bedrock_api_key', creds.bedrock.apiKey);
         }
-        
+
         document.getElementById('provider').value = localStorage.getItem('provider') || 'anthropic';
         document.getElementById('anthropicApiKey').value = localStorage.getItem('anthropic_api_key') || '';
         document.getElementById('anthropicModel').value = localStorage.getItem('anthropic_model') || 'claude-haiku-4-5';
@@ -4846,21 +4846,21 @@ Example - create a tool that gets weather:
         document.getElementById('bedrockAdditionalFields').value = localStorage.getItem('bedrock_additional_fields') || '';
         document.getElementById('webllmModel').value = localStorage.getItem('webllm_model') || 'Qwen2.5-3B-Instruct-q4f16_1-MLC';
         document.getElementById('systemPrompt').value = localStorage.getItem('system_prompt') || DEFAULT_SYSTEM_PROMPT;
-        
+
         window.updateProviderFields();
-        
+
         const success = await initializeAgent();
-        
+
         // Initialize Vision UI Controls
         initVisionControls();
-        
+
         document.getElementById('inputField').disabled = false;
         document.getElementById('sendBtn').disabled = false;
         document.getElementById('inputField').focus();
-        
+
         // Update notification button state
         updateNotificationButton();
-        
+
         // 🔑 Listen for credential changes from other tabs
         window.addEventListener('agimesh:credentials', (e) => {
             const creds = e.detail;
@@ -4880,11 +4880,11 @@ Example - create a tool that gets weather:
                 });
             }
         });
-        
+
         if (!success) {
             addMessage('system', 'Add your API key in settings to get started, or try WebLLM for local inference!');
         }
-        
+
         // 🔑 Delayed credential sync after AgentMesh initializes (agent-mesh.js loads async)
         setTimeout(async () => {
             if (window.AgentMesh?.getCredentials && !agent) {
@@ -4901,22 +4901,22 @@ Example - create a tool that gets weather:
                 }
             }
         }, 700);
-        
+
         // Check if running as PWA
         if (window.matchMedia('(display-mode: standalone)').matches) {
             console.log('Running as installed PWA');
         }
     }
-    
+
     function updateNotificationButton() {
         const btn = document.getElementById('notifyBtn');
         if (!btn) return;
-        
+
         if (!('Notification' in window)) {
             btn.style.display = 'none';
             return;
         }
-        
+
         if (Notification.permission === 'granted') {
             btn.textContent = '🔔';
             btn.title = 'Notifications enabled';
@@ -4938,13 +4938,13 @@ Example - create a tool that gets weather:
     document.getElementById('notifyBtn')?.addEventListener('click', requestNotificationPermission);
     document.getElementById('clearBtn')?.addEventListener('click', window.clearChat);
     document.getElementById('settingsBtn')?.addEventListener('click', window.openSettings);
-    
+
     // Modal
     document.getElementById('settingsModal')?.addEventListener('click', (e) => {
         if (e.target.id === 'settingsModal') window.closeSettings();
     });
     document.getElementById('modalCloseBtn')?.addEventListener('click', window.closeSettings);
-    
+
     // Tabs
     document.querySelectorAll('.tab[data-tab]').forEach(tab => {
         tab.addEventListener('click', (e) => {
@@ -4953,12 +4953,12 @@ Example - create a tool that gets weather:
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             e.target.classList.add('active');
             document.getElementById(`tab-${tabName}`).classList.add('active');
-            
+
             // Update tools tab content when shown
             if (tabName === 'tools') {
                 // Render built-in tools with toggle capability
                 renderBuiltinTools();
-                
+
                 // Update custom tools list
                 const customToolsList = document.getElementById('customToolsList');
                 if (customToolsList) {
@@ -4973,14 +4973,14 @@ Example - create a tool that gets weather:
                         }).join('');
                     }
                 }
-                
+
                 // Update PWA status
                 const pwaStatus = document.getElementById('pwaStatus');
                 if (pwaStatus) {
                     const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
                     const hasServiceWorker = 'serviceWorker' in navigator;
                     const notifPermission = 'Notification' in window ? Notification.permission : 'unsupported';
-                    
+
                     pwaStatus.innerHTML = `
                         <strong>Installed:</strong> ${isStandalone ? '✅ Yes' : '❌ No (add to home screen)'}<br>
                         <strong>Service Worker:</strong> ${hasServiceWorker ? '✅ Supported' : '❌ Not supported'}<br>
@@ -4991,52 +4991,52 @@ Example - create a tool that gets weather:
             }
         });
     });
-    
+
     // Provider select
     document.getElementById('provider')?.addEventListener('change', window.updateProviderFields);
-    
+
     // Form buttons
     document.getElementById('saveCredentialsBtn')?.addEventListener('click', window.saveCredentials);
     document.getElementById('testConnectionBtn')?.addEventListener('click', window.testConnection);
     document.getElementById('saveSystemPromptBtn')?.addEventListener('click', window.saveSystemPrompt);
-    
+
     // Input field
     const inputField = document.getElementById('inputField');
     inputField?.addEventListener('keydown', window.handleKeyDown);
     inputField?.addEventListener('input', (e) => window.autoResize(e.target));
-    
+
     // Send button
     document.getElementById('sendBtn')?.addEventListener('click', window.sendMessage);
-    
+
     // Context tab event handlers
     document.getElementById('contextActivity')?.addEventListener('change', (e) => {
         contextInjector.enable('activity', e.target.checked);
         localStorage.setItem('context_activity', e.target.checked);
     });
-    
+
     document.getElementById('contextGeolocation')?.addEventListener('change', (e) => {
         contextInjector.enable('geolocation', e.target.checked);
         localStorage.setItem('context_geolocation', e.target.checked);
     });
-    
+
     document.getElementById('contextBluetooth')?.addEventListener('change', (e) => {
         contextInjector.enable('bluetooth', e.target.checked);
         localStorage.setItem('context_bluetooth', e.target.checked);
     });
-    
+
     document.getElementById('refreshContextBtn')?.addEventListener('click', () => {
         const preview = document.getElementById('contextPreview');
         if (preview) {
             preview.textContent = contextInjector.getContextString() || 'No context enabled';
         }
     });
-    
+
     document.getElementById('addCustomContextBtn')?.addEventListener('click', () => {
         const keyInput = document.getElementById('customContextKey');
         const valueInput = document.getElementById('customContextValue');
         const key = keyInput?.value?.trim();
         const value = valueInput?.value?.trim();
-        
+
         if (key && value) {
             contextInjector.setCustomContext(key, value);
             keyInput.value = '';
@@ -5045,58 +5045,58 @@ Example - create a tool that gets weather:
             showToast(`Added context: ${key}`);
         }
     });
-    
+
     function updateCustomContextList() {
         const list = document.getElementById('customContextList');
         if (!list) return;
-        
+
         const context = contextInjector.getContext();
         const custom = context.custom || {};
         const keys = Object.keys(custom);
-        
+
         if (keys.length === 0) {
             list.innerHTML = '<em>No custom context set</em>';
         } else {
-            list.innerHTML = keys.map(k => 
+            list.innerHTML = keys.map(k =>
                 `<span style="background:rgba(255,255,255,0.05);padding:2px 8px;border-radius:4px;margin-right:4px;">${k}: ${custom[k]} <span onclick="window.agiContext.removeCustom('${k}');this.parentElement.remove();" style="cursor:pointer;color:rgba(255,100,100,0.6);">✕</span></span>`
             ).join('');
         }
     }
-    
+
     // Load saved context settings on init
     function loadContextSettings() {
         const activity = localStorage.getItem('context_activity') === 'true';
         const geolocation = localStorage.getItem('context_geolocation') === 'true';
         const bluetooth = localStorage.getItem('context_bluetooth') === 'true';
-        
+
         const activityCheckbox = document.getElementById('contextActivity');
         const geoCheckbox = document.getElementById('contextGeolocation');
         const btCheckbox = document.getElementById('contextBluetooth');
-        
+
         if (activityCheckbox) activityCheckbox.checked = activity;
         if (geoCheckbox) geoCheckbox.checked = geolocation;
         if (btCheckbox) btCheckbox.checked = bluetooth;
-        
+
         if (activity) contextInjector.enable('activity', true);
         if (geolocation) contextInjector.enable('geolocation', true);
         if (bluetooth) contextInjector.enable('bluetooth', true);
     }
-    
+
     // Call on page load
     loadContextSettings();
-    
+
     // ═══════════════════════════════════════════════════════════════════════════
     // MAP BACKGROUND INITIALIZATION
     // ═══════════════════════════════════════════════════════════════════════════
-    
+
     let mapBackground = null;
-    
+
     async function initMapBackground() {
         const apiKey = localStorage.getItem('google_maps_api_key');
         const mapId = localStorage.getItem('google_maps_map_id');
         const mapEnabled = localStorage.getItem('map_enabled') === 'true';
         const mapStyle = localStorage.getItem('map_style') || 'dark';
-        
+
         if (!mapEnabled || !apiKey) {
             document.documentElement.classList.remove('map-mode');
             document.body.classList.remove('map-mode');
@@ -5106,12 +5106,12 @@ Example - create a tool that gets weather:
             }
             return;
         }
-        
+
         // Destroy existing map if any
         if (mapBackground) {
             mapBackground.destroy();
         }
-        
+
         // Create new map
         mapBackground = new MapBackground({
             apiKey: apiKey,
@@ -5128,16 +5128,16 @@ Example - create a tool that gets weather:
                         ${pos.speed ? `<br><strong>Speed:</strong> ${(pos.speed * 3.6).toFixed(1)} km/h` : ''}
                     `;
                 }
-                
+
                 // Also update context injector with location
                 if (contextInjector) {
                     contextInjector.setCustomContext('map_location', `${pos.lat.toFixed(4)},${pos.lng.toFixed(4)}`);
                 }
             }
         });
-        
+
         const success = await mapBackground.init();
-        
+
         if (success) {
             document.documentElement.classList.add('map-mode');
             document.body.classList.add('map-mode');
@@ -5148,64 +5148,64 @@ Example - create a tool that gets weather:
             console.warn('🗺️ Map background failed to initialize');
         }
     }
-    
+
     function loadMapSettings() {
         const apiKey = localStorage.getItem('google_maps_api_key') || '';
         const mapId = localStorage.getItem('google_maps_map_id') || '';
         const mapEnabled = localStorage.getItem('map_enabled') === 'true';
         const mapStyle = localStorage.getItem('map_style') || 'dark';
-        
+
         const apiKeyInput = document.getElementById('googleMapsApiKey');
         const mapIdInput = document.getElementById('googleMapsMapId');
         const enabledCheckbox = document.getElementById('mapEnabled');
         const styleSelect = document.getElementById('mapStyle');
-        
+
         if (apiKeyInput) apiKeyInput.value = apiKey;
         if (mapIdInput) mapIdInput.value = mapId;
         if (enabledCheckbox) enabledCheckbox.checked = mapEnabled;
         if (styleSelect) styleSelect.value = mapStyle;
     }
-    
+
     // Map settings event handlers
     document.getElementById('saveMapSettingsBtn')?.addEventListener('click', async () => {
         const apiKey = document.getElementById('googleMapsApiKey')?.value || '';
         const mapId = document.getElementById('googleMapsMapId')?.value || '';
         const enabled = document.getElementById('mapEnabled')?.checked || false;
         const style = document.getElementById('mapStyle')?.value || 'dark';
-        
+
         localStorage.setItem('google_maps_api_key', apiKey);
         localStorage.setItem('google_maps_map_id', mapId);
         localStorage.setItem('map_enabled', enabled.toString());
         localStorage.setItem('map_style', style);
-        
+
         await initMapBackground();
         showToast(enabled ? (mapId ? 'Map enabled (Advanced)' : 'Map enabled (Basic)') : 'Map disabled');
     });
-    
+
     document.getElementById('testMapBtn')?.addEventListener('click', async () => {
         const apiKey = document.getElementById('googleMapsApiKey')?.value;
         if (!apiKey) {
             showToast('Enter API key first');
             return;
         }
-        
+
         // Temporarily save and test
         localStorage.setItem('google_maps_api_key', apiKey);
         localStorage.setItem('google_maps_map_id', document.getElementById('googleMapsMapId')?.value || '');
         localStorage.setItem('map_enabled', 'true');
         localStorage.setItem('map_style', document.getElementById('mapStyle')?.value || 'dark');
-        
+
         await initMapBackground();
         showToast('Testing map...');
     });
-    
+
     // Load map settings on page load
     loadMapSettings();
-    
+
     // ═══════════════════════════════════════════════════════════════════════════
     // GOOGLE SETTINGS EVENT HANDLERS
     // ═══════════════════════════════════════════════════════════════════════════
-    
+
     function loadGoogleSettings() {
         const config = googleAPI.getConfig();
         if (config) {
@@ -5214,25 +5214,25 @@ Example - create a tool that gets weather:
             if (clientIdInput) clientIdInput.value = config.clientId || '';
             if (apiKeyInput) apiKeyInput.value = config.apiKey || '';
         }
-        
+
         // Show current origin for authorized origins setup
         const originEl = document.getElementById('currentOrigin');
         if (originEl) originEl.textContent = window.location.origin;
-        
+
         updateGoogleAuthStatus();
     }
-    
+
     async function updateGoogleAuthStatus() {
         const statusEl = document.getElementById('googleAuthStatus');
         if (!statusEl) return;
-        
+
         const config = googleAPI.getConfig();
         if (!config?.clientId) {
             statusEl.innerHTML = '❌ <strong>Not configured</strong><br>Add OAuth Client ID above';
             statusEl.style.color = 'rgba(255,100,100,0.8)';
             return;
         }
-        
+
         if (googleAPI.isAuthenticated()) {
             try {
                 const userInfo = await googleAPI.getUserInfo();
@@ -5247,40 +5247,40 @@ Example - create a tool that gets weather:
             statusEl.style.color = 'rgba(255,200,100,0.8)';
         }
     }
-    
+
     document.getElementById('saveGoogleConfigBtn')?.addEventListener('click', () => {
         const clientId = document.getElementById('googleClientId')?.value?.trim();
         const apiKey = document.getElementById('googleApiKey')?.value?.trim();
-        
+
         if (!clientId) {
             showToast('Client ID required');
             return;
         }
-        
+
         googleAPI.saveConfig({
             clientId,
             apiKey: apiKey || undefined,
             scopes: DEFAULT_SCOPES
         });
-        
+
         updateGoogleAuthStatus();
         showToast('Google config saved');
     });
-    
+
     document.getElementById('googleAuthBtn')?.addEventListener('click', async () => {
         const config = googleAPI.getConfig();
         if (!config?.clientId) {
             showToast('Save config first');
             return;
         }
-        
+
         try {
             const statusEl = document.getElementById('googleAuthStatus');
             if (statusEl) {
                 statusEl.innerHTML = '🔄 <strong>Authenticating...</strong><br>Check popup window';
                 statusEl.style.color = 'rgba(100,150,255,0.8)';
             }
-            
+
             await googleAPI.requestToken();
             await updateGoogleAuthStatus();
             showToast('Google authenticated!');
@@ -5293,7 +5293,7 @@ Example - create a tool that gets weather:
             showToast('Auth failed: ' + e.message);
         }
     });
-    
+
     document.getElementById('googleRevokeBtn')?.addEventListener('click', async () => {
         try {
             await googleAPI.revokeToken();
@@ -5303,7 +5303,7 @@ Example - create a tool that gets weather:
             showToast('Revoke failed: ' + e.message);
         }
     });
-    
+
     // Load Google settings on page load
     loadGoogleSettings();
 
@@ -5378,14 +5378,14 @@ Example - create a tool that gets weather:
                 settings[key] = value;
             }
         }
-        
+
         const plaintext = JSON.stringify(settings);
         const enc = new TextEncoder();
-        
+
         // Generate salt and IV
         const salt = crypto.getRandomValues(new Uint8Array(16));
         const iv = crypto.getRandomValues(new Uint8Array(12));
-        
+
         // Derive key and encrypt
         const key = await deriveKey(password, salt);
         const ciphertext = await crypto.subtle.encrypt(
@@ -5393,13 +5393,13 @@ Example - create a tool that gets weather:
             key,
             enc.encode(plaintext)
         );
-        
+
         // Combine salt + iv + ciphertext
         const combined = new Uint8Array(salt.length + iv.length + ciphertext.byteLength);
         combined.set(salt, 0);
         combined.set(iv, salt.length);
         combined.set(new Uint8Array(ciphertext), salt.length + iv.length);
-        
+
         // Base64 encode
         return btoa(String.fromCharCode(...combined));
     }
@@ -5407,12 +5407,12 @@ Example - create a tool that gets weather:
     async function decryptSettings(encryptedBase64, password) {
         // Decode base64
         const combined = Uint8Array.from(atob(encryptedBase64), c => c.charCodeAt(0));
-        
+
         // Extract salt, iv, ciphertext
         const salt = combined.slice(0, 16);
         const iv = combined.slice(16, 28);
         const ciphertext = combined.slice(28);
-        
+
         // Derive key and decrypt
         const key = await deriveKey(password, salt);
         const plaintext = await crypto.subtle.decrypt(
@@ -5420,7 +5420,7 @@ Example - create a tool that gets weather:
             key,
             ciphertext
         );
-        
+
         const dec = new TextDecoder();
         return JSON.parse(dec.decode(plaintext));
     }
@@ -5446,50 +5446,50 @@ Example - create a tool that gets weather:
 
     function saveMessagesToStorage() {
         if (localStorage.getItem('persist_messages') === 'false') return;
-        
+
         const messagesInner = document.getElementById('messagesInner');
         if (!messagesInner) return;
-        
+
         const messages = [];
         messagesInner.querySelectorAll('.message').forEach(msgEl => {
-            const role = msgEl.classList.contains('user') ? 'user' 
+            const role = msgEl.classList.contains('user') ? 'user'
                        : msgEl.classList.contains('assistant') ? 'assistant'
                        : msgEl.classList.contains('error') ? 'error'
                        : 'system';
-            
+
             // Skip system intro message
             if (role === 'system' && msgEl.querySelector('.message-content')?.textContent?.includes('Build your own AGI')) {
                 return;
             }
-            
+
             const content = msgEl.querySelector('.message-content')?.innerHTML || '';
             if (content) {
                 messages.push({ role, content, timestamp: Date.now() });
             }
         });
-        
+
         // Also save tool blocks
         messagesInner.querySelectorAll('.tool-block').forEach(toolEl => {
             const name = toolEl.querySelector('.tool-name')?.textContent || 'unknown';
             const input = toolEl.querySelector('.tool-input')?.textContent || '';
             messages.push({ role: 'tool', name, input, timestamp: Date.now() });
         });
-        
+
         localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
     }
 
     function loadMessagesFromStorage() {
         if (localStorage.getItem('persist_messages') === 'false') return;
-        
+
         const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
         if (!stored) return;
-        
+
         try {
             const messages = JSON.parse(stored);
             if (!Array.isArray(messages) || messages.length === 0) return;
-            
+
             const inner = document.getElementById('messagesInner');
-            
+
             messages.forEach(msg => {
                 if (msg.role === 'tool') {
                     // Restore tool block
@@ -5510,23 +5510,23 @@ Example - create a tool that gets weather:
                     // Restore message
                     const msgEl = document.createElement('div');
                     msgEl.className = `message ${msg.role}`;
-                    
+
                     if (msg.role !== 'system') {
                         const roleLabel = document.createElement('div');
                         roleLabel.className = 'message-role';
                         roleLabel.textContent = msg.role === 'user' ? 'you' : msg.role === 'assistant' ? 'agi' : msg.role;
                         msgEl.appendChild(roleLabel);
                     }
-                    
+
                     const contentEl = document.createElement('div');
                     contentEl.className = 'message-content';
                     contentEl.innerHTML = msg.content;
                     msgEl.appendChild(contentEl);
-                    
+
                     inner.appendChild(msgEl);
                 }
             });
-            
+
             smartScroll();
         } catch (e) {
             console.warn('Failed to load messages:', e);
@@ -5536,7 +5536,7 @@ Example - create a tool that gets weather:
     function getChatHistoryStats() {
         const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
         if (!stored) return { count: 0, size: 0 };
-        
+
         try {
             const messages = JSON.parse(stored);
             return {
@@ -5559,31 +5559,31 @@ Example - create a tool that gets weather:
     // Auto-save messages after each interaction
     const originalAddMessage = addMessage;
     window._originalAddMessage = originalAddMessage;
-    
+
     // Override to add persistence (delegates to original, then saves)
     function addMessageWithPersist(role, content, images = []) {
         const inner = document.getElementById('messagesInner');
         const msg = document.createElement('div');
         msg.className = `message ${role}`;
-        
+
         if (role !== 'system') {
             const roleLabel = document.createElement('div');
             roleLabel.className = 'message-role';
             roleLabel.textContent = role === 'user' ? 'you' : role === 'assistant' ? 'agi' : role;
             msg.appendChild(roleLabel);
         }
-        
+
         const contentEl = document.createElement('div');
         contentEl.className = 'message-content';
-        
+
         if (role === 'user') {
             contentEl.textContent = content;
-            
+
             // Add image thumbnails for user messages
             if (images && images.length > 0) {
                 const imgStrip = document.createElement('div');
                 imgStrip.style.cssText = 'display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;';
-                
+
                 images.forEach(file => {
                     const img = document.createElement('img');
                     img.src = URL.createObjectURL(file);
@@ -5591,17 +5591,17 @@ Example - create a tool that gets weather:
                     img.title = file.name;
                     imgStrip.appendChild(img);
                 });
-                
+
                 contentEl.appendChild(imgStrip);
             }
         } else {
             contentEl.innerHTML = `<div class="markdown-content">${marked.parse(content)}</div>`;
         }
-        
+
         msg.appendChild(contentEl);
         inner.appendChild(msg);
         smartScroll();
-        
+
         // Auto-save after adding message
         setTimeout(saveMessagesToStorage, 100);
     }
@@ -5619,14 +5619,14 @@ Example - create a tool that gets weather:
             showToast('Password must be at least 4 characters');
             return;
         }
-        
+
         try {
             const encrypted = await encryptSettings(password);
             const url = generateExportUrl(encrypted);
-            
+
             document.getElementById('exportedUrl').value = url;
             document.getElementById('exportResult').style.display = 'block';
-            
+
             showToast('Settings exported!');
         } catch (e) {
             console.error('Export failed:', e);
@@ -5646,7 +5646,7 @@ Example - create a tool that gets weather:
         const urlOrData = document.getElementById('importUrl')?.value?.trim();
         const password = document.getElementById('importPassword')?.value;
         const statusEl = document.getElementById('importStatus');
-        
+
         if (!urlOrData) {
             showToast('Paste the encrypted URL first');
             return;
@@ -5655,11 +5655,11 @@ Example - create a tool that gets weather:
             showToast('Enter decryption password');
             return;
         }
-        
+
         statusEl.style.display = 'block';
         statusEl.innerHTML = '🔄 Decrypting...';
         statusEl.style.color = 'rgba(100,150,255,0.8)';
-        
+
         try {
             // Extract encrypted data from URL or use directly
             let encryptedData = urlOrData;
@@ -5667,10 +5667,10 @@ Example - create a tool that gets weather:
                 const url = new URL(urlOrData);
                 encryptedData = url.searchParams.get('import');
             }
-            
+
             const settings = await decryptSettings(encryptedData, password);
             applySettings(settings);
-            
+
             // Update form fields
             document.getElementById('provider').value = settings.provider || 'anthropic';
             document.getElementById('anthropicApiKey').value = settings.anthropic_api_key || '';
@@ -5679,31 +5679,31 @@ Example - create a tool that gets weather:
             document.getElementById('openaiModel').value = settings.openai_model || 'gpt-5-nano-2025-08-07';
             document.getElementById('systemPrompt').value = settings.system_prompt || DEFAULT_SYSTEM_PROMPT;
             window.updateProviderFields();
-            
+
             statusEl.innerHTML = '✅ Settings imported! Reinitializing...';
             statusEl.style.color = 'rgba(100,255,100,0.8)';
-            
+
             // Reload Google API config
             if (window.googleAPI && typeof window.googleAPI.loadConfig === 'function') {
                 window.googleAPI.loadConfig();
             }
-            
+
             // Update Google settings UI
             loadGoogleSettings();
-            
+
             // Update map settings UI and reinitialize map
             loadMapSettings();
             await initMapBackground();
-            
+
             // Reinitialize agent
             await initializeAgent();
-            
+
             showToast('Settings imported successfully!');
-            
+
             // Clear import fields
             document.getElementById('importUrl').value = '';
             document.getElementById('importPassword').value = '';
-            
+
         } catch (e) {
             console.error('Import failed:', e);
             statusEl.innerHTML = '❌ Decryption failed. Check password.';
@@ -5728,7 +5728,7 @@ Example - create a tool that gets weather:
             showToast('No messages to export');
             return;
         }
-        
+
         const blob = new Blob([stored], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -5736,7 +5736,7 @@ Example - create a tool that gets weather:
         a.download = `agi-chat-${new Date().toISOString().slice(0,10)}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        
+
         showToast('Chat exported!');
     });
 
@@ -5753,11 +5753,11 @@ Example - create a tool that gets weather:
     function checkForQueryParam() {
         const url = new URL(window.location.href);
         const query = url.searchParams.get('q');
-        
+
         if (query) {
             // Clear URL params without reload
             window.history.replaceState({}, '', window.location.pathname);
-            
+
             // Wait for agent to initialize, then send query
             const sendQuery = async () => {
                 // Wait until agent is ready
@@ -5766,7 +5766,7 @@ Example - create a tool that gets weather:
                     await new Promise(r => setTimeout(r, 500));
                     attempts++;
                 }
-                
+
                 if (agent) {
                     console.log('📱 Running query from URL param:', query);
                     await runAgent(query);
@@ -5774,7 +5774,7 @@ Example - create a tool that gets weather:
                     addMessage('error', 'Agent not ready. Please add API key in settings.');
                 }
             };
-            
+
             setTimeout(sendQuery, 1000);
         }
     }
@@ -5783,7 +5783,7 @@ Example - create a tool that gets weather:
     function checkForImportUrl() {
         const url = new URL(window.location.href);
         const importData = url.searchParams.get('import');
-        
+
         if (importData) {
             // Open settings modal and switch to sync tab
             document.getElementById('settingsModal').classList.add('active');
@@ -5791,13 +5791,13 @@ Example - create a tool that gets weather:
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             document.querySelector('.tab[data-tab="sync"]')?.classList.add('active');
             document.getElementById('tab-sync')?.classList.add('active');
-            
+
             // Pre-fill import URL
             document.getElementById('importUrl').value = window.location.href;
-            
+
             // Clear URL params without reload
             window.history.replaceState({}, '', window.location.pathname);
-            
+
             showToast('Import URL detected! Enter password to import.');
         }
     }
@@ -5807,7 +5807,7 @@ Example - create a tool that gets weather:
         const persistEnabled = localStorage.getItem('persist_messages') !== 'false';
         const checkbox = document.getElementById('persistMessages');
         if (checkbox) checkbox.checked = persistEnabled;
-        
+
         updateChatHistoryStats();
     }
 
@@ -5888,9 +5888,9 @@ Example - create a tool that gets weather:
     function renderBuiltinTools() {
         const container = document.getElementById('builtinToolsList');
         if (!container) return;
-        
+
         const disabled = getDisabledTools();
-        
+
         // Group tools by category
         const categories = {
             'core': { label: '🔧 Core Tools', tools: [] },
@@ -5900,36 +5900,36 @@ Example - create a tool that gets weather:
             'google': { label: '🔐 Google API', tools: [] },
             'mesh': { label: '🌐 Agent Mesh', tools: [] }
         };
-        
+
         BUILTIN_TOOLS_INFO.forEach(tool => {
             const cat = tool.category || 'core';
             if (categories[cat]) {
                 categories[cat].tools.push(tool);
             }
         });
-        
+
         let html = '';
         for (const [catKey, cat] of Object.entries(categories)) {
             if (cat.tools.length === 0) continue;
-            
+
             html += `<div style="margin-bottom:16px;">
                 <div style="font-size:11px;font-weight:600;color:var(--text-tertiary);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">${cat.label}</div>`;
-            
+
             html += cat.tools.map(tool => {
                 const isDisabled = disabled.includes(tool.name);
-                return `<div class="tool-toggle-item" data-tool="${tool.name}" style="cursor:pointer;padding:4px 8px;border-radius:6px;margin-bottom:4px;transition:all 0.2s;${isDisabled ? 'opacity:0.4;' : ''}" 
-                    onmouseover="this.style.background='rgba(255,255,255,0.05)'" 
+                return `<div class="tool-toggle-item" data-tool="${tool.name}" style="cursor:pointer;padding:4px 8px;border-radius:6px;margin-bottom:4px;transition:all 0.2s;${isDisabled ? 'opacity:0.4;' : ''}"
+                    onmouseover="this.style.background='rgba(255,255,255,0.05)'"
                     onmouseout="this.style.background='transparent'">
                     <code style="${isDisabled ? 'text-decoration:line-through;' : ''}">${tool.name}</code> — ${tool.desc}
                     <span style="float:right;color:${isDisabled ? 'rgba(255,100,100,0.6)' : 'rgba(100,255,100,0.6)'};">${isDisabled ? '✕' : '✓'}</span>
                 </div>`;
             }).join('');
-            
+
             html += '</div>';
         }
-        
+
         container.innerHTML = html;
-        
+
         // Add click handlers
         container.querySelectorAll('.tool-toggle-item').forEach(item => {
             item.addEventListener('click', () => {
@@ -5944,7 +5944,7 @@ Example - create a tool that gets weather:
     window.runAgent = runAgent;
     window.BROWSER_TOOLS = BROWSER_TOOLS;
     window.initializeAgent = initializeAgent;
-    
+
     // Render tools on page load and when tools tab is shown
     renderBuiltinTools();
 
