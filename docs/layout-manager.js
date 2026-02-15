@@ -35,18 +35,13 @@ export class LayoutManager {
     if (!this.complicationRegistry) return
 
     const complications = this.state.complications || {
-      statusbar: ['mesh-nav', 'wall-clock'],
-      sidebar: ['stop-all', 'clear-done', 'reset', 'layouts', 'settings']
+      statusbar: ['mesh-nav', 'wall-clock']
     }
 
     const context = { state: this.state, layoutManager: this, widgetRegistry: this.widgetRegistry }
 
     if (this.statusbarEl) {
       this.complicationRegistry.render(this.statusbarEl, 'statusbar', complications.statusbar, context)
-    }
-
-    if (this.sidebarEl) {
-      this.complicationRegistry.render(this.sidebarEl, 'sidebar', complications.sidebar, context)
     }
   }
 
@@ -235,7 +230,7 @@ export class LayoutManager {
   }
 
   hideAllDropZones () {
-    document.querySelectorAll('.drop-zones').forEach(z => z.style.display = 'none')
+    document.querySelectorAll('.drop-zones').forEach(z => { z.style.display = 'none' })
   }
 
   handleDragLeave (targetBlockId) {
