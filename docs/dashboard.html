@@ -233,6 +233,8 @@ import { ComplicationRegistry } from './complication-registry.js';
 import { registerDefaultComplications } from './default-complications.js';
 import { createBrowserTools } from './browser-tools.js';
 import { loadCredentials, detectProvider as detectProviderUtil, createModel as createModelUtil, createConversationManager as createCMUtil } from './model-utils.js';
+import { Orchestrator } from './orchestrator.js';
+import { WidgetSidebar } from './widget-sidebar.js';
 import './erc8004-discovery.js?v=2';
 
 // ═══ STATE & HELPERS ═══
@@ -241,111 +243,26 @@ function loadTasks() { try { const d = JSON.parse(localStorage.getItem('dashboar
 
 // ═══ BROWSER TOOLS ═══
 const browserTools = createBrowserTools({ tool, z, state, notify, saveTasks });
-const { storageGetTool, storageSetTool } = browserTools.storage;
-const { createTaskTool, updateTaskTool, listTasksTool, claimTaskTool } = browserTools.tasks;
-const { listAgentsTool, delegateTaskTool } = browserTools.orchestration;
-
-const TASK_TOOLS = [createTaskTool, updateTaskTool, listTasksTool, claimTaskTool];
-const EXTRA_TOOLS = { storage_get: storageGetTool, storage_set: storageSetTool };
-const ORCHESTRATOR_TOOLS = [...TASK_TOOLS, listAgentsTool, delegateTaskTool];
 
 // ═══ ORCHESTRATION ═══
+const orchestrator = new Orchestrator({
+  state,
+  createModel,
+  detectProvider,
+  createConversationManager,
+  browserTools,
+  notify,
+  saveTasks,
+  notifyAgentStatus,
+  notifyRingEntry
+});
 
-async function runDelegatedAgent(agentId, taskId, instructions) {
-  const task = state.tasks.get(taskId);
-  const agentData = state.agents.get(agentId);
-  if (!agentData || !task) return;
+// Expose for compatibility
+const ORCHESTRATOR_TOOLS = orchestrator.ORCHESTRATOR_TOOLS;
+const runDelegatedAgent = (agentId, taskId, instructions) => orchestrator.runDelegatedAgent(agentId, taskId, instructions);
+const buildOrchestratorPrompt = () => orchestrator.buildOrchestratorPrompt();
+const seedAgentList = (agent) => orchestrator.seedAgentList(agent);
 
-  // Track instance
-  agentData.instances = (agentData.instances || 0) + 1;
-  agentData.workingOn = task.title;
-  notifyAgentStatus(agentId);
-
-  // Initialize trace
-  task.trace = task.trace || [];
-
-  try {
-    const model = createModel(agentData.provider || detectProvider(), { modelId: agentData.modelId, maxTokens: 4096 });
-    const agentTools = [updateTaskTool, createTaskTool];
-
-    // Add extra named tools from agent config
-    if (agentData.tools) agentData.tools.forEach(n => { if (EXTRA_TOOLS[n]) agentTools.push(EXTRA_TOOLS[n]); });
-
-    // Connect MCP servers from agent config
-    if (agentData.mcp) {
-      for (const srv of agentData.mcp) {
-        const token = srv.tokenKey?.split('.').reduce((o, k) => o?.[k], state.credentials);
-        const opts = token ? { requestInit: { headers: { 'Authorization': `Bearer ${token}` } } } : {};
-        const client = new McpClient({ transport: new StreamableHTTPClientTransport(srv.url, opts) });
-        agentTools.push(client);
-      }
-    }
-
-    const agent = new Agent({
-      model,
-      tools: agentTools,
-      systemPrompt: `You are agent "${agentId}". You are working on task "${task.title}" (ID: ${taskId}). Use update_task to report progress (add worklog entries) and mark complete when done. If the task needs sub-tasks, use create_task with parentId="${taskId}". Be thorough but concise.`,
-      printer: false,
-      conversationManager: createConversationManager(agentData.conversationManager)
-    });
-
-    let result = '';
-    for await (const event of agent.stream(instructions)) {
-      if (event?.type === 'modelContentBlockDeltaEvent' && event.delta?.type === 'textDelta') {
-        result += event.delta.text;
-        task.trace.push({ type: 'thinking', content: event.delta.text, ts: Date.now() });
-      }
-      if (event?.type === 'modelContentBlockStartEvent' && event.contentBlock?.type === 'toolUse') {
-        task.trace.push({ type: 'tool', content: `${event.contentBlock.name}(${JSON.stringify(event.contentBlock.input).slice(0,100)})`, ts: Date.now() });
-      }
-    }
-
-    // Mark complete if agent didn't already
-    if (task.status === 'in-progress') {
-      task.status = 'complete';
-      task.worklog.push({ ts: Date.now(), agentId, msg: result.slice(0, 300) || 'Completed' });
-    }
-
-    // Ring buffer
-    state.ringBuffer.push({ agentId, content: `[${task.title}] ${result.slice(0, 200)}`, ts: Date.now(), taskId });
-    notifyRingEntry(state.ringBuffer[state.ringBuffer.length - 1]);
-    if (window.AgentMesh?.addToRingContext) window.AgentMesh.addToRingContext(agentId, 'browser', `[${task.title}] ${result.slice(0, 500)}`);
-  } catch (e) {
-    task.status = 'failed';
-    task.worklog.push({ ts: Date.now(), agentId, msg: `Error: ${e.message}` });
-    task.trace.push({ type: 'error', content: e.message, ts: Date.now() });
-  }
-
-  if (agentData) {
-    agentData.instances = Math.max(0, (agentData.instances || 1) - 1);
-    agentData.status = agentData.instances > 0 ? 'processing' : 'ready';
-    agentData.workingOn = null;
-    notifyAgentStatus(agentId);
-  }
-  notify('tasks'); saveTasks();
-}
-
-function buildOrchestratorPrompt() {
-  return `You are an orchestrator agent in a multi-agent mesh dashboard. Your job:
-1. When given a goal, decompose it into tasks using create_task (use parentId for sub-tasks)
-2. Delegate tasks to available agents with delegate_task — they run in parallel automatically
-3. Use list_agents to check available agents and their status
-4. Maximize parallelism: delegate multiple tasks at once to minimize wall-clock time
-5. Monitor progress with list_tasks and update_task
-
-Be concise. Act immediately — create tasks and delegate them, don't just describe what you'd do.`;
-}
-
-function seedAgentList(agent) {
-  const agents = [...state.agents.values()].map(a => ({ id: a.id, model: a.model, role: a.role, status: a.status }));
-  agent.messages.push(
-    { role: 'user', content: [{ type: 'textBlock', text: 'list_agents' }] },
-    { role: 'assistant', content: [{ type: 'toolUse', toolUseId: 'seed-list', name: 'list_agents', input: {} }] },
-    { role: 'user', content: [{ type: 'toolResult', toolUseId: 'seed-list', content: [{ type: 'text', text: JSON.stringify(agents) }] }] }
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════
 // SECTION INDEX
 // STATE ............. Constants, mock data, layout config
 // BLOCKS ............ Block registry, renderers, layout engine
@@ -831,103 +748,20 @@ if ('serviceWorker' in navigator) {
 }
 
 // ── Populate Widget Sidebar ──
-function populateWidgetSidebar() {
-  const sidebar = document.getElementById('widgetSidebar');
-  const widgets = Array.from(widgetRegistry.widgets.entries());
-
-  // Load pinned widgets from localStorage
-  const pinned = new Set(JSON.parse(localStorage.getItem('pinnedWidgets') || '[]'));
-
-  // Sort: pinned first, then alphabetically
-  const sorted = widgets.sort(([idA, wA], [idB, wB]) => {
-    const aPin = pinned.has(idA) ? 0 : 1;
-    const bPin = pinned.has(idB) ? 0 : 1;
-    if (aPin !== bPin) return aPin - bPin;
-    return (wA.meta.title || idA).localeCompare(wB.meta.title || idB);
-  });
-
-  const visible = sorted.slice(0, 10);
-  const overflow = sorted.slice(10);
-
-  // Render visible widgets
-  visible.forEach(([id, widget]) => {
-    const btn = document.createElement('button');
-    btn.className = 'widget-btn' + (pinned.has(id) ? ' pinned' : '');
-    btn.title = widget.meta.title || id;
-    btn.onclick = () => addBlock(id);
-    btn.oncontextmenu = (e) => {
-      e.preventDefault();
-      if (pinned.has(id)) pinned.delete(id); else pinned.add(id);
-      localStorage.setItem('pinnedWidgets', JSON.stringify([...pinned]));
-      sidebar.innerHTML = '';
-      populateWidgetSidebar();
-    };
-    btn.innerHTML = `<span class="icon">${widget.meta.icon}</span><span class="label">${widget.meta.title}</span>`;
-    sidebar.appendChild(btn);
-  });
-
-  // Overflow menu
-  if (overflow.length) {
-    const more = document.createElement('div');
-    more.className = 'widget-more';
-    const moreBtn = document.createElement('button');
-    moreBtn.className = 'widget-btn';
-    moreBtn.title = 'More widgets';
-    moreBtn.innerHTML = `<span class="icon">⋯</span><span class="label">More</span>`;
-    const menu = document.createElement('div');
-    menu.className = 'widget-more-menu';
-    overflow.forEach(([id, widget]) => {
-      const btn = document.createElement('button');
-      btn.className = 'widget-btn' + (pinned.has(id) ? ' pinned' : '');
-      btn.onclick = () => addBlock(id);
-      btn.oncontextmenu = (e) => {
-        e.preventDefault();
-        if (pinned.has(id)) pinned.delete(id); else pinned.add(id);
-        localStorage.setItem('pinnedWidgets', JSON.stringify([...pinned]));
-        sidebar.innerHTML = '';
-        populateWidgetSidebar();
-      };
-      btn.innerHTML = `<span class="icon">${widget.meta.icon}</span><span class="label">${widget.meta.title}</span>`;
-      menu.appendChild(btn);
-    });
-    more.appendChild(moreBtn);
-    more.appendChild(menu);
-    sidebar.appendChild(more);
-  }
-
-  // Divider
-  const divider = document.createElement('div');
-  divider.className = 'sidebar-divider';
-  sidebar.appendChild(divider);
-
-  // Actions
-  const actions = [
+// Initialize widget sidebar
+const widgetSidebar = new WidgetSidebar({
+  container: document.getElementById('widgetSidebar'),
+  widgetRegistry,
+  onAddWidget: (type) => layoutManager.openWidget(type, {}, { reuse: false }),
+  actions: [
     { icon: '⏹', label: 'Stop All', title: 'Stop all active tasks', fn: stopAllTasks },
     { icon: '🗑️', label: 'Clear Done', title: 'Clear completed tasks', fn: clearDoneTasks },
     { icon: '🔄', label: 'Reset', title: 'Reset layout', fn: resetLayout },
     { icon: '💾', label: 'Layouts', title: 'Layouts', fn: showLayoutMenu },
     { icon: '⚙', label: 'Settings', title: 'Settings', fn: () => AgentMesh.settings?.open() }
-  ];
-
-  actions.forEach(a => {
-    const btn = document.createElement('button');
-    btn.className = 'widget-btn';
-    btn.title = a.title;
-    btn.onclick = a.fn;
-    btn.innerHTML = `<span class="icon">${a.icon}</span><span class="label">${a.label}</span>`;
-    sidebar.appendChild(btn);
-  });
-
-  // Toggle
-  const toggle = document.createElement('div');
-  toggle.className = 'sidebar-toggle';
-  toggle.title = 'Toggle sidebar';
-  toggle.textContent = '📌';
-  toggle.onclick = () => sidebar.classList.toggle('docked');
-  sidebar.appendChild(toggle);
-}
-
-populateWidgetSidebar();
+  ]
+});
+widgetSidebar.render();
 </script>
 </body>
 </html>
