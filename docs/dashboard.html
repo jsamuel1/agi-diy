@@ -477,6 +477,8 @@ const chatHandler = new ChatHandler({
 // Expose for compatibility
 const ensureChatAgent = () => chatHandler.ensureChatAgent();
 const sendChatMessage = (text, blockId) => chatHandler.sendChatMessage(text, blockId);
+window.sendChatMessage = sendChatMessage;
+window.sendChatMessage = sendChatMessage;
 const startWallClock = () => chatHandler.startWallClock();
 const escapeHtml = (s) => chatHandler.escapeHtml(s);
 const formatElapsed = (start, end) => chatHandler.formatElapsed(start, end);
