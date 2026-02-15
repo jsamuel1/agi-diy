@@ -251,30 +251,6 @@ const EXTRA_TOOLS = { storage_get: storageGetTool, storage_set: storageSetTool }
 const ORCHESTRATOR_TOOLS = [...TASK_TOOLS, listAgentsTool, delegateTaskTool];
 
 // ═══ ORCHESTRATION ═══
-  name: 'delegate_task',
-  description: 'Delegate a task to an agent. The agent will work on it asynchronously and update the task status/worklog.',
-  inputSchema: z.object({
-    taskId: z.string(),
-    agentId: z.string(),
-    instructions: z.string().describe('Detailed instructions for the agent'),
-  }),
-  callback: async (input) => {
-    const task = state.tasks.get(input.taskId);
-    if (!task) return JSON.stringify({ error: 'Task not found' });
-    const agentData = state.agents.get(input.agentId);
-    if (!agentData) return JSON.stringify({ error: 'Agent not found' });
-
-    // Claim the task
-    task.agentId = input.agentId; task.status = 'in-progress';
-    task.worklog.push({ ts: Date.now(), agentId: input.agentId, msg: `Delegated: ${input.instructions.slice(0, 100)}` });
-    agentData.status = 'processing';
-    notify('tasks'); notifyAgentStatus(input.agentId); saveTasks();
-
-    // Run agent asynchronously (don't await — fire and forget for parallelism)
-    runDelegatedAgent(input.agentId, input.taskId, input.instructions);
-    return JSON.stringify({ taskId: input.taskId, agentId: input.agentId, status: 'delegated' });
-  }
-});
 
 async function runDelegatedAgent(agentId, taskId, instructions) {
   const task = state.tasks.get(taskId);
