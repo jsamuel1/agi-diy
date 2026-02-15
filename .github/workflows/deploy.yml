@@ -78,33 +78,17 @@ jobs:
         env:
           S3_BUCKET: ${{ vars.S3_BUCKET }}
         run: |
-          # Copy JS files with immutable cache (preserve content-type)
+          # Update cache-control for static assets (preserve existing content-type)
           aws s3 cp s3://"$S3_BUCKET"/ s3://"$S3_BUCKET"/ \
             --recursive \
             --exclude "*" \
             --include "*.js" \
-            --content-type "application/javascript" \
-            --cache-control "public, max-age=31536000, immutable" \
-            --metadata-directive REPLACE
-
-          # Copy CSS files with immutable cache
-          aws s3 cp s3://"$S3_BUCKET"/ s3://"$S3_BUCKET"/ \
-            --recursive \
-            --exclude "*" \
             --include "*.css" \
-            --content-type "text/css" \
-            --cache-control "public, max-age=31536000, immutable" \
-            --metadata-directive REPLACE
-
-          # Copy images with immutable cache
-          aws s3 cp s3://"$S3_BUCKET"/ s3://"$S3_BUCKET"/ \
-            --recursive \
-            --exclude "*" \
             --include "*.png" \
             --include "*.jpg" \
             --include "*.svg" \
             --cache-control "public, max-age=31536000, immutable" \
-            --metadata-directive REPLACE
+            --metadata-directive COPY
 
       - name: Invalidate CloudFront
         if: vars.CLOUDFRONT_DISTRIBUTION_ID != ''
