@@ -1695,11 +1695,12 @@
         disconnectRelayById(relayId);
         try {
             const ws = new WebSocket(url);
-            const conn = { ws, connected: false, heartbeat: null, reconnectTimer: null };
+            const conn = { ws, connected: false, heartbeat: null, reconnectTimer: null, reconnectAttempts: 0 };
             relayConnections.set(relayId, conn);
             
             ws.onopen = () => {
                 conn.connected = true;
+                conn.reconnectAttempts = 0; // Reset on successful connection
                 logRelay('info', relayId, 'Connected', url);
                 
                 // Query relay capabilities
@@ -1732,14 +1733,20 @@
                 broadcast('relay-disconnected', { relayId });
                 const handler = subscribers.get('relay-status');
                 if (handler) handler({ connected: false, url, relayId });
-                // Auto-reconnect if provider exists
+                
+                // Auto-reconnect with exponential backoff (30s to 5min)
                 const provider = relayReconnectProviders.get(relayId);
                 if (provider && !conn.reconnectTimer) {
+                    conn.reconnectAttempts++;
+                    const baseDelay = Math.min(30000 * Math.pow(2, conn.reconnectAttempts - 1), 300000); // 30s to 5min
+                    const jitter = (Math.random() - 0.5) * 10000; // +/- 5s
+                    const delay = Math.max(1000, baseDelay + jitter);
+                    
                     conn.reconnectTimer = setTimeout(async () => {
                         conn.reconnectTimer = null;
-                        console.log(`[AgentMesh] 🔄 Relay reconnect [${relayId}]...`);
+                        console.log(`[AgentMesh] 🔄 Relay reconnect [${relayId}] attempt ${conn.reconnectAttempts}...`);
                         try { await provider(); } catch (e) { logRelay('warn', relayId, 'Reconnect failed', e.message); }
-                    }, 3000);
+                    }, delay);
                 }
             };
             ws.onerror = (err) => {

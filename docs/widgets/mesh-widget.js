@@ -22,10 +22,18 @@ export default new Widget({
       const icon = connected ? '●' : '○';
       const color = connected ? 'var(--green)' : 'var(--text-muted)';
       const label = r.type === 'websocket' ? r.url : `${r.id} (auto-renew)`;
-      const reauthBtn = !connected && r.type === 'agentcore' 
-        ? `<button onclick="window.reauthAgentCore?.()" style="background:var(--orange,#ff9500);color:#fff;border:none;padding:2px 6px;border-radius:3px;font-size:10px;cursor:pointer;margin-left:8px">🔐 Reauth</button>`
-        : '';
-      return `<div style="margin-bottom:4px;display:flex;align-items:center"><span style="color:${color}">${icon}</span> <span style="flex:1">${label}</span>${reauthBtn}</div>`;
+      
+      // Show reauth button for agentcore, or connect button for websocket
+      let actionBtn = '';
+      if (!connected) {
+        if (r.type === 'agentcore') {
+          actionBtn = `<button onclick="window.reauthAgentCore?.()" style="background:var(--orange,#ff9500);color:#fff;border:none;padding:2px 6px;border-radius:3px;font-size:10px;cursor:pointer;margin-left:8px">🔐 Reauth</button>`;
+        } else if (r.type === 'websocket') {
+          actionBtn = `<button onclick="window.AgentMesh?.connectRelayById?.('${r.id}')" style="background:var(--blue,#007aff);color:#fff;border:none;padding:2px 6px;border-radius:3px;font-size:10px;cursor:pointer;margin-left:8px">🔌 Connect</button>`;
+        }
+      }
+      
+      return `<div style="margin-bottom:4px;display:flex;align-items:center"><span style="color:${color}">${icon}</span> <span style="flex:1">${label}</span>${actionBtn}</div>`;
     }).join('');
     
     const relayLogList = relayLogs.slice(-20).reverse().map(l => {
