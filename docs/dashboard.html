@@ -391,6 +391,12 @@ function notifyRingEntry(entry) {
   findCfg(state.layout);
 }
 
+// ── Task actions ──
+function stopAllTasks() { state.tasks.forEach(t => { if (t.status !== 'complete') t.status = 'complete'; }); notify('tasks'); saveTasks(); }
+function clearDoneTasks() { [...state.tasks.entries()].forEach(([id, t]) => { if (t.status === 'complete') state.tasks.delete(id); }); state.tasks.forEach(t => { t.children = t.children.filter(c => state.tasks.has(c)); }); notify('tasks'); saveTasks(); }
+window.stopAllTasks = stopAllTasks;
+window.clearDoneTasks = clearDoneTasks;
+
 // ═══ BROWSER TOOLS ═══
 const browserTools = createBrowserTools({ tool, z, state, notify, saveTasks });
 
@@ -500,12 +506,11 @@ if (window.AgentMesh) {
   });
 }
 
-loadCredentials();
 await loadDefaultAgents();
 loadTasks();
 layoutManager.loadLayout() || layoutManager.render();
 initialMeshSync();
-setTimeout(populateMeshNav, 500); // after mesh-pages.json loads
+setTimeout(() => window.MeshNav?.populate(), 500); // after mesh-pages.json loads
 
 // Discover on-chain agents (non-blocking)
 if (window.AgentMesh?.erc8004) {
@@ -586,7 +591,7 @@ const widgetSidebar = new WidgetSidebar({
   actions: [
     { icon: '⏹', label: 'Stop All', title: 'Stop all active tasks', fn: stopAllTasks },
     { icon: '🗑️', label: 'Clear Done', title: 'Clear completed tasks', fn: clearDoneTasks },
-    { icon: '🔄', label: 'Reset', title: 'Reset layout', fn: resetLayout },
+    { icon: '🔄', label: 'Reset', title: 'Reset layout', fn: window.resetLayout },
     { icon: '💾', label: 'Layouts', title: 'Layouts', fn: showLayoutMenu },
     { icon: '⚙', label: 'Settings', title: 'Settings', fn: () => AgentMesh.settings?.open() }
   ]
