@@ -1,2 +1,5 @@
 contentPath: docs
 indexDocument: dashboard.html
+contentTypes:
+  - pattern: "*.js"
+    contentType: "application/javascript"
