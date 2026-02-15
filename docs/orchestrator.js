@@ -113,6 +113,97 @@ export class Orchestrator {
 Be concise. Act immediately — create tasks and delegate them, don't just describe what you'd do.`
   }
 
+  async loadDefaultAgents (state, COLORS, notifyAgentStatus) {
+    let DEFAULT_AGENTS = []
+    try {
+      const resp = await fetch('./agents.json')
+      DEFAULT_AGENTS = await resp.json()
+    } catch (e) { console.warn('Failed to load agents.json, using empty defaults:', e) }
+
+    DEFAULT_AGENTS.forEach((a, i) => {
+      if (!state.agents.has(a.id)) {
+        state.agents.set(a.id, {
+          ...a,
+          color: a.color || COLORS[i % COLORS.length],
+          status: 'ready',
+          instances: 0,
+          minInstances: a.minInstances || 0,
+          maxInstances: a.maxInstances || 1
+        })
+      }
+    })
+    state.colorIndex = state.agents.size
+
+    // Start minimum instances
+    state.agents.forEach((agent, id) => {
+      const minInstances = agent.minInstances || 0
+      if (minInstances > 0 && (agent.instances || 0) < minInstances) {
+        for (let i = 0; i < minInstances; i++) {
+          this.startAgentInstance(id, state, notifyAgentStatus)
+        }
+      }
+    })
+
+    // Register with AgentMesh
+    if (window.AgentMesh?.registerAgent) {
+      state.agents.forEach((a, id) => window.AgentMesh.registerAgent(id, 'browser', { model: a.model }))
+    }
+  }
+
+  startAgentInstance (agentId, state, notifyAgentStatus) {
+    const agent = state.agents.get(agentId)
+    if (!agent) return
+
+    agent.instances = (agent.instances || 0) + 1
+    agent.status = 'idle'
+    notifyAgentStatus(agentId)
+
+    // Scheduled execution
+    if (agent.schedule?.interval) {
+      const intervalId = setInterval(async () => {
+        const currentAgent = state.agents.get(agentId)
+        if (!currentAgent || currentAgent.instances === 0) {
+          clearInterval(intervalId)
+          return
+        }
+        if (currentAgent.status === 'processing') return
+
+        currentAgent.status = 'processing'
+        notifyAgentStatus(agentId)
+
+        try {
+          const model = this.createModel(currentAgent.provider || this.detectProvider(), {
+            modelId: currentAgent.modelId,
+            maxTokens: 4096
+          })
+          const agentInstance = new Agent({
+            model,
+            tools: this.ORCHESTRATOR_TOOLS,
+            systemPrompt: currentAgent.role,
+            printer: false,
+            conversationManager: this.createConversationManager(currentAgent.conversationManager)
+          })
+
+          let response = ''
+          for await (const event of agentInstance.stream(agent.schedule.prompt)) {
+            if (event?.type === 'modelContentBlockDeltaEvent' && event.delta?.type === 'textDelta') {
+              response += event.delta.text
+            }
+          }
+
+          if (!response.includes('[IDLE]')) {
+            console.log(`${agentId} scheduled run:`, response.slice(0, 200))
+          }
+        } catch (e) {
+          console.error(`${agentId} scheduled run error:`, e)
+        }
+
+        currentAgent.status = 'idle'
+        notifyAgentStatus(agentId)
+      }, agent.schedule.interval)
+    }
+  }
+
   seedAgentList (agent) {
     const agents = [...this.state.agents.values()].map(a => ({ id: a.id, model: a.model, role: a.role, status: a.status }))
     agent.messages.push(
