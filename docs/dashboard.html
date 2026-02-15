@@ -240,28 +240,6 @@ import './erc8004-discovery.js?v=2';
 
 // ═══ STATE & HELPERS ═══
 
-// ═══ BROWSER TOOLS ═══
-const browserTools = createBrowserTools({ tool, z, state, notify, saveTasks });
-
-// ═══ ORCHESTRATION ═══
-const orchestrator = new Orchestrator({
-  state,
-  createModel,
-  detectProvider,
-  createConversationManager,
-  browserTools,
-  notify,
-  saveTasks,
-  notifyAgentStatus,
-  notifyRingEntry
-});
-
-// Expose for compatibility
-const ORCHESTRATOR_TOOLS = orchestrator.ORCHESTRATOR_TOOLS;
-const runDelegatedAgent = (agentId, taskId, instructions) => orchestrator.runDelegatedAgent(agentId, taskId, instructions);
-const buildOrchestratorPrompt = () => orchestrator.buildOrchestratorPrompt();
-const seedAgentList = (agent) => orchestrator.seedAgentList(agent);
-
 // SECTION INDEX
 // STATE ............. Constants, mock data, layout config
 // BLOCKS ............ Block registry, renderers, layout engine
@@ -402,6 +380,30 @@ function createConversationManager(config) {
     SummarizingConversationManager
   });
 }
+
+// ── Notify helpers (emit widget events) ──
+function notify(type) { widgetRegistry.emit(type, { type }); }
+function notifyAgentStatus(agentId) { widgetRegistry.emit('agent-status', { agentId }); }
+function notifyNewAgent(agent) { widgetRegistry.emit('new-agent', agent); }
+function notifyRingEntry(entry) {
+  widgetRegistry.emit('ring-entry', entry);
+  function findCfg(nodes) { for (const n of nodes) { if (n.type === 'agent-chat' && n.agentId === entry.agentId) { const el = document.querySelector(`#${n.id} .block-body`); if (el) widgetRegistry.render('agent-chat', el, n); } if (n.children) findCfg(n.children); } }
+  findCfg(state.layout);
+}
+
+// ═══ BROWSER TOOLS ═══
+const browserTools = createBrowserTools({ tool, z, state, notify, saveTasks });
+
+// ═══ ORCHESTRATION ═══
+const orchestrator = new Orchestrator({
+  state, createModel, detectProvider, createConversationManager,
+  browserTools, notify, saveTasks, notifyAgentStatus, notifyRingEntry
+});
+
+const ORCHESTRATOR_TOOLS = orchestrator.ORCHESTRATOR_TOOLS;
+const runDelegatedAgent = (agentId, taskId, instructions) => orchestrator.runDelegatedAgent(agentId, taskId, instructions);
+const buildOrchestratorPrompt = () => orchestrator.buildOrchestratorPrompt();
+const seedAgentList = (agent) => orchestrator.seedAgentList(agent);
 
 // ── One-time mesh sync at startup ──
 function initialMeshSync() {
