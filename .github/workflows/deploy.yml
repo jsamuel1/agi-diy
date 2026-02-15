@@ -28,7 +28,8 @@ jobs:
           aws s3 sync docs/ s3://$S3_BUCKET/ \
             --delete \
             --cache-control "public, max-age=3600" \
-            --exclude "*.md"
+            --exclude "*.md" \
+            --content-type-by-extension
       
       - name: Set immutable cache for assets
         env:
