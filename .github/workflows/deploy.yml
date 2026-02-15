@@ -1,0 +1,53 @@
+name: Deploy to S3
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      
+      - name: Sync to S3
+        env:
+          S3_BUCKET: ${{ vars.S3_BUCKET || 'agidiy.sauhsoj.people.aws.dev' }}
+        run: |
+          aws s3 sync docs/ s3://$S3_BUCKET/ \
+            --delete \
+            --cache-control "public, max-age=3600" \
+            --exclude "*.md"
+      
+      - name: Set immutable cache for assets
+        env:
+          S3_BUCKET: ${{ vars.S3_BUCKET || 'agidiy.sauhsoj.people.aws.dev' }}
+        run: |
+          aws s3 cp s3://$S3_BUCKET/ s3://$S3_BUCKET/ \
+            --recursive \
+            --exclude "*" \
+            --include "*.js" \
+            --include "*.css" \
+            --include "*.png" \
+            --include "*.jpg" \
+            --include "*.svg" \
+            --cache-control "public, max-age=31536000, immutable" \
+            --metadata-directive REPLACE
+      
+      - name: Invalidate CloudFront
+        if: vars.CLOUDFRONT_DISTRIBUTION_ID != ''
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
