@@ -14,55 +14,71 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
-      
+
       - name: Sync to S3
         env:
           S3_BUCKET: ${{ vars.S3_BUCKET }}
         run: |
-          aws s3 sync docs/ s3://$S3_BUCKET/ \
+          # Sync HTML files
+          aws s3 sync docs/ s3://"$S3_BUCKET"/ \
             --delete \
-            --cache-control "public, max-age=3600" \
-            --exclude "*.md" \
-            --content-type "text/html" \
             --exclude "*" \
-            --include "*.html"
-          
-          aws s3 sync docs/ s3://$S3_BUCKET/ \
+            --include "*.html" \
+            --content-type "text/html" \
+            --cache-control "public, max-age=3600"
+
+          # Sync JavaScript files
+          aws s3 sync docs/ s3://"$S3_BUCKET"/ \
             --exclude "*" \
             --include "*.js" \
             --content-type "application/javascript" \
             --cache-control "public, max-age=3600"
-          
-          aws s3 sync docs/ s3://$S3_BUCKET/ \
+
+          # Sync CSS files
+          aws s3 sync docs/ s3://"$S3_BUCKET"/ \
             --exclude "*" \
             --include "*.css" \
             --content-type "text/css" \
             --cache-control "public, max-age=3600"
-          
-          aws s3 sync docs/ s3://$S3_BUCKET/ \
+
+          # Sync JSON files
+          aws s3 sync docs/ s3://"$S3_BUCKET"/ \
             --exclude "*" \
             --include "*.json" \
             --content-type "application/json" \
             --cache-control "public, max-age=3600"
-          
-          aws s3 sync docs/ s3://$S3_BUCKET/ \
+
+          # Sync images
+          aws s3 sync docs/ s3://"$S3_BUCKET"/ \
             --exclude "*" \
             --include "*.png" \
             --include "*.jpg" \
             --include "*.svg" \
             --cache-control "public, max-age=3600"
-      
+
+          # Sync other files (txt, etc)
+          aws s3 sync docs/ s3://"$S3_BUCKET"/ \
+            --exclude "*.html" \
+            --exclude "*.js" \
+            --exclude "*.css" \
+            --exclude "*.json" \
+            --exclude "*.png" \
+            --exclude "*.jpg" \
+            --exclude "*.svg" \
+            --exclude "*.md" \
+            --cache-control "public, max-age=3600"
+
       - name: Set immutable cache for assets
         env:
           S3_BUCKET: ${{ vars.S3_BUCKET }}
         run: |
-          aws s3 cp s3://$S3_BUCKET/ s3://$S3_BUCKET/ \
+          aws s3 cp s3://"$S3_BUCKET"/ s3://"$S3_BUCKET"/ \
             --recursive \
             --exclude "*" \
             --include "*.js" \
@@ -72,7 +88,7 @@ jobs:
             --include "*.svg" \
             --cache-control "public, max-age=31536000, immutable" \
             --metadata-directive REPLACE
-      
+
       - name: Invalidate CloudFront
         if: vars.CLOUDFRONT_DISTRIBUTION_ID != ''
         run: |
