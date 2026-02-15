@@ -249,19 +249,6 @@ const { listAgentsTool, delegateTaskTool } = browserTools.orchestration;
 const TASK_TOOLS = [createTaskTool, updateTaskTool, listTasksTool, claimTaskTool];
 const EXTRA_TOOLS = { storage_get: storageGetTool, storage_set: storageSetTool };
 const ORCHESTRATOR_TOOLS = [...TASK_TOOLS, listAgentsTool, delegateTaskTool];
-  description: 'Create a new task. Use parentId to create sub-tasks for hierarchical decomposition.',
-  inputSchema: z.object({
-    title: z.string().describe('Task title'),
-    parentId: z.string().optional().describe('Parent task ID for sub-tasks'),
-    agentId: z.string().optional().describe('Agent to assign'),
-    source: z.string().optional().describe('Origin: manual, jira, slack, email'),
-  }),
-  callback: (input) => {
-    const id = `t${taskIdCounter++}`;
-    const task = { id, title: input.title, status: 'pending', agentId: input.agentId || null, parentId: input.parentId || null, children: [], worklog: [], source: input.source || 'manual' };
-    state.tasks.set(id, task);
-    if (input.parentId) { const p = state.tasks.get(input.parentId); if (p) p.children.push(id); }
-    notify('tasks'); saveTasks();
 
 // ═══ ORCHESTRATION ═══
   name: 'delegate_task',
@@ -298,7 +285,7 @@ async function runDelegatedAgent(agentId, taskId, instructions) {
   agentData.instances = (agentData.instances || 0) + 1;
   agentData.workingOn = task.title;
   notifyAgentStatus(agentId);
-  
+
   // Initialize trace
   task.trace = task.trace || [];
 
@@ -354,7 +341,7 @@ async function runDelegatedAgent(agentId, taskId, instructions) {
     task.trace.push({ type: 'error', content: e.message, ts: Date.now() });
   }
 
-  if (agentData) { 
+  if (agentData) {
     agentData.instances = Math.max(0, (agentData.instances || 1) - 1);
     agentData.status = agentData.instances > 0 ? 'processing' : 'ready';
     agentData.workingOn = null;
@@ -476,7 +463,7 @@ window.showLayoutMenu = () => {
       </div>
     </div>
   `;
-  
+
   const modal = document.createElement('div');
   modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000';
   modal.innerHTML = `<div style="background:var(--bg);border-radius:8px;max-width:400px;width:90%">${menu}</div>`;
@@ -508,8 +495,8 @@ window.deleteLayoutPreset = (name) => {
 state.credentials = loadCredentials();
 
 function createModel(provider, cfg = {}) {
-  return createModelUtil(provider, state.credentials, { 
-    AnthropicModel, OpenAIModel, BedrockModel, WebLLMBrowserModel 
+  return createModelUtil(provider, state.credentials, {
+    AnthropicModel, OpenAIModel, BedrockModel, WebLLMBrowserModel
   }, cfg);
 }
 
@@ -518,10 +505,10 @@ function detectProvider() {
 }
 
 function createConversationManager(config) {
-  return createCMUtil(config, { 
-    SlidingWindowConversationManager, 
-    NullConversationManager, 
-    SummarizingConversationManager 
+  return createCMUtil(config, {
+    SlidingWindowConversationManager,
+    NullConversationManager,
+    SummarizingConversationManager
   });
 }
 
@@ -596,11 +583,11 @@ function ensureChatAgent() {
   if (!chatCfg) return false;
   try {
     const model = createModel(chatCfg.provider || detectProvider(), { modelId: chatCfg.modelId, maxTokens: 8192 });
-    state.chatAgent = new Agent({ 
-      model, 
-      tools: ORCHESTRATOR_TOOLS, 
-      systemPrompt: buildOrchestratorPrompt(), 
-      printer: false, 
+    state.chatAgent = new Agent({
+      model,
+      tools: ORCHESTRATOR_TOOLS,
+      systemPrompt: buildOrchestratorPrompt(),
+      printer: false,
       conversationManager: createConversationManager(chatCfg.conversationManager)
     });
     seedAgentList(state.chatAgent);
@@ -646,11 +633,11 @@ async function sendChatMessage(text, blockId) {
     // Fresh agent per message for parallelism
     const chatCfg = state.agents.get('chat');
     const model = createModel(chatCfg?.provider || detectProvider(), { modelId: chatCfg?.modelId, maxTokens: 8192 });
-    const agent = new Agent({ 
-      model, 
-      tools: ORCHESTRATOR_TOOLS, 
-      systemPrompt: buildOrchestratorPrompt(), 
-      printer: false, 
+    const agent = new Agent({
+      model,
+      tools: ORCHESTRATOR_TOOLS,
+      systemPrompt: buildOrchestratorPrompt(),
+      printer: false,
       conversationManager: createConversationManager(chatCfg?.conversationManager)
     });
     seedAgentList(agent);
@@ -697,11 +684,11 @@ let DEFAULT_AGENTS = [];
 function startAgentInstance(agentId) {
   const agent = state.agents.get(agentId);
   if (!agent) return;
-  
+
   agent.instances = (agent.instances || 0) + 1;
   agent.status = 'idle';
   notifyAgentStatus(agentId);
-  
+
   // If agent has a schedule, set up interval
   if (agent.schedule?.interval) {
     const intervalId = setInterval(async () => {
@@ -711,15 +698,15 @@ function startAgentInstance(agentId) {
         return;
       }
       if (currentAgent.status === 'processing') return; // Skip if busy
-      
+
       // Run scheduled prompt
       currentAgent.status = 'processing';
       notifyAgentStatus(agentId);
-      
+
       try {
-        const model = createModel(currentAgent.provider || detectProvider(), { 
-          modelId: currentAgent.modelId, 
-          maxTokens: 4096 
+        const model = createModel(currentAgent.provider || detectProvider(), {
+          modelId: currentAgent.modelId,
+          maxTokens: 4096
         });
         const agentInstance = new Agent({
           model,
@@ -728,21 +715,21 @@ function startAgentInstance(agentId) {
           printer: false,
           conversationManager: createConversationManager(currentAgent.conversationManager)
         });
-        
+
         let response = '';
         for await (const event of agentInstance.stream(agent.schedule.prompt)) {
           if (event?.type === 'modelContentBlockDeltaEvent' && event.delta?.type === 'textDelta') {
             response += event.delta.text;
           }
         }
-        
+
         if (!response.includes('[IDLE]')) {
           console.log(`${agentId} scheduled run:`, response.slice(0, 200));
         }
       } catch (e) {
         console.error(`${agentId} scheduled run error:`, e);
       }
-      
+
       currentAgent.status = 'idle';
       notifyAgentStatus(agentId);
     }, agent.schedule.interval);
@@ -756,9 +743,9 @@ async function loadDefaultAgents() {
   } catch (e) { console.warn('Failed to load agents.json, using empty defaults:', e); }
   DEFAULT_AGENTS.forEach((a, i) => {
     if (!state.agents.has(a.id)) {
-      state.agents.set(a.id, { 
-        ...a, 
-        color: a.color || COLORS[i % COLORS.length], 
+      state.agents.set(a.id, {
+        ...a,
+        color: a.color || COLORS[i % COLORS.length],
         status: 'ready',
         instances: 0,
         minInstances: a.minInstances || 0,
@@ -767,7 +754,7 @@ async function loadDefaultAgents() {
     }
   });
   state.colorIndex = state.agents.size;
-  
+
   // Start minimum instances for each agent
   state.agents.forEach((agent, id) => {
     const minInstances = agent.minInstances || 0;
@@ -777,7 +764,7 @@ async function loadDefaultAgents() {
       }
     }
   });
-  
+
   // Register all agents with AgentMesh for cross-page discovery
   if (window.AgentMesh?.registerAgent) {
     state.agents.forEach((a, id) => window.AgentMesh.registerAgent(id, 'browser', { model: a.model }));
@@ -805,7 +792,7 @@ if (window.AgentMesh) {
       window.AgentMesh.sendRelay({ type: 'capabilities_request' }, payload.relayId);
     }
   });
-  
+
   window.AgentMesh.subscribe?.('relay-capabilities', (payload) => {
     console.log('[Dashboard] Relay capabilities received:', payload);
     widgetRegistry.emit('relay-capabilities', payload);
@@ -893,10 +880,10 @@ if ('serviceWorker' in navigator) {
 function populateWidgetSidebar() {
   const sidebar = document.getElementById('widgetSidebar');
   const widgets = Array.from(widgetRegistry.widgets.entries());
-  
+
   // Load pinned widgets from localStorage
   const pinned = new Set(JSON.parse(localStorage.getItem('pinnedWidgets') || '[]'));
-  
+
   // Sort: pinned first, then alphabetically
   const sorted = widgets.sort(([idA, wA], [idB, wB]) => {
     const aPin = pinned.has(idA) ? 0 : 1;
@@ -904,10 +891,10 @@ function populateWidgetSidebar() {
     if (aPin !== bPin) return aPin - bPin;
     return (wA.meta.title || idA).localeCompare(wB.meta.title || idB);
   });
-  
+
   const visible = sorted.slice(0, 10);
   const overflow = sorted.slice(10);
-  
+
   // Render visible widgets
   visible.forEach(([id, widget]) => {
     const btn = document.createElement('button');
@@ -924,7 +911,7 @@ function populateWidgetSidebar() {
     btn.innerHTML = `<span class="icon">${widget.meta.icon}</span><span class="label">${widget.meta.title}</span>`;
     sidebar.appendChild(btn);
   });
-  
+
   // Overflow menu
   if (overflow.length) {
     const more = document.createElement('div');
@@ -953,12 +940,12 @@ function populateWidgetSidebar() {
     more.appendChild(menu);
     sidebar.appendChild(more);
   }
-  
+
   // Divider
   const divider = document.createElement('div');
   divider.className = 'sidebar-divider';
   sidebar.appendChild(divider);
-  
+
   // Actions
   const actions = [
     { icon: '⏹', label: 'Stop All', title: 'Stop all active tasks', fn: stopAllTasks },
@@ -967,7 +954,7 @@ function populateWidgetSidebar() {
     { icon: '💾', label: 'Layouts', title: 'Layouts', fn: showLayoutMenu },
     { icon: '⚙', label: 'Settings', title: 'Settings', fn: () => AgentMesh.settings?.open() }
   ];
-  
+
   actions.forEach(a => {
     const btn = document.createElement('button');
     btn.className = 'widget-btn';
@@ -976,7 +963,7 @@ function populateWidgetSidebar() {
     btn.innerHTML = `<span class="icon">${a.icon}</span><span class="label">${a.label}</span>`;
     sidebar.appendChild(btn);
   });
-  
+
   // Toggle
   const toggle = document.createElement('div');
   toggle.className = 'sidebar-toggle';
