@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>loom</title>
+    <link rel="manifest" href="public/manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪡</text></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles/base.css">
+    <link rel="stylesheet" href="styles/layout.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/voice.css">
+</head>
+<body>
+    <div id="previewBackground"></div>
+    <div class="app">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="brand" id="brandTitle">
+                    loom
+                    <span class="brand-sub">multi-agent</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:4px;margin-top:12px;flex-wrap:wrap" id="meshNavSlot"></div>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Agents</div>
+                    <div class="agent-list" id="agentList"></div>
+                    <button class="spawn-btn" onclick="openSpawnModal()">+ New Agent</button>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Scheduled Tasks</div>
+                    <div id="scheduleList">
+                        <div style="font-size:11px;color:var(--text-tertiary);">No tasks scheduled</div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">☰</button>
+                    <div>
+                        <div class="current-agent" id="currentAgentName">No Agent Selected</div>
+                        <div class="current-agent-model" id="currentAgentModel">—</div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="header-btn" onclick="broadcastMessage()">📢 Broadcast</button>
+                    <button class="header-btn" onclick="clearChat()">🗑️ Clear</button>
+                    <button class="header-btn" onclick="clearAllChats()">🗑️ Clear All</button>
+                    <button class="header-btn" id="previewToggle" onclick="togglePreviewMode()" title="Toggle app preview background">🖼️ Preview</button>
+                    <button class="header-btn" onclick="openSettingsModal()">⚙️ Settings</button>
+                </div>
+            </header>
+
+            <div class="pipeline-flow" id="pipelineFlow"></div>
+            <div class="content-panels">
+                <main class="chat-panel" data-verbosity="2">
+                    <div style="padding:4px 12px;border-bottom:1px solid var(--divider);display:flex;justify-content:flex-end;">
+                        <select class="verbosity-select" onchange="this.closest('[data-verbosity]').dataset.verbosity=this.value">
+                            <option value="1">Chat</option>
+                            <option value="2" selected>Chat + Widgets</option>
+                            <option value="3">+ Tool Summary</option>
+                            <option value="4">+ Tool Details</option>
+                        </select>
+                    </div>
+                    <div class="messages-container" id="messagesContainer">
+                        <div class="messages-inner" id="messagesInner">
+                            <div class="message system">
+                                <div class="message-content">
+                                    <strong>Loom — Multi-Agent</strong><br><br>
+                                    Start chatting — a default agent is created with your saved credentials.<br><br>
+                                    Click "+ New Agent" to spawn agents, or ⚙️ Settings to configure API keys.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-container">
+                        <div class="input-wrapper" style="flex-direction:column;gap:4px">
+                            <div class="voice-cfg" id="voiceCfg" style="display:none">
+                                <span style="font-size:9px;color:var(--text-tertiary)">🎤</span>
+                                <select id="voiceProvider" onchange="voiceCfgChanged()">
+                                    <option value="novasonic">Nova Sonic</option>
+                                    <option value="gemini_live">Gemini Live</option>
+                                    <option value="openai">OpenAI Realtime</option>
+                                </select>
+                                <select id="voiceSelect" onchange="voiceCfgChanged()"></select>
+                            </div>
+                            <div id="voiceTranscript" style="display:none"></div>
+                            <div class="voice-vis" id="voiceVis" style="display:none"></div>
+                            <div style="display:flex;gap:12px;align-items:flex-end;width:100%">
+                                <select class="target-select" id="targetAgent" onchange="if(this.value!=='all')selectAgent(this.value)">
+                                    <option value="all">All Agents</option>
+                                </select>
+                                <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Voice">🎤</button>
+                                <textarea class="input-field" id="inputField" placeholder="Send a message..." rows="1" onkeydown="handleKeyDown(event)"></textarea>
+                                <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </button>
+                                <button class="send-btn" id="interruptBtn" title="Send as interrupt" onclick="sendInterrupt()" style="background:var(--warning);display:none;">⚡</button>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+
+                <div class="panel-resizer" id="panelResizer"></div>
+                <aside class="activity-panel" id="activityPanel" data-verbosity="4">
+                    <div class="activity-panel-header">
+                        <select id="activityFilter" onchange="filterActivityFeed()"><option value="all">All Agents</option></select>
+                        <select class="verbosity-select" id="activityVerbosity" onchange="document.querySelector('.activity-panel').dataset.verbosity=this.value">
+                            <option value="1">Chat</option>
+                            <option value="2">Chat + Widgets</option>
+                            <option value="3">+ Tool Summary</option>
+                            <option value="4" selected>+ Tool Details</option>
+                        </select>
+                    </div>
+                    <div class="activity-feed" id="activityFeed"></div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- Hidden pipeline panel (data functions) -->
+        <aside class="pipeline-panel" id="pipelinePanel" style="display:none;">
+            <div class="pipeline-pills" id="pipelinePills"></div>
+            <div class="activity-log" id="activityLog"></div>
+            <div class="completion-cards" id="completionCards" style="display:none;"></div>
+        </aside>
+    </div>
+
+    <!-- Mobile Sidebar -->
+    <div class="mobile-sidebar" id="mobileSidebar">
+        <button class="mobile-sidebar-close" onclick="toggleMobileSidebar()">×</button>
+        <div style="padding:60px 20px 20px;">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Agents</div>
+                <div class="agent-list" id="mobileAgentList"></div>
+                <button class="spawn-btn" onclick="openSpawnModal();toggleMobileSidebar();">+ New Agent</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals are loaded by src/ui/modals.js -->
+    <div id="modalContainer"></div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Polyfills -->
+    <script>
+    if (typeof Symbol.dispose === 'undefined') Symbol.dispose = Symbol('Symbol.dispose');
+    if (typeof Symbol.asyncDispose === 'undefined') Symbol.asyncDispose = Symbol('Symbol.asyncDispose');
+    </script>
+
+    <!-- App entry point -->
+    <script type="module" src="src/app.js"></script>
+    <script src="src/vendor/agent-mesh.js"></script>
+    <script src="src/vendor/mesh-nav.js"></script>
+    <script src="src/vendor/agentcore-relay.js"></script>
+    <script>
+    // Populate mesh navigation after AgentMesh loads
+    setTimeout(() => window.MeshNav?.populate('meshNavSlot'), 500);
+    </script>
+</body>
+</html>

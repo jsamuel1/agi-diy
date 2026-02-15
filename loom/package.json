@@ -1,0 +1,14 @@
+{
+  "name": "loom",
+  "private": true,
+  "type": "module",
+  "description": "Multi-agent AI platform. Runs in your browser.",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:analyze": "node build.mjs --analyze",
+    "serve": "python3 -m http.server 8080"
+  },
+  "devDependencies": {
+    "esbuild": "^0.27.3"
+  }
+}

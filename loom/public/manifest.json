@@ -1,0 +1,17 @@
+{
+  "name": "Loom",
+  "short_name": "Loom",
+  "description": "Multi-agent AI platform. Strands Agents running entirely in your browser.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-512.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon-192.svg", "sizes": "192x192", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "categories": ["productivity", "utilities"],
+  "prefer_related_applications": false
+}

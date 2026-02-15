@@ -1,0 +1,95 @@
+/* voice.css — Mic button, visualizer, transcript, config */
+
+.mic-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--text-tertiary);
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+.mic-btn:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.mic-btn.active {
+    background: #007aff;
+    color: #fff;
+    border-color: #007aff;
+    animation: mic-pulse 1.5s infinite;
+}
+.mic-btn.pending {
+    background: #ffd60a;
+    color: #000;
+    border-color: #ffd60a;
+    animation: pl 1s infinite;
+}
+
+@keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,122,255,0.4); }
+    50% { box-shadow: 0 0 0 10px rgba(0,122,255,0); }
+}
+@keyframes pl {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.voice-vis {
+    height: 24px;
+    margin-bottom: 4px;
+    background: var(--glass);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    overflow: hidden;
+}
+.voice-vis .bar {
+    width: 3px;
+    background: #007aff;
+    border-radius: 2px;
+    animation: vbar 0.6s ease-in-out infinite alternate;
+}
+@keyframes vbar {
+    from { height: 4px; }
+    to { height: 18px; }
+}
+
+.voice-transcript {
+    font-size: 10px;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    border-radius: 6px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.voice-transcript.user {
+    background: rgba(48,209,88,0.1);
+    border-left: 2px solid #30d158;
+}
+.voice-transcript.assistant {
+    background: rgba(0,122,255,0.1);
+    border-left: 2px solid #007aff;
+}
+
+.voice-cfg {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 4px;
+}
+.voice-cfg select {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    padding: 3px 6px;
+    color: var(--text-secondary);
+    font-size: 9px;
+    font-family: inherit;
+}
