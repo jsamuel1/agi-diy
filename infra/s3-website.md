@@ -123,15 +123,15 @@ Outputs:
   BucketName:
     Value: !Ref WebsiteBucket
     Description: S3 bucket name
-  
+
   WebsiteURL:
     Value: !GetAtt WebsiteBucket.WebsiteURL
     Description: S3 website endpoint
-  
+
   CloudFrontURL:
     Value: !GetAtt CloudFrontDistribution.DomainName
     Description: CloudFront distribution domain
-  
+
   DistributionId:
     Value: !Ref CloudFrontDistribution
     Description: CloudFront distribution ID for cache invalidation
