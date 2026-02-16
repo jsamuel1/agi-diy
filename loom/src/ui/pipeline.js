@@ -3,10 +3,16 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { TASK_COLORS } from '../state/store.js';
+import * as db from '../sync/db.js';
 
-export function getPipelines() { try { return JSON.parse(localStorage.getItem('agi_pipelines') || '{}'); } catch { return {}; } }
-export function savePipelines(p) { localStorage.setItem('agi_pipelines', JSON.stringify(p)); }
-export function getActivePipeline(pipelines) { const p = pipelines || getPipelines(); const keys = Object.keys(p); return keys.length ? p[keys[keys.length - 1]] : null; }
+// In-memory cache — loaded from IDB at startup, written through on changes
+let _pipelines = {};
+
+export function getPipelines() { return _pipelines; }
+export function savePipelines(p) { _pipelines = p; db.putMeta('pipelines', p).catch(e => console.warn('[loom] pipeline save failed:', e)); }
+export function clearPipelines() { _pipelines = {}; db.deleteMeta('pipelines').catch(e => console.warn('[loom] pipeline clear failed:', e)); }
+export async function loadPipelines() { _pipelines = (await db.getMeta('pipelines')) || {}; }
+export function getActivePipeline(pipelines) { const p = pipelines || _pipelines; const keys = Object.keys(p); return keys.length ? p[keys[keys.length - 1]] : null; }
 
 export function getReadyTasks(pipeline) {
     return pipeline.tasks.filter(t => t.status === 'pending' && t.dependsOn.every(d => pipeline.tasks.find(x => x.id === d)?.status === 'done'));
@@ -84,7 +90,7 @@ export function renderPipelineFlow(pipeline) {
     clearBtn.textContent = '×';
     clearBtn.style.cssText = 'cursor:pointer;color:#666;font-size:16px;margin-right:8px;flex-shrink:0;';
     clearBtn.onclick = () => {
-        localStorage.removeItem('agi_pipelines');
+        clearPipelines();
         updatePipelineUI();
         // Reset activity filter
         const sel = document.getElementById('activityFilter');

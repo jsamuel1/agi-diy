@@ -5,11 +5,16 @@
 import { tool, z } from '../vendor/strands.js';
 import { state } from '../state/store.js';
 import { scrollToBottom } from '../ui/toast.js';
+import * as db from '../sync/db.js';
 
 let latestSandboxId = null;
 
-function getSandboxes() { try { return JSON.parse(localStorage.getItem('agi_sandboxes') || '{}'); } catch { return {}; } }
-function saveSandboxes(s) { localStorage.setItem('agi_sandboxes', JSON.stringify(s)); }
+// In-memory cache — loaded from IDB at startup, written through on changes
+let _sandboxes = {};
+
+function getSandboxes() { return _sandboxes; }
+function saveSandboxes(s) { _sandboxes = s; db.putMeta('sandboxes', s).catch(e => console.warn('[loom] sandbox save failed:', e)); }
+export async function loadSandboxes() { _sandboxes = (await db.getMeta('sandboxes')) || {}; }
 
 function renderSandboxIframe(sandbox) {
     const wrap = document.createElement('div');

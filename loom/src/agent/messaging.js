@@ -2,19 +2,16 @@
 // MESSAGING — runAgentMessage, sendMessage, clearChat, broadcastMessage
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { Agent } from '../vendor/strands.js';
-import { state, DEFAULT_MAX_TOKENS } from '../state/store.js';
-import { createModel, providerReady, detectProvider } from '../models/providers.js';
+import { state } from '../state/store.js';
+import { providerReady } from '../models/providers.js';
 import { showToast } from '../ui/toast.js';
 import { addMessageToUI, addThinking, removeThinking, updateStreaming, finalizeStreaming, streamingEls, updateRingUI, renderMessages } from '../ui/messages.js';
 import { addToolCall, updateToolStatus } from '../ui/messages.js';
 import { appendActivityFeed, activityLog, renderActivityEntry } from '../ui/activity.js';
-import { transcriptPushText, transcriptFullText, transcriptLastText } from '../agent/transcript.js';
-import { updatePipelineUI } from '../ui/pipeline.js';
-import { TOOLS } from '../tools/registry.js';
-import { buildCustomTools } from '../tools/self-mod.js';
-import { buildSystemPrompt, updateAgentUI, autoCreateDefaultAgent } from './lifecycle.js';
-import { SummarizingManager, InterruptHook, queueInterrupt } from './hooks.js';
+import { transcriptPushText } from '../agent/transcript.js';
+import { updatePipelineUI, clearPipelines } from '../ui/pipeline.js';
+import { ensureAgent, updateAgentUI, autoCreateDefaultAgent } from './lifecycle.js';
+import { queueInterrupt } from './hooks.js';
 import { saveState } from '../sync/persistence.js';
 
 export let broadcastMode = false;
@@ -40,36 +37,10 @@ export async function runAgentMessage(agentId, message) {
 
     let activeAgent;
     try {
-        const provider = providerReady(agentData.config.provider) ? agentData.config.provider : detectProvider();
-        const model = createModel(provider, {
-            modelId: agentData.config.modelId,
-            maxTokens: agentData.config.maxTokens || DEFAULT_MAX_TOKENS,
-            additionalRequestFields: agentData.config.additionalRequestFields || null
-        });
-        const enabledTools = agentData.config.enabledTools;
-        const selectedTools = (!enabledTools || enabledTools === null) ? TOOLS : TOOLS.filter(t => enabledTools.includes(t.name));
-        const customTools = buildCustomTools();
-        const allTools = [...selectedTools, ...customTools];
-
-        activeAgent = new Agent({
-            model, tools: allTools,
-            systemPrompt: buildSystemPrompt(agentId, agentData.config.systemPrompt),
-            printer: false,
-            conversationManager: new SummarizingManager(),
-            hooks: [new InterruptHook()]
-        });
-
-        if (agentData.config.toolChoice) {
-            const origStream = model.stream.bind(model);
-            model.stream = function(msgs, opts) { return origStream(msgs, { ...opts, toolChoice: agentData.config.toolChoice }); };
-        }
-
-        if (agentData.messages.length > 0) {
-            const recentHistory = agentData.messages.slice(-20);
-            for (const msg of recentHistory) {
-                const text = msg.content || (msg.transcript ? transcriptFullText(msg.transcript) : '');
-                activeAgent.messages.push({ role: msg.role, content: [{ type: 'textBlock', text }] });
-            }
+        activeAgent = ensureAgent(agentId);
+        if (!activeAgent) {
+            addMessageToUI('error', `Failed to initialize agent "${agentId}"`, agentId, agentData.color);
+            return;
         }
     } catch (e) {
         addMessageToUI('error', `Failed to create agent: ${e.message}`, agentId, agentData.color);
@@ -131,17 +102,18 @@ export async function runAgentMessage(agentId, message) {
         updateRingUI();
 
         agentData.status = 'ready';
-        abortControllers.delete(agentId);
-        clearTimeout(watchdog);
-        document.getElementById('interruptBtn').style.display = 'none';
         return currentText;
     } catch (e) {
-        agentData.status = 'error'; abortControllers.delete(agentId);
-        document.getElementById('interruptBtn').style.display = 'none';
+        agentData.status = 'error';
         if (shouldShow) { removeThinking(); addMessageToUI('error', e.message, agentId, agentData.color); }
         appendActivityFeed(agentId, `❌ Error: ${e.message}`, 'msg');
+    } finally {
+        clearTimeout(watchdog);
+        abortControllers.delete(agentId);
+        document.getElementById('interruptBtn').style.display = 'none';
+        if (agentData.status === 'processing') agentData.status = 'ready';
+        updateAgentUI(); saveState();
     }
-    updateAgentUI(); saveState();
 }
 
 export async function sendMessage() {
@@ -175,11 +147,13 @@ export function clearChat() {
     abortControllers.clear();
     for (const [, data] of state.agents) data.status = 'ready';
     updateAgentUI();
-    localStorage.removeItem('agi_pipelines'); updatePipelineUI();
+    clearPipelines(); updatePipelineUI();
     if (!state.activeAgentId) { showToast('Cleared'); return; }
     const agentData = state.agents.get(state.activeAgentId);
     if (agentData) {
         agentData.messages = [];
+        // Clear the live agent's SDK conversation so it doesn't carry stale context
+        if (agentData.agent?.messages) agentData.agent.messages.length = 0;
         renderMessages();
         showToast('Cleared'); saveState();
     }
@@ -188,8 +162,12 @@ export function clearChat() {
 export function clearAllChats() {
     for (const [, ac] of abortControllers) ac.abort();
     abortControllers.clear();
-    for (const [, data] of state.agents) { data.status = 'ready'; data.messages = []; }
-    localStorage.removeItem('agi_pipelines'); updatePipelineUI(); updateAgentUI();
+    for (const [, data] of state.agents) {
+        data.status = 'ready';
+        data.messages = [];
+        if (data.agent?.messages) data.agent.messages.length = 0;
+    }
+    clearPipelines(); updatePipelineUI(); updateAgentUI();
     renderMessages(); saveState(); showToast('All cleared');
 }
 

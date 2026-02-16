@@ -4,19 +4,71 @@
 
 import { tool, z } from '../vendor/strands.js';
 import { state } from '../state/store.js';
-
-const CUSTOM_TOOLS_KEY = 'agi_multi_custom_tools';
+import * as db from '../sync/db.js';
 
 let _saveState = null;
 export function setSelfModCallbacks({ saveState }) { _saveState = saveState; }
 
+// In-memory cache — loaded from IDB at startup, written through on changes
+let _customTools = null;
+
 export function loadCustomTools() {
-    try { const stored = localStorage.getItem(CUSTOM_TOOLS_KEY); return stored ? JSON.parse(stored) : {}; } catch { return {}; }
+    return _customTools || {};
 }
 
 export function saveCustomTools(tools) {
-    localStorage.setItem(CUSTOM_TOOLS_KEY, JSON.stringify(tools));
+    _customTools = tools;
+    db.putMeta('customTools', tools).catch(e => console.warn('[loom] custom tools save failed:', e));
 }
+
+export async function initCustomTools() {
+    _customTools = (await db.getMeta('customTools')) || {};
+}
+
+// ─── Web Worker sandbox for custom tool execution ───
+
+const SANDBOX_WORKER_CODE = `
+self.onmessage = async (e) => {
+    const { code, input } = e.data;
+    try {
+        const fn = new Function('input', 'return (async () => { ' + code + ' })()');
+        const result = await fn(input);
+        self.postMessage({ result });
+    } catch (err) {
+        self.postMessage({ error: err.message || String(err) });
+    }
+};`;
+
+let _workerUrl = null;
+function getWorkerUrl() {
+    if (!_workerUrl)
+        _workerUrl = URL.createObjectURL(new Blob([SANDBOX_WORKER_CODE], { type: 'application/javascript' }));
+    return _workerUrl;
+}
+
+function runInSandbox(code, input, timeoutMs = 10000) {
+    return new Promise((resolve, reject) => {
+        const worker = new Worker(getWorkerUrl());
+        const timer = setTimeout(() => {
+            worker.terminate();
+            reject(new Error(`Tool execution timed out after ${timeoutMs / 1000}s`));
+        }, timeoutMs);
+        worker.onmessage = (e) => {
+            clearTimeout(timer);
+            worker.terminate();
+            if (e.data.error) reject(new Error(e.data.error));
+            else resolve(e.data.result);
+        };
+        worker.onerror = (e) => {
+            clearTimeout(timer);
+            worker.terminate();
+            reject(new Error(e.message || 'Worker error'));
+        };
+        worker.postMessage({ code, input });
+    });
+}
+
+// ─── Tool definition builder ───
 
 export function createToolFromDefinition(name, def) {
     try {
@@ -34,7 +86,13 @@ export function createToolFromDefinition(name, def) {
             if (!(def.inputSchema.required || []).includes(key)) zodType = zodType.optional();
             schemaObj[key] = zodType;
         }
-        const callbackFn = new Function('input', `return (async () => { ${def.code} })();`);
+        const callbackFn = async (input) => {
+            try {
+                return await runInSandbox(def.code, input);
+            } catch (e) {
+                return { error: e.message };
+            }
+        };
         return tool({ name, description: def.description, inputSchema: z.object(schemaObj), callback: callbackFn });
     } catch (e) { console.error(`Failed to create tool ${name}:`, e); return null; }
 }

@@ -3,22 +3,23 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { state, DEFAULT_MAX_TOKENS, DEFAULT_MODELS, DEFAULT_BEDROCK_ADDITIONAL_FIELDS } from './state/store.js';
-import { Agent } from './vendor/strands.js';
+import { Agent, SummarizingConversationManager } from './vendor/strands.js';
 import { createModel, PROVIDER_CAPS, providerReady, detectProvider } from './models/providers.js';
 import { showToast } from './ui/toast.js';
 import { renderMessages, updateRingUI } from './ui/messages.js';
 import { addMessageToUI } from './ui/messages.js';
-import { updatePipelineUI } from './ui/pipeline.js';
+import { updatePipelineUI, loadPipelines } from './ui/pipeline.js';
 import { filterActivityFeed } from './ui/activity.js';
 import { injectModals, initModalHandlers, getMcpServersConfig } from './ui/modals.js';
 import { initSyncHandlers, checkForImportParam } from './sync/encrypted.js';
-import { saveState, loadState, exportAllAgents, importAgents, clearAllData } from './sync/persistence.js';
+import { saveState, loadState, exportAllAgents, exportAgent, importAgents, clearAllData, reconcilePipelineState } from './sync/persistence.js';
 import { TOOLS, TOOL_DESCRIPTIONS } from './tools/registry.js';
-import { buildCustomTools, loadCustomTools, saveCustomTools, setSelfModCallbacks } from './tools/self-mod.js';
+import { buildCustomTools, loadCustomTools, saveCustomTools, setSelfModCallbacks, initCustomTools } from './tools/self-mod.js';
 import { setCoreCallbacks, schedulerTool } from './tools/core.js';
 import { agentMesh, setMeshCallbacks, updateMeshLog } from './mesh/local.js';
-import { initPreviewMode } from './tools/sandbox.js';
-import { buildSystemPrompt, connectMcpServers, updateAgentUI, selectAgent, killAgent, autoCreateDefaultAgent } from './agent/lifecycle.js';
+import { initPreviewMode, loadSandboxes } from './tools/sandbox.js';
+import { computeConfigHash, buildSystemPrompt, connectMcpServers, updateAgentUI, selectAgent, killAgent, autoCreateDefaultAgent } from './agent/lifecycle.js';
+import { InterruptHook } from './agent/hooks.js';
 import { runAgentMessage, sendMessage, broadcastMessagePrompt, clearChat, clearAllChats, sendInterrupt, handleKeyDown } from './agent/messaging.js';
 import { initVoice, toggleVoice, voiceCfgChanged, populateVoices } from './ui/voice.js';
 
@@ -102,13 +103,20 @@ window.spawnAgent = async function() {
         const { clients: mcpClients, toolNames: mcpToolNames, tools: mcpTools } = await connectMcpServers(mcpServers);
         allTools.push(...mcpTools);
 
-        const agent = new Agent({ model, tools: allTools, systemPrompt: buildSystemPrompt(id, systemPrompt), printer: false });
+        const agent = new Agent({
+            model, tools: allTools,
+            systemPrompt: buildSystemPrompt(id, systemPrompt),
+            printer: false,
+            conversationManager: new SummarizingConversationManager({ summaryRatio: 0.3, preserveRecentMessages: 10 }),
+            hooks: [new InterruptHook()]
+        });
         const color = state.agentColors[state.colorIndex % state.agentColors.length];
         state.colorIndex++;
 
+        const config = { provider, modelId: modelId || undefined, systemPrompt, maxTokens, additionalRequestFields, enabledTools: allToolsEnabled ? null : enabledTools, mcpServers: mcpServers.length ? mcpServers : undefined };
         state.agents.set(id, {
-            agent, model,
-            config: { provider, modelId: modelId || undefined, systemPrompt, maxTokens, additionalRequestFields, enabledTools: allToolsEnabled ? null : enabledTools, mcpServers: mcpServers.length ? mcpServers : undefined },
+            agent, model, config,
+            _configHash: computeConfigHash(config),
             mcpClients, mcpToolNames, messages: [], status: 'ready', color
         });
 
@@ -195,10 +203,18 @@ window.saveAgentEdit = async function() {
             }
         }
 
-        const agent = new Agent({ model, tools: allTools, systemPrompt: buildSystemPrompt(agentId, systemPrompt), printer: false });
+        const agent = new Agent({
+            model, tools: allTools,
+            systemPrompt: buildSystemPrompt(agentId, systemPrompt),
+            printer: false,
+            conversationManager: new SummarizingConversationManager({ summaryRatio: 0.3, preserveRecentMessages: 10 }),
+            hooks: [new InterruptHook()]
+        });
+        const config = { provider, modelId: modelId || undefined, systemPrompt, maxTokens, additionalRequestFields, enabledTools: allToolsEnabled ? null : enabledTools, mcpServers: mcpServers.length ? mcpServers : undefined };
         agentData.agent = agent; agentData.model = model;
+        agentData._configHash = computeConfigHash(config);
         agentData.mcpClients = mcpClients; agentData.mcpToolNames = mcpToolNames;
-        agentData.config = { provider, modelId: modelId || undefined, systemPrompt, maxTokens, additionalRequestFields, enabledTools: allToolsEnabled ? null : enabledTools, mcpServers: mcpServers.length ? mcpServers : undefined };
+        agentData.config = config;
 
         window.closeModal('editAgentModal');
         updateAgentUI(); saveState();
@@ -294,6 +310,11 @@ window.deleteRingEntry = function(index) {
 // ─── Expose globals for onclick handlers in HTML ───
 window.selectAgent = selectAgent;
 window.killAgent = killAgent;
+window.exportAgentDialog = function(agentId, event) {
+    event.stopPropagation();
+    const format = prompt('Export format: json or markdown', 'markdown');
+    if (format === 'json' || format === 'markdown') exportAgent(agentId, format);
+};
 window.sendMessage = sendMessage;
 window.handleKeyDown = handleKeyDown;
 window.clearChat = clearChat;
@@ -328,8 +349,10 @@ window.voiceCfgChanged = voiceCfgChanged;
     // Init mesh
     agentMesh.init();
 
-    // Load persisted state
+    // Load persisted state from IndexedDB (migrates from localStorage on first run)
     await loadState();
+    await Promise.all([loadPipelines(), loadSandboxes(), initCustomTools()]);
+    reconcilePipelineState();
     updateAgentUI();
     updateRingUI();
 

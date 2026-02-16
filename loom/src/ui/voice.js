@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// VOICE — Speech-to-Speech via Local DevDuck WS (port 10001)
+// VOICE — Speech-to-Speech via DevDuck WS (opt-in, with backoff)
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { state } from '../state/store.js';
@@ -13,7 +13,12 @@ export const VOICE_PROVIDERS = {
 };
 
 const V = { active: false, pending: false, audioCtx: null, mediaStream: null, playCtx: null, workletNode: null, workletReady: false, ws: null, micWorklet: null };
-let voiceCfg = JSON.parse(localStorage.getItem('kaa-voice-cfg') || '{"provider":"novasonic","voice":"tiffany"}');
+let voiceCfg = JSON.parse(localStorage.getItem('kaa-voice-cfg') || '{"provider":"novasonic","voice":"tiffany","enabled":false}');
+
+// Exponential backoff state
+let _reconnectDelay = 2000;
+let _reconnectTimer = null;
+const MAX_RECONNECT_DELAY = 60000;
 
 const AUDIO_WORKLET_CODE = `class AudioProcessor extends AudioWorkletProcessor{constructor(){super();this.buffer=new Float32Array(0);this.port.onmessage=e=>{if(e.data.type==='audio'){const n=new Float32Array(this.buffer.length+e.data.samples.length);n.set(this.buffer);n.set(e.data.samples,this.buffer.length);this.buffer=n}else if(e.data.type==='clear'){this.buffer=new Float32Array(0)}}}process(i,o){const out=o[0][0],n=out.length;if(this.buffer.length>=n){out.set(this.buffer.subarray(0,n));this.buffer=this.buffer.slice(n)}else if(this.buffer.length>0){out.set(this.buffer);for(let i=this.buffer.length;i<n;i++)out[i]=0;this.buffer=new Float32Array(0)}else out.fill(0);return true}}registerProcessor('audio-processor',AudioProcessor);`;
 const MIC_WORKLET_CODE = `class MicCaptureProcessor extends AudioWorkletProcessor{constructor(){super();this.active=true;this.port.onmessage=e=>{if(e.data.type==='stop')this.active=false}}process(inputs){if(!this.active)return false;const input=inputs[0]?.[0];if(input?.length>0)this.port.postMessage({type:'audio',samples:new Float32Array(input)});return true}}registerProcessor('mic-capture-processor',MicCaptureProcessor);`;
@@ -33,8 +38,13 @@ function setVoiceUI(s) {
         cfg.style.display = 'flex';
     } else if (s === 'pending') {
         btn.className = 'mic-btn pending'; btn.textContent = '⏳'; vis.style.display = 'none'; cfg.style.display = 'flex';
+    } else if (s === 'disconnected') {
+        btn.className = 'mic-btn disconnected'; btn.textContent = '🎤'; btn.disabled = false;
+        btn.title = 'Voice server not connected — click to retry';
+        vis.style.display = 'none'; cfg.style.display = 'flex';
     } else {
-        btn.className = 'mic-btn'; btn.textContent = '🎤'; vis.style.display = 'none';
+        btn.className = 'mic-btn'; btn.textContent = '🎤'; btn.disabled = false;
+        vis.style.display = 'none';
         document.getElementById('voiceTranscript').style.display = 'none'; cfg.style.display = 'flex';
     }
 }
@@ -99,16 +109,19 @@ async function playAudioChunk(b64, sr) {
 }
 
 function connectVoiceWs() {
+    if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null; }
+
     const ws = new WebSocket('ws://localhost:10001');
     ws.onopen = () => {
         V.ws = ws;
+        _reconnectDelay = 2000; // Reset backoff on successful connection
         ws.send(JSON.stringify({ type:'config', voiceProvider: voiceCfg.provider, voice: voiceCfg.voice, bedrockRegion: state.credentials.bedrock?.region || 'us-east-1' }));
-        document.getElementById('micBtn').disabled = false;
+        setVoiceUI('idle');
     };
     ws.onmessage = (e) => {
         try { const msg = JSON.parse(e.data);
             switch (msg.type) {
-                case 'audio_started': V.active = true; V.pending = false; setVoiceUI('active'); showToast('🎤 Voice active (' + (msg.provider||'') + ')'); break;
+                case 'audio_started': V.active = true; V.pending = false; setVoiceUI('active'); showToast('Voice active (' + (msg.provider||'') + ')'); break;
                 case 'audio_stopped': V.active = false; V.pending = false; stopAudioCapture(); stopPlayback(); setVoiceUI('idle'); break;
                 case 'audio_chunk': playAudioChunk(msg.audio, msg.sample_rate || 16000); break;
                 case 'transcript': showTranscript(msg.text, msg.role); if (msg.is_final) { const emoji = msg.role === 'user' ? '🎤' : '🔊'; state.ringBuffer.push({agentId:'voice',role:msg.role,content:emoji+' '+msg.text?.slice(0,150),timestamp:Date.now()}); updateRingUI(); } break;
@@ -119,14 +132,27 @@ function connectVoiceWs() {
     ws.onerror = () => {};
     ws.onclose = () => {
         V.ws = null;
-        if (V.active || V.pending) { V.active = false; V.pending = false; stopAudioCapture(); stopPlayback(); setVoiceUI('idle') }
-        document.getElementById('micBtn').disabled = true;
-        setTimeout(connectVoiceWs, 5000);
+        if (V.active || V.pending) { V.active = false; V.pending = false; stopAudioCapture(); stopPlayback(); }
+        setVoiceUI('disconnected');
+
+        // Only auto-reconnect if voice is enabled
+        if (voiceCfg.enabled) {
+            _reconnectTimer = setTimeout(connectVoiceWs, _reconnectDelay);
+            _reconnectDelay = Math.min(_reconnectDelay * 2, MAX_RECONNECT_DELAY);
+        }
     };
 }
 
 export async function toggleVoice() {
-    if (!V.ws || V.ws.readyState !== 1) { showToast('DevDuck not connected (port 10001)'); return }
+    // If not connected, enable voice and initiate connection
+    if (!V.ws || V.ws.readyState !== 1) {
+        voiceCfg.enabled = true;
+        localStorage.setItem('kaa-voice-cfg', JSON.stringify(voiceCfg));
+        showToast('Connecting to voice server...');
+        connectVoiceWs();
+        return;
+    }
+
     if (V.active || V.pending) {
         V.active = false; V.pending = false;
         V.ws.send(JSON.stringify({type:'audio_stop'}));
@@ -155,7 +181,12 @@ export function initVoice() {
     if (providerEl) providerEl.value = voiceCfg.provider;
     populateVoices();
     document.getElementById('voiceCfg').style.display = 'flex';
-    document.getElementById('micBtn').disabled = true;
-    setVoiceUI('idle');
-    connectVoiceWs();
+
+    if (voiceCfg.enabled) {
+        // Previously enabled — try to reconnect
+        connectVoiceWs();
+    } else {
+        // Not enabled — show disconnected state, user must click mic to opt in
+        setVoiceUI('disconnected');
+    }
 }

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// HOOKS — InterruptHook, SummarizingManager
+// HOOKS — InterruptHook, RetryHook
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { BeforeModelCallEvent, AfterInvocationEvent, SlidingWindowConversationManager } from '../vendor/strands.js';
+import { BeforeModelCallEvent, AfterModelCallEvent } from '../vendor/strands.js';
 import { state } from '../state/store.js';
 import { addMessageToUI } from '../ui/messages.js';
+import { appendActivityFeed } from '../ui/activity.js';
 
 export const interruptQueues = new Map(); // agentId -> [message strings]
 
@@ -28,34 +29,60 @@ export class InterruptHook {
     }
 }
 
-export class SummarizingManager {
-    constructor({ windowSize = 40, summarizeAfter = 30 } = {}) {
-        this.inner = new SlidingWindowConversationManager({ windowSize });
-        this.summarizeAfter = summarizeAfter;
-        this.summaries = new Map();
+// ─── RetryHook — exponential backoff for transient API errors ───
+
+const RETRYABLE_NAMES = new Set([
+    'ModelThrottledError',
+    'RateLimitError',
+    'APIConnectionError',
+    'APIConnectionTimeoutError',
+    'InternalServerError',
+]);
+
+const RETRYABLE_PATTERNS = /throttl|rate.limit|overloaded|too many requests|service.unavailable|502|503|504/i;
+
+function isRetryable(error) {
+    if (RETRYABLE_NAMES.has(error.name)) return true;
+    const status = error.status || error.statusCode;
+    if (status === 429 || (status >= 500 && status < 600)) return true;
+    if (RETRYABLE_PATTERNS.test(error.message || '')) return true;
+    return false;
+}
+
+export class RetryHook {
+    constructor({ maxRetries = 3, baseDelayMs = 1000 } = {}) {
+        this._maxRetries = maxRetries;
+        this._baseDelayMs = baseDelayMs;
+        this._retries = 0;
     }
+
     registerCallbacks(registry) {
-        this.inner.registerCallbacks(registry);
-        registry.addCallback(AfterInvocationEvent, async (event) => {
-            const msgs = event.agent.messages;
-            if (msgs.length < this.summarizeAfter) return;
+        registry.addCallback(AfterModelCallEvent, async (event) => {
+            // Reset counter on success
+            if (!event.error) {
+                this._retries = 0;
+                return;
+            }
+
+            if (!isRetryable(event.error)) return;
+            if (this._retries >= this._maxRetries) {
+                this._retries = 0;
+                return; // Exhausted — let it fail
+            }
+
+            this._retries++;
+            const delay = this._baseDelayMs * Math.pow(2, this._retries - 1)
+                + Math.floor(Math.random() * 500);
+
             const agentId = state.activeAgentId || 'main';
-            const half = Math.floor(msgs.length / 2);
-            const toSummarize = msgs.slice(0, half);
-            const texts = toSummarize.map(m => {
-                const c = m.content || m;
-                if (typeof c === 'string') return c;
-                if (Array.isArray(c)) return c.map(b => b.text || '').join(' ');
-                return '';
-            }).filter(Boolean).join('\n');
-            if (texts.length < 200) return;
-            const summary = `[CONVERSATION SUMMARY]: ${texts.slice(0, 2000)}...`;
-            this.summaries.set(agentId, summary);
-            const kept = msgs.slice(half);
-            event.agent.messages.length = 0;
-            event.agent.messages.push({ role: 'user', content: [{ type: 'textBlock', text: summary }] });
-            kept.forEach(m => event.agent.messages.push(m));
-            console.log(`Summarized ${half} messages for ${agentId}, kept ${kept.length}`);
+            const reason = event.error.name || `HTTP ${event.error.status || '?'}`;
+            const msg = `Retry ${this._retries}/${this._maxRetries} (${reason}), waiting ${(delay / 1000).toFixed(1)}s...`;
+            console.warn(`[loom] ${agentId}: ${msg}`);
+            appendActivityFeed(agentId, `⟳ ${msg}`, 'msg');
+            addMessageToUI('system', msg, agentId);
+
+            await new Promise(r => setTimeout(r, delay));
+            event.retry = true;
         });
     }
 }
