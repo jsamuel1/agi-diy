@@ -8,7 +8,7 @@ Based on analysis of `sauhsoj-ii.html` as the starting point.
 
 **Problem:** The current `SummarizingManager` doesn't summarize — it truncates the first half of messages to 2,000 characters and labels it `[CONVERSATION SUMMARY]`. Context is silently lost. Worse, because agents are recreated every message (see #6), the manager's `summaries` Map is always empty, so the summarization logic never actually triggers across turns.
 
-**Fix:** Either call the LLM to produce a real summary, or use a smarter extraction strategy: keep tool results, key decisions, and final answers; drop verbose reasoning and intermediate streaming text. Persist summary state so it survives agent recreation.
+**Fix:** The Strands SDK now exports `SummarizingConversationManager` natively — swap our fake `SummarizingManager` class in `hooks.js` for the real one. It supports configurable `windowSize` and `summaryPrompt`. This also requires fixing #6 first (agent persistence across turns), since the manager's state is lost when agents are recreated every message.
 
 ---
 

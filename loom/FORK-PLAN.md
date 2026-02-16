@@ -171,9 +171,9 @@ This is purely a refactor — no new features, no bug fixes. The app should beha
 **Goal:** Agents persist across turns. Fixes IMPROVEMENTS #6, #1, #7.
 
 1. `src/agent/lifecycle.js` — keep live agent instances in state, only recreate on config change
-2. `src/agent/hooks.js` — SummarizingManager now works because state persists
+2. `src/agent/hooks.js` — Replace fake `SummarizingManager` with SDK's native `SummarizingConversationManager`; works because agent state now persists
 3. `src/agent/messaging.js` — add `finally` block for cleanup on abort/error
-4. Upgrade SummarizingManager to extract key info instead of naive truncation
+4. Remove the fake `SummarizingManager` class entirely — the SDK handles it
 
 ---
 
